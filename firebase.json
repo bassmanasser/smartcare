@@ -1,0 +1,37 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "smartcare-app-wearable-device",
+          "appId": "1:675835178966:android:1d0cd759a221f74cb9be77",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "smartcare-app-wearable-device",
+          "configurations": {
+            "android": "1:675835178966:android:1d0cd759a221f74cb9be77",
+            "ios": "1:675835178966:ios:26604bccb3c8d90ab9be77",
+            "web": "1:675835178966:web:7ae9d732083d0689b9be77"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ]
+}

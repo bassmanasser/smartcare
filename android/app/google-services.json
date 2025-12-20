@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "675835178966",
+    "project_id": "smartcare-app-wearable-device",
+    "storage_bucket": "smartcare-app-wearable-device.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:675835178966:android:1d0cd759a221f74cb9be77",
+        "android_client_info": {
+          "package_name": "com.example.smartcare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEUlgYVWzwSuzI2foW9keadAwFPDUnGQs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
