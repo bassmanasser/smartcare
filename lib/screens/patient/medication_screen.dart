@@ -1,9 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../models/medication.dart';
-import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
 
 class MedicationScreen extends StatefulWidget {
@@ -15,6 +13,28 @@ class MedicationScreen extends StatefulWidget {
 }
 
 class _MedicationScreenState extends State<MedicationScreen> {
+  Map<String, dynamic> _timeToMap(TimeOfDay t) => {"h": t.hour, "m": t.minute};
+
+  TimeOfDay? _mapToTime(dynamic x) {
+    if (x is Map) {
+      final h = x['h'];
+      final m = x['m'];
+      if (h is int && m is int) return TimeOfDay(hour: h, minute: m);
+    }
+    return null;
+  }
+
+  CollectionReference<Map<String, dynamic>> _medsRef() {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.patientId)
+        .collection('medications');
+  }
+
+  Future<void> _toggleReminder(String medId, bool value) async {
+    await _medsRef().doc(medId).update({'reminderEnabled': value});
+  }
+
   Future<void> _addMedicationDialog() async {
     final nameCtrl = TextEditingController();
     final dosageCtrl = TextEditingController();
@@ -22,7 +42,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
     TimeOfDay? selectedTime;
     bool enableReminder = false;
 
-    final result = await showDialog<Medication?>(
+    final result = await showDialog<Map<String, dynamic>?>(
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('Add Medication'),
@@ -32,20 +52,17 @@ class _MedicationScreenState extends State<MedicationScreen> {
             children: [
               TextField(
                 controller: nameCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Medication Name'),
+                decoration: const InputDecoration(labelText: 'Medication Name'),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: dosageCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Dosage (e.g. 1 pill)'),
+                decoration: const InputDecoration(labelText: 'Dosage (e.g. 1 pill)'),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: freqCtrl,
-                decoration: const InputDecoration(
-                    labelText: 'Frequency (e.g. 2 times/day)'),
+                decoration: const InputDecoration(labelText: 'Frequency (e.g. 2 times/day)'),
               ),
               const SizedBox(height: 16),
               StatefulBuilder(
@@ -77,9 +94,7 @@ class _MedicationScreenState extends State<MedicationScreen> {
                           },
                           icon: const Icon(Icons.access_time),
                           label: Text(
-                            selectedTime == null
-                                ? 'Select time'
-                                : selectedTime!.format(context),
+                            selectedTime == null ? 'Select time' : selectedTime!.format(context),
                           ),
                         ),
                     ],
@@ -96,23 +111,15 @@ class _MedicationScreenState extends State<MedicationScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (nameCtrl.text.trim().isEmpty ||
-                  dosageCtrl.text.trim().isEmpty) {
-                return;
-              }
+              if (nameCtrl.text.trim().isEmpty || dosageCtrl.text.trim().isEmpty) return;
 
-              final med = Medication(
-                id: '',
-                patientId: widget.patientId,
-                name: nameCtrl.text.trim(),
-                dosage: dosageCtrl.text.trim(),
-                frequency: freqCtrl.text.trim(),
-                active: true,
-                reminderTime: enableReminder ? selectedTime : null,
-                reminderEnabled:
-                    enableReminder && selectedTime != null,
-              );
-              Navigator.pop(c, med);
+              Navigator.pop(c, {
+                "name": nameCtrl.text.trim(),
+                "dosage": dosageCtrl.text.trim(),
+                "frequency": freqCtrl.text.trim(),
+                "reminderEnabled": enableReminder && selectedTime != null,
+                "reminderTime": selectedTime == null ? null : _timeToMap(selectedTime!),
+              });
             },
             child: const Text('Add'),
           ),
@@ -121,24 +128,35 @@ class _MedicationScreenState extends State<MedicationScreen> {
     );
 
     if (result != null && mounted) {
-      final app = Provider.of<AppState>(context, listen: false);
-      await app.addMedication(result, widget.patientId as Medication);
+      await _medsRef().add({
+        "patientId": widget.patientId,
+        "name": result["name"],
+        "dosage": result["dosage"],
+        "frequency": result["frequency"],
+        "active": true,
+        "reminderEnabled": result["reminderEnabled"] ?? false,
+        "reminderTime": result["reminderTime"],
+        "createdAt": FieldValue.serverTimestamp(),
+      });
     }
   }
 
-  Future<void> _toggleReminder(Medication med, bool value) async {
-    await FirebaseFirestore.instance
-        .collection('medications')
-        .doc(med.id)
-        .update({'reminderEnabled': value});
+  Medication _docToMedication(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    final d = doc.data();
+    return Medication(
+      id: doc.id,
+      patientId: (d['patientId'] ?? widget.patientId).toString(),
+      name: (d['name'] ?? '').toString(),
+      dosage: (d['dosage'] ?? '').toString(),
+      frequency: (d['frequency'] ?? '').toString(),
+      active: d['active'] == true,
+      reminderEnabled: d['reminderEnabled'] == true,
+      reminderTime: _mapToTime(d['reminderTime']),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final app = Provider.of<AppState>(context);
-    final meds = app.getMedicationsForPatient(widget.patientId)
-      ..sort((a, b) => a.name.compareTo(b.name));
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Medication Reminders'),
@@ -149,39 +167,48 @@ class _MedicationScreenState extends State<MedicationScreen> {
         backgroundColor: PETROL,
         child: const Icon(Icons.add),
       ),
-      body: meds.isEmpty
-          ? const Center(child: Text('No medications added yet.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: meds.length,
-              itemBuilder: (c, i) {
-                final med = meds[i];
-                final timeText = med.reminderTime != null
-                    ? med.reminderTime!.format(context)
-                    : 'No time set';
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: _medsRef().snapshots(),
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snap.hasData || snap.data!.docs.isEmpty) {
+            return const Center(child: Text('No medications added yet.'));
+          }
 
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                      vertical: 4, horizontal: 8),
-                  child: SwitchListTile(
-                    title: Text(
-                      med.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    subtitle: Text(
-                      '${med.dosage} • ${med.frequency}\nReminder: $timeText',
-                    ),
-                    isThreeLine: true,
-                    value: med.reminderEnabled,
-                    onChanged: (newValue) {
-                      _toggleReminder(med, newValue);
-                    },
+          // ✅ FIX: sort على List مش null
+          final meds = snap.data!.docs.map(_docToMedication).toList()
+            ..sort((a, b) => a.name.compareTo(b.name));
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(8),
+            itemCount: meds.length,
+            itemBuilder: (c, i) {
+              final med = meds[i];
+              final timeText = med.reminderTime != null
+                  ? med.reminderTime!.format(context)
+                  : 'No time set';
+
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                child: SwitchListTile(
+                  title: Text(
+                    med.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                );
-              },
-            ),
+                  subtitle: Text('${med.dosage} • ${med.frequency}\nReminder: $timeText'),
+                  isThreeLine: true,
+                  value: med.reminderEnabled,
+                  onChanged: (value) async {
+                    await _toggleReminder(med.id, value);
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

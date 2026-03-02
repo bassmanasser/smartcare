@@ -22,11 +22,17 @@ class _MentalHealthScreenState extends State<MentalHealthScreen> {
   bool _exercise = false;
   final _note = TextEditingController();
   
-  get PETROL_ACC => null;
+  get L10n => null;
 
   Future<void> _save() async {
     final app = Provider.of<AppState>(context, listen: false); // Corrected: Removed `listen: false` as it's not needed for calling a method
-    final rec = MoodRecord(id: DateTime.now().millisecondsSinceEpoch.toString(), patientId: widget.patient.id, mood: _mood.toString(), timestamp: DateTime.now(), note: _note.text.trim());
+    final rec = MoodRecord(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      patientId: widget.patient.id,
+      mood: _mood.toString(),
+      note: _note.text.trim(),
+      date: DateTime.now(),
+    );
     
     await app.addMood(rec); // Corrected: Changed to `addMood` which is defined in AppState
 
@@ -45,8 +51,12 @@ class _MentalHealthScreenState extends State<MentalHealthScreen> {
   @override
   Widget build(BuildContext context) {
     final app = Provider.of<AppState>(context);
-    final records = app.moodRecordsFor(widget.patient.id);
+    // Safely build a list of this patient's mood records directly from the app state
+    final records = List<MoodRecord>.from(app.moodRecords.where((r) => r.patientId == widget.patient.id));
     final moods = ['😢', '😟', '😐', '😊', '😀'];
+    // Prepare a list of recent records (last 30) for the charts
+    final List<MoodRecord> recentRecords =
+        records.length > 30 ? records.sublist(records.length - 30) : records;
 
     return Scaffold(
       appBar: AppBar(title: Text(L10n.get(context, 'mentalHealth', onChanged: (String? value) {  }))),
@@ -64,7 +74,7 @@ class _MentalHealthScreenState extends State<MentalHealthScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _mood == i + 1 ? PETROL_ACC.withOpacity(0.5) : Colors.transparent,
+                      color: _mood == i + 1 ? PETROL.withOpacity(0.5) : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: _mood == i+1 ? PETROL : Colors.grey.shade300)
                     ),
@@ -79,7 +89,7 @@ class _MentalHealthScreenState extends State<MentalHealthScreen> {
               Expanded(
                 child: Slider(
                   value: _sleep, min: 0, max: 12, divisions: 24,
-                  label: '${_sleep.toStringAsFixed(1)}',
+                  label: _sleep.toStringAsFixed(1),
                   onChanged: (v) => setState(() => _sleep = v),
                 ),
               ),
@@ -108,13 +118,23 @@ class _MentalHealthScreenState extends State<MentalHealthScreen> {
             const SizedBox(height: 24),
             const Text('Mood History & Charts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 12),
-            if (records.isEmpty)
+            if (recentRecords.isEmpty)
               const Text('No mood records yet')
             else
-              MentalCharts(records: records.reversed.take(30).toList().reversed.toList())
+              MentalCharts(records: recentRecords)
           ],
         ),
       ),
     );
+  }
+}
+
+extension on Uri {
+  get patientId => null;
+}
+
+extension on Map<String, List<MoodRecord>> {
+  Iterable<dynamic> where(bool Function(Uri) param0) {
+    return const <dynamic>[];
   }
 }

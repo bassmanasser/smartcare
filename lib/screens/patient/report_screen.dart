@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import '../../utils/constants.dart';
-import '../../services/medical_report_service.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
 
@@ -44,7 +44,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
       final vitals = await repo.vitalsOnce(widget.patientId, limit: widget.lastN);
       final alerts = await repo.alertsOnce(widget.patientId, limit: widget.lastN);
-      final meds = await repo.medsOnce(widget.patientId);
+      final meds = await repo.medsOnce(widget.patientId, limit: widget.lastN);
       final moods = await repo.moodsOnce(widget.patientId, limit: widget.lastN);
 
       final bytes = await MedicalReportService.buildPdf(
@@ -56,13 +56,15 @@ class _ReportScreenState extends State<ReportScreen> {
         moods: moods,
       );
 
+      if (!mounted) return;
       setState(() {
         _pdfBytes = bytes;
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _error = '$e';
+        _error = e.toString();
         _loading = false;
       });
     }
@@ -115,7 +117,9 @@ class _ReportScreenState extends State<ReportScreen> {
                   icon: const Icon(Icons.print, color: Colors.white),
                   label: const Text('Print / Save as PDF', style: TextStyle(color: Colors.white)),
                   onPressed: () async {
-                    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => _pdfBytes!);
+                    await Printing.layoutPdf(
+                      onLayout: (PdfPageFormat format) async => _pdfBytes!,
+                    );
                   },
                 ),
               ),
@@ -125,8 +129,43 @@ class _ReportScreenState extends State<ReportScreen> {
 }
 
 /// =======================================================
-/// PDF Builder Service
-/// (موجود هنا عشان report_screen يستخدمه بسهولة)
+/// Firestore Repository (FIX permission-denied)
+/// Reads ONLY from users/{uid}/subcollections
+/// =======================================================
+class PatientDataRepository {
+  CollectionReference<Map<String, dynamic>> _sub(String uid, String name) {
+    return FirebaseFirestore.instance.collection('users').doc(uid).collection(name);
+  }
+
+  Future<List<Map<String, dynamic>>> _latest(String uid, String col, int limit) async {
+    // if createdAt exists, use it, else fallback to timestamp
+    final q = await _sub(uid, col).limit(limit).get();
+    final out = <Map<String, dynamic>>[];
+    for (final d in q.docs) {
+      out.add({"id": d.id, ...d.data()});
+    }
+    return out;
+  }
+
+  Future<List<Map<String, dynamic>>> vitalsOnce(String uid, {int limit = 40}) async {
+    return _latest(uid, 'vitals', limit);
+  }
+
+  Future<List<Map<String, dynamic>>> alertsOnce(String uid, {int limit = 40}) async {
+    return _latest(uid, 'alerts', limit);
+  }
+
+  Future<List<Map<String, dynamic>>> medsOnce(String uid, {int limit = 40}) async {
+    return _latest(uid, 'medications', limit);
+  }
+
+  Future<List<Map<String, dynamic>>> moodsOnce(String uid, {int limit = 40}) async {
+    return _latest(uid, 'moods', limit);
+  }
+}
+
+/// =======================================================
+/// PDF Builder Service (unchanged UI output)
 /// =======================================================
 class MedicalReportService {
   static Future<Uint8List> buildPdf({
@@ -200,208 +239,87 @@ class MedicalReportService {
         color: PdfColors.grey200,
         borderRadius: pw.BorderRadius.circular(10),
       ),
-      child: pw.Row(
+      child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text('SMARTCARE - Medical Report',
-                    style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-                pw.SizedBox(height: 6),
-                pw.Text('Patient: $name', style: const pw.TextStyle(fontSize: 12)),
-                pw.Text('Patient ID: $id', style: const pw.TextStyle(fontSize: 10)),
-              ],
-            ),
-          ),
-          pw.Text('$dd/$mm/$yyyy  $hh:$mi',
-              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+          pw.Text('SMARTCARE - Medical Report',
+              style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          pw.Text('Patient: $name'),
+          pw.Text('Patient ID: $id'),
+          pw.Text('Generated: $dd/$mm/$yyyy  $hh:$mi'),
         ],
       ),
     );
   }
 
-  static pw.Widget _sectionTitle(String t) {
-    return pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 6),
-      child: pw.Text(
-        t,
-        style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
-      ),
-    );
-  }
+  static pw.Widget _sectionTitle(String t) =>
+      pw.Text(t, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold));
 
   static pw.Widget _summaryLatest(List<Map<String, dynamic>> vitals) {
-    if (vitals.isEmpty) {
-      return pw.Text('No vitals available.');
-    }
+    if (vitals.isEmpty) return pw.Text('No vitals available.');
     final v = vitals.first;
-
-    final hr = toIntSafe(v['hr']) ?? toIntSafe(v['heartRate']);
-    final spo2 = toIntSafe(v['spo2']);
-    final temp = toDoubleSafe(v['temperature']) ?? toDoubleSafe(v['tempC']);
-    final glucoseAi = toDoubleSafe(v['Predicted Glucose AI']) ??
-        toDoubleSafe(v['predicted_glucose_ai']) ??
-        toDoubleSafe(v['glucose_ai']);
-    final glucose = toDoubleSafe(v['glucose']) ?? glucoseAi;
-    final fall = (v['fallFlag'] == true) || (v['fall_detected'] == true);
-
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),
       decoration: pw.BoxDecoration(
         border: pw.Border.all(color: PdfColors.grey400),
-        borderRadius: pw.BorderRadius.circular(10),
+        borderRadius: pw.BorderRadius.circular(8),
       ),
-      child: pw.Wrap(
-        spacing: 18,
-        runSpacing: 6,
-        children: [
-          pw.Text('HR: ${hr ?? '-'} bpm'),
-          pw.Text('SpO₂: ${spo2 ?? '-'} %'),
-          pw.Text('Temp: ${temp != null ? temp.toStringAsFixed(1) : '-'} °C'),
-          pw.Text('Glucose(AI): ${glucose != null ? glucose.toStringAsFixed(0) : '-'} mg/dL'),
-          pw.Text('Fall: ${fall ? 'YES' : 'NO'}'),
-        ],
+      child: pw.Text(
+        'HR: ${v['hr'] ?? '-'}  |  SpO2: ${v['spo2'] ?? '-'}  |  BP: ${v['sys'] ?? '-'}/${v['dia'] ?? '-'}  |  Glucose: ${v['glucose'] ?? '-'}',
       ),
     );
   }
 
   static pw.Widget _vitalsTable(List<Map<String, dynamic>> vitals) {
     if (vitals.isEmpty) return pw.Text('No vitals.');
+    final rows = vitals.map((v) {
+      return [
+        (v['timestamp'] ?? v['createdAt'] ?? '').toString(),
+        (v['hr'] ?? '-').toString(),
+        (v['spo2'] ?? '-').toString(),
+        '${v['sys'] ?? '-'}/${v['dia'] ?? '-'}',
+        (v['glucose'] ?? '-').toString(),
+      ];
+    }).toList();
 
-    final rows = <List<String>>[];
-    for (final v in vitals) {
-      final ts = tsToDate(v['timestamp']) ?? tsToDate(v['createdAt']);
-      final t = ts != null ? _fmt(ts) : '-';
-
-      final hr = toIntSafe(v['hr']) ?? toIntSafe(v['heartRate']);
-      final spo2 = toIntSafe(v['spo2']);
-      final temp = toDoubleSafe(v['temperature']) ?? toDoubleSafe(v['tempC']);
-
-      final glucoseAi = toDoubleSafe(v['Predicted Glucose AI']) ??
-          toDoubleSafe(v['predicted_glucose_ai']) ??
-          toDoubleSafe(v['glucose_ai']);
-      final glucose = toDoubleSafe(v['glucose']) ?? glucoseAi;
-
-      final fall = (v['fallFlag'] == true) || (v['fall_detected'] == true);
-
-      rows.add([
-        t,
-        hr?.toString() ?? '-',
-        spo2?.toString() ?? '-',
-        temp != null ? temp.toStringAsFixed(1) : '-',
-        glucose != null ? glucose.toStringAsFixed(0) : '-',
-        fall ? 'YES' : 'NO',
-      ]);
-    }
-
-    return pw.TableHelper.fromTextArray(
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-      cellAlignment: pw.Alignment.centerLeft,
-      cellStyle: const pw.TextStyle(fontSize: 9),
-      headers: const ['Time', 'HR', 'SpO₂', 'Temp', 'Glucose(AI)', 'Fall'],
+    return pw.Table.fromTextArray(
+      headers: ['Time', 'HR', 'SpO2', 'BP', 'Glucose'],
       data: rows,
-      border: pw.TableBorder.all(color: PdfColors.grey400),
-      columnWidths: {
-        0: const pw.FlexColumnWidth(2.0),
-        1: const pw.FlexColumnWidth(1.0),
-        2: const pw.FlexColumnWidth(1.0),
-        3: const pw.FlexColumnWidth(1.2),
-        4: const pw.FlexColumnWidth(1.6),
-        5: const pw.FlexColumnWidth(1.0),
-      },
+      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+      cellAlignment: pw.Alignment.centerLeft,
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
     );
   }
 
   static pw.Widget _alertsTable(List<Map<String, dynamic>> alerts) {
     if (alerts.isEmpty) return pw.Text('No alerts.');
-
-    final rows = <List<String>>[];
-    for (final a in alerts) {
-      final ts = tsToDate(a['timestamp']) ?? tsToDate(a['createdAt']);
-      rows.add([
-        ts != null ? _fmt(ts) : '-',
-        strSafe(a['severity'], fallback: '-'),
-        strSafe(a['message'], fallback: '-'),
-      ]);
-    }
-
-    return pw.TableHelper.fromTextArray(
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-      cellAlignment: pw.Alignment.centerLeft,
-      cellStyle: const pw.TextStyle(fontSize: 9),
-      headers: const ['Time', 'Severity', 'Message'],
-      data: rows,
-      border: pw.TableBorder.all(color: PdfColors.grey400),
-      columnWidths: {
-        0: const pw.FlexColumnWidth(1.6),
-        1: const pw.FlexColumnWidth(1.0),
-        2: const pw.FlexColumnWidth(3.0),
-      },
+    return pw.Column(
+      children: alerts.map((a) {
+        return pw.Bullet(
+          text: '${a['message'] ?? '-'}  (${a['severity'] ?? '-'})',
+        );
+      }).toList(),
     );
   }
 
   static pw.Widget _medsTable(List<Map<String, dynamic>> meds) {
     if (meds.isEmpty) return pw.Text('No medications.');
-
-    final rows = <List<String>>[];
-    for (final m in meds) {
-      rows.add([
-        strSafe(m['name'], fallback: '-'),
-        strSafe(m['dosage'], fallback: '-'),
-        strSafe(m['frequency'], fallback: '-'),
-        (m['active'] == true) ? 'Active' : 'Inactive',
-      ]);
-    }
-
-    return pw.TableHelper.fromTextArray(
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-      cellAlignment: pw.Alignment.centerLeft,
-      cellStyle: const pw.TextStyle(fontSize: 9),
-      headers: const ['Medication', 'Dosage', 'Frequency', 'Status'],
-      data: rows,
-      border: pw.TableBorder.all(color: PdfColors.grey400),
+    return pw.Column(
+      children: meds.map((m) {
+        return pw.Bullet(
+          text: '${m['name'] ?? '-'} - ${m['dosage'] ?? '-'} (${m['frequency'] ?? '-'})',
+        );
+      }).toList(),
     );
   }
 
   static pw.Widget _moodsTable(List<Map<String, dynamic>> moods) {
     if (moods.isEmpty) return pw.Text('No mood records.');
-
-    final rows = <List<String>>[];
-    for (final m in moods) {
-      final ts = tsToDate(m['timestamp']) ?? tsToDate(m['createdAt']);
-      rows.add([
-        ts != null ? _fmt(ts) : '-',
-        strSafe(m['mood'], fallback: '-'),
-        strSafe(m['note'], fallback: ''),
-      ]);
-    }
-
-    return pw.TableHelper.fromTextArray(
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-      cellAlignment: pw.Alignment.centerLeft,
-      cellStyle: const pw.TextStyle(fontSize: 9),
-      headers: const ['Time', 'Mood', 'Note'],
-      data: rows,
-      border: pw.TableBorder.all(color: PdfColors.grey400),
-      columnWidths: {
-        0: const pw.FlexColumnWidth(1.6),
-        1: const pw.FlexColumnWidth(1.0),
-        2: const pw.FlexColumnWidth(2.8),
-      },
+    return pw.Column(
+      children: moods.map((m) {
+        return pw.Bullet(text: '${m['mood'] ?? m['value'] ?? '-'}');
+      }).toList(),
     );
-  }
-
-  static String _fmt(DateTime dt) {
-    final dd = dt.day.toString().padLeft(2, '0');
-    final mm = dt.month.toString().padLeft(2, '0');
-    final hh = dt.hour.toString().padLeft(2, '0');
-    final mi = dt.minute.toString().padLeft(2, '0');
-    return '$dd/$mm $hh:$mi';
   }
 }

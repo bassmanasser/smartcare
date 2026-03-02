@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../user_type_selection_screen.dart';
 import '../../utils/constants.dart';
+import '../patient/patient_signup_screen.dart';
+import '../doctor/doctor_signup_screen.dart';
+import '../parent/parent_signup_screen.dart';
 
 class EmailAuthScreen extends StatefulWidget {
-  const EmailAuthScreen({super.key});
+  final String role;          // patient | doctor | parent
+  final bool startAsLogin;    // true=login , false=signup
+
+  const EmailAuthScreen({
+    super.key,
+    required this.role,
+    this.startAsLogin = true,
+  });
 
   @override
   State<EmailAuthScreen> createState() => _EmailAuthScreenState();
@@ -16,8 +25,14 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
   final _password = TextEditingController();
   final _auth = FirebaseAuth.instance;
 
-  bool _isLogin = true;
+  late bool _isLogin;
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isLogin = widget.startAsLogin;
+  }
 
   @override
   void dispose() {
@@ -26,16 +41,19 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
     super.dispose();
   }
 
+  Widget _nextProfileScreen() {
+    if (widget.role == "patient") return const PatientSignUpScreen();
+    if (widget.role == "doctor") return const DoctorSignupScreen();
+    return const ParentSignUpScreen();
+  }
+
   Future<void> _submit() async {
     final email = _email.text.trim();
     final pass = _password.text.trim();
 
     if (email.isEmpty || pass.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Enter a valid email and password (min 6 chars).'),
-        ),
+        const SnackBar(content: Text('Invalid email or password (min 6 chars).')),
       );
       return;
     }
@@ -43,120 +61,83 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
     setState(() => _loading = true);
 
     try {
-      UserCredential cred;
       if (_isLogin) {
-        cred = await _auth.signInWithEmailAndPassword(
-          email: email,
-          password: pass,
-        );
+        // ✅ Login
+        await _auth.signInWithEmailAndPassword(email: email, password: pass);
+
+        if (!mounted) return;
+        Navigator.pop(context); // Main.dart هيحوّل لHome حسب الدور من Firestore
       } else {
-        cred = await _auth.createUserWithEmailAndPassword(
-          email: email,
-          password: pass,
+        // ✅ Signup (create auth account)
+        await _auth.createUserWithEmailAndPassword(email: email, password: pass);
+
+        if (!mounted) return;
+
+        // ✅ بعد إنشاء الحساب: ادخلي مباشرة صفحة "Complete Profile" حسب الدور
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => _nextProfileScreen()),
+          (r) => false,
         );
       }
-
-      if (!mounted) return;
-
-      // بعد التسجيل/الدخول → نسيب SplashScreen يشوف role
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const UserTypeSelectionScreen(),
-        ),
-        (r) => false,
-      );
     } on FirebaseAuthException catch (e) {
-      String msg = 'Authentication error';
-      if (e.code == 'user-not-found') msg = 'No user found for this email.';
-      if (e.code == 'wrong-password') msg = 'Wrong password.';
-      if (e.code == 'email-already-in-use') msg = 'Email already in use.';
+      final msg = e.message ?? 'Authentication error';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      if (mounted) setState(() => _loading = false);
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
+        const SnackBar(content: Text('Unexpected error. Try again.')),
       );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final title = _isLogin ? 'Login' : 'Sign Up';
+    final title = _isLogin ? "Login" : "Create Account";
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: Text("$title (${widget.role.toUpperCase()})"),
         backgroundColor: PETROL_DARK,
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                const Icon(Icons.lock_open, size: 80, color: PETROL),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _email,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _password,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                ),
-                const SizedBox(height: 24),
-                _loading
-                    ? const CircularProgressIndicator()
-                    : Column(
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _submit,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: PETROL,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 14),
-                              ),
-                              child: Text(
-                                title,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _isLogin = !_isLogin;
-                              });
-                            },
-                            child: Text(
-                              _isLogin
-                                  ? "Don't have an account? Sign Up"
-                                  : 'Already have an account? Login',
-                            ),
-                          ),
-                        ],
-                      ),
-              ],
+        child: Column(
+          children: [
+            TextField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
             ),
-          ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _password,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 20),
+
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _loading ? null : _submit,
+                style: ElevatedButton.styleFrom(backgroundColor: PETROL_DARK, foregroundColor: Colors.white),
+                child: _loading
+                    ? const CircularProgressIndicator()
+                    : Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ),
+
+            const SizedBox(height: 14),
+            TextButton(
+              onPressed: _loading
+                  ? null
+                  : () => setState(() => _isLogin = !_isLogin),
+              child: Text(_isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"),
+            ),
+          ],
         ),
       ),
     );

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:smartcare/models/vital_sample.dart';
 
 class VitalsInsightsService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -46,14 +47,14 @@ class VitalsInsightsService {
           severity: 'high',
           title: 'Low oxygen saturation',
           message:
-              'SpO₂ is ${spo2}%. This is very low. If there is shortness of breath, chest pain, confusion, or bluish lips, seek urgent medical care.',
+              'SpO₂ is $spo2%. This is very low. If there is shortness of breath, chest pain, confusion, or bluish lips, seek urgent medical care.',
         ));
       } else if (spo2 < 94) {
         alerts.add(_BuiltAlert(
           severity: 'medium',
           title: 'Borderline oxygen saturation',
           message:
-              'SpO₂ is ${spo2}%. Monitor closely. Re-check sensor placement and measure again after rest.',
+              'SpO₂ is $spo2%. Monitor closely. Re-check sensor placement and measure again after rest.',
         ));
       }
     }
@@ -65,28 +66,28 @@ class VitalsInsightsService {
           severity: 'high',
           title: 'High heart rate',
           message:
-              'Heart rate is ${hr} bpm. If there is dizziness, chest pain, fainting, or severe palpitations, seek urgent care.',
+              'Heart rate is $hr bpm. If there is dizziness, chest pain, fainting, or severe palpitations, seek urgent care.',
         ));
       } else if (hr > 110) {
         alerts.add(_BuiltAlert(
           severity: 'medium',
           title: 'Elevated heart rate',
           message:
-              'Heart rate is ${hr} bpm. Consider rest, hydration, and re-check. If persistent, consult a clinician.',
+              'Heart rate is $hr bpm. Consider rest, hydration, and re-check. If persistent, consult a clinician.',
         ));
       } else if (hr < 45) {
         alerts.add(_BuiltAlert(
           severity: 'high',
           title: 'Low heart rate',
           message:
-              'Heart rate is ${hr} bpm. If there is fainting, weakness, or confusion, seek urgent evaluation.',
+              'Heart rate is $hr bpm. If there is fainting, weakness, or confusion, seek urgent evaluation.',
         ));
       } else if (hr < 55) {
         alerts.add(_BuiltAlert(
           severity: 'medium',
           title: 'Borderline low heart rate',
           message:
-              'Heart rate is ${hr} bpm. Monitor symptoms. Some athletes can have low HR.',
+              'Heart rate is $hr bpm. Monitor symptoms. Some athletes can have low HR.',
         ));
       }
     }
@@ -98,21 +99,21 @@ class VitalsInsightsService {
           severity: 'high',
           title: 'Hypertensive crisis range',
           message:
-              'Blood pressure is ${sys}/${dia} mmHg. If there is headache, chest pain, shortness of breath, weakness, or vision changes, seek urgent care.',
+              'Blood pressure is $sys/$dia mmHg. If there is headache, chest pain, shortness of breath, weakness, or vision changes, seek urgent care.',
         ));
       } else if (sys >= 140 || dia >= 90) {
         alerts.add(_BuiltAlert(
           severity: 'medium',
           title: 'High blood pressure',
           message:
-              'Blood pressure is ${sys}/${dia} mmHg. Monitor and consider medical advice if repeated.',
+              'Blood pressure is $sys/$dia mmHg. Monitor and consider medical advice if repeated.',
         ));
       } else if (sys < 90 || dia < 60) {
         alerts.add(_BuiltAlert(
           severity: 'medium',
           title: 'Low blood pressure',
           message:
-              'Blood pressure is ${sys}/${dia} mmHg. If there is dizziness or fainting, ensure hydration and consult a clinician if persistent.',
+              'Blood pressure is $sys/$dia mmHg. If there is dizziness or fainting, ensure hydration and consult a clinician if persistent.',
         ));
       }
     }
@@ -260,6 +261,8 @@ class VitalsInsightsService {
       return null;
     }
   }
+
+  Future<void> analyzeAndAlert(VitalSample s) async {}
 }
 
 class _BuiltAlert {

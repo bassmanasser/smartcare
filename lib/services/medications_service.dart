@@ -1,38 +1,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-class MedicationDoc {
-  final String name;
-  final String dosage;
-  final String frequency;
-  final bool active;
-
-  MedicationDoc({
-    required this.name,
-    required this.dosage,
-    required this.frequency,
-    required this.active,
-  });
-
-  factory MedicationDoc.fromMap(Map<String, dynamic> m) {
-    return MedicationDoc(
-      name: (m['name'] ?? '') as String,
-      dosage: (m['dosage'] ?? '') as String,
-      frequency: (m['frequency'] ?? '') as String,
-      active: (m['active'] ?? true) as bool,
-    );
-  }
-}
+import '../models/medication.dart';
 
 class MedicationsService {
-  final _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  Stream<List<MedicationDoc>> medsStream(String patientId) {
+  // جلب قائمة الأدوية لمريض معين
+  Stream<List<Medication>> medicationsStream(String patientId) {
     return _db
-        .collection('patients')
-        .doc(patientId)
         .collection('medications')
-        .orderBy('name')
+        .where('patientId', isEqualTo: patientId)
         .snapshots()
-        .map((qs) => qs.docs.map((d) => MedicationDoc.fromMap(d.data())).toList());
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Medication.fromJson(data);
+      }).toList();
+    });
+  }
+
+  // تحديث حالة الدواء (نشط/غير نشط)
+  Future<void> updateMedicationStatus(String medId, bool isActive) async {
+    await _db.collection('medications').doc(medId).update({
+      'active': isActive,
+    });
+  }
+
+  // حذف دواء
+  Future<void> deleteMedication(String medId) async {
+    await _db.collection('medications').doc(medId).delete();
   }
 }

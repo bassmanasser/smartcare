@@ -1,104 +1,265 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
 
-import '../../providers/app_state.dart';
 import '../../models/doctor.dart';
-import '../../utils/constants.dart';
-import 'doctor_home_screen.dart';
+import '../../services/storage_service.dart';
+import '../../services/invite_service.dart';
+import '../../utils/doctor_specialties.dart';
 
-class DoctorSignUpScreen extends StatefulWidget {
-  const DoctorSignUpScreen({super.key});
+class DoctorSignupScreen extends StatefulWidget {
+  const DoctorSignupScreen({super.key});
 
   @override
-  State<DoctorSignUpScreen> createState() => _DoctorSignUpScreenState();
+  State<DoctorSignupScreen> createState() => _DoctorSignupScreenState();
 }
 
-class _DoctorSignUpScreenState extends State<DoctorSignUpScreen> {
-  final _name = TextEditingController();
-  final _specialty = TextEditingController();
+class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
+  final _formKey = GlobalKey<FormState>();
 
-  @override
-  void dispose() {
-    _name.dispose();
-    _specialty.dispose();
-    super.dispose();
+  final inviteController = TextEditingController();
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  String? selectedMainSpecialty;
+  String? selectedSubSpecialty;
+
+  File? optionalDocImage;
+  String? optionalDocImageUrl;
+
+  bool loading = false;
+
+  Future<void> pickOptionalImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: source, imageQuality: 85);
+    if (picked != null) {
+      setState(() => optionalDocImage = File(picked.path));
+    }
   }
 
-  Future<void> _save() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+  Future<void> registerDoctor() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (selectedMainSpecialty == null || selectedSubSpecialty == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Choose specialty")));
+      return;
+    }
+
+    final inviteCode = inviteController.text.trim();
+    if (inviteCode.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You must login first.')),
+        const SnackBar(content: Text("Invitation code is required")),
       );
       return;
     }
 
-    final app = Provider.of<AppState>(context, listen: false);
+    setState(() => loading = true);
 
-    final d = Doctor(
-      id: user.uid,
-      name: _name.text.trim().isEmpty ? 'Doctor' : _name.text.trim(),
-      specialty: _specialty.text.trim().isEmpty
-          ? null
-          : _specialty.text.trim(),
-    );
+    try {
+      // 1) verify invite
+      final inviteDoc = await InviteService.verifyInviteCode(inviteCode);
+      if (inviteDoc == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Invalid or used invite code")),
+        );
+        setState(() => loading = false);
+        return;
+      }
 
-    await app.registerDoctor(d);
+      final inviteData = inviteDoc.data()!;
 
-    if (!mounted) return;
+      // optional email lock
+      final allowedEmail = inviteData["allowedEmail"];
+      if (allowedEmail != null &&
+          allowedEmail.toString().trim().isNotEmpty &&
+          allowedEmail.toString().trim().toLowerCase() !=
+              emailController.text.trim().toLowerCase()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Invite code not valid for this email")),
+        );
+        setState(() => loading = false);
+        return;
+      }
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DoctorHomeScreen(doctor: d),
-      ),
-      (r) => false,
-    );
+      // 2) create user
+      final auth = FirebaseAuth.instance;
+      final cred = await auth.createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+      final uid = cred.user!.uid;
+
+      // 3) optional upload image
+      if (optionalDocImage != null) {
+        optionalDocImageUrl =
+            await StorageService.uploadDoctorDocImage(optionalDocImage!, uid);
+      }
+
+      // 4) autoApprove = true
+      final autoApprove = (inviteData["autoApprove"] == true);
+      final status = autoApprove ? "approved" : "pending";
+
+      final doctor = Doctor(
+        uid: uid,
+        name: nameController.text.trim(),
+        email: emailController.text.trim(),
+        mainSpecialty: selectedMainSpecialty!,
+        subSpecialty: selectedSubSpecialty!,
+        verificationStatus: status,
+        corneaImageUrl: optionalDocImageUrl,
+        licenseQrData: inviteCode, // نخزن الكود كمرجع داخلي
+      );
+
+      await FirebaseFirestore.instance
+          .collection("doctors")
+          .doc(uid)
+          .set(doctor.toMap());
+
+      // 5) mark invite used
+      await InviteService.markInviteUsed(
+        inviteDocId: inviteDoc.id,
+        usedByUid: uid,
+      );
+
+      // optional log
+      await FirebaseFirestore.instance
+          .collection("doctor_verifications")
+          .doc(uid)
+          .set({
+        "doctorUid": uid,
+        "inviteCode": inviteCode,
+        "docImageUrl": optionalDocImageUrl,
+        "status": status,
+        "submittedAt": DateTime.now().toIso8601String(),
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Doctor registered & approved ✅")),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error: $e")));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final specialties = DoctorSpecialties.specialties;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Doctor Profile'),
-        backgroundColor: PETROL_DARK,
-      ),
+      appBar: AppBar(title: const Text("Doctor Registration")),
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _name,
-              decoration: const InputDecoration(
-                labelText: 'Full name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _specialty,
-              decoration: const InputDecoration(
-                labelText: 'Specialty (optional)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: PETROL,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: inviteController,
+                decoration: const InputDecoration(
+                  labelText: "Invitation Code",
+                  hintText: "e.g. 8H2K9QAZ",
                 ),
-                child: const Text(
-                  'Save & Continue',
-                  style: TextStyle(color: Colors.white),
-                ),
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? "Invitation code required"
+                    : null,
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: "Name"),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? "Enter name" : null,
+              ),
+              TextFormField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: "Email"),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? "Enter email" : null,
+              ),
+              TextFormField(
+                controller: passwordController,
+                decoration: const InputDecoration(labelText: "Password"),
+                obscureText: true,
+                validator: (v) =>
+                    (v == null || v.length < 6) ? "Password must be 6+" : null,
+              ),
+
+              const SizedBox(height: 16),
+
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(labelText: "Main Specialty"),
+                value: selectedMainSpecialty,
+                items: specialties.keys
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedMainSpecialty = value;
+                    selectedSubSpecialty = null;
+                  });
+                },
+              ),
+              const SizedBox(height: 10),
+
+              if (selectedMainSpecialty != null)
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: "Sub Specialty"),
+                  value: selectedSubSpecialty,
+                  items: specialties[selectedMainSpecialty]!
+                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (value) =>
+                      setState(() => selectedSubSpecialty = value),
+                ),
+
+              const SizedBox(height: 18),
+
+              const Text(
+                "Optional: Upload document image",
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => pickOptionalImage(ImageSource.gallery),
+                      child: const Text("Gallery"),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => pickOptionalImage(ImageSource.camera),
+                      child: const Text("Camera"),
+                    ),
+                  ),
+                ],
+              ),
+              if (optionalDocImage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Image.file(optionalDocImage!, height: 140),
+                ),
+
+              const SizedBox(height: 22),
+
+              ElevatedButton(
+                onPressed: loading ? null : registerDoctor,
+                child: Text(loading ? "Registering..." : "Register"),
+              ),
+            ],
+          ),
         ),
       ),
     );

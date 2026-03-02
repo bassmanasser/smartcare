@@ -12,7 +12,7 @@ class ChatMessageBubble extends StatelessWidget {
   final ChatMessage message;
   const ChatMessageBubble({super.key, required this.message});
   
-  get PETROL_ACC => null;
+  static const Color PETROL_ACC = Color(0xFF006064); // petrol-like color
 
   @override
   Widget build(BuildContext context) {

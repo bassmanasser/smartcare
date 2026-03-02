@@ -1,39 +1,43 @@
 class MoodRecord {
-  final String id;
+  String? id;
   final String patientId;
-  final String mood; // 'Happy', 'Sad', 'Stressed'...
+  final String mood;
   final String? note;
-  final DateTime timestamp;
+  final DateTime date;
 
   MoodRecord({
-    required this.id,
+    this.id,
     required this.patientId,
     required this.mood,
     this.note,
-    required this.timestamp,
+    required this.date,
   });
 
+  // تحويل البيانات القادمة من Firestore
   factory MoodRecord.fromJson(Map<String, dynamic> json) {
     return MoodRecord(
-      id: json['id'] as String? ?? '',
-      patientId: json['patientId'] as String,
-      mood: json['mood'] as String? ?? 'Neutral',
-      note: json['note'] as String?,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(
-        (json['t'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
-      ),
+      id: json['id'],
+      patientId: json['patientId'] ?? '',
+      mood: json['mood'] ?? 'Neutral',
+      note: json['note'],
+        // التعامل مع اختلاف صيغ الوقت في Firebase
+        date: json['date'] != null 
+          ? DateTime.tryParse(json['date']) ?? DateTime.now() 
+          : DateTime.now(),
     );
   }
 
+  get timestamp => null;
+
   get stress => null;
 
+  // تحويل البيانات لإرسالها لـ Firestore
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'patientId': patientId,
       'mood': mood,
       'note': note,
-      't': timestamp.millisecondsSinceEpoch,
+      'date': date.toIso8601String(),
     };
   }
 }

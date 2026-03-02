@@ -1,115 +1,93 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/app_state.dart';
 
-class L10n {
+class AppLocalizations {
+  final Locale locale;
+
+  AppLocalizations(this.locale);
+
+  static AppLocalizations of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
-      'appTitle': 'SmartCare',
-      'iAmAPatient': 'I am a Patient',
-      'iAmADoctor': 'I am a Doctor',
-      'iAmAParent': 'I am a Parent',
-      'doctorSignUp': 'Doctor Sign Up',
-      'fullName': 'Full name',
-      'createDoctorAccount': 'Create Doctor Account',
-      'dr': 'Dr.',
-      'noPatients': 'No patients linked to you yet.',
-      'age': 'Age',
-      'last': 'Last',
-      'patientSignUp': 'Patient Sign Up',
-      'gender': 'Gender',
-      'female': 'Female',
-      'male': 'Male',
-      'other': 'Other',
-      'occupation': 'Occupation',
-      'location': 'Location',
-      'maritalStatus': 'Marital status',
-      'single': 'Single',
-      'married': 'Married',
-      'divorced': 'Divorced',
-      'widowed': 'Widowed',
-      'numChildren': 'Number of children',
-      'emailOptional': 'Email (optional)',
-      'doctorID': 'Doctor ID',
-      'createPatient': 'Create Patient Account',
-      'specialCondition': 'Special Condition (e.g., Autism)',
-      'parentIDRequired': 'Parent ID (Required for under 18)',
-      'welcome': 'Welcome',
+      'app_title': 'SmartCare',
+      'home': 'Home',
+      'services': 'Services',
       'settings': 'Settings',
-      'sos': 'SOS',
-      'heartRate': 'Heart Rate',
-      'spo2': 'SpO₂',
-      'temp': 'Temp',
+      'welcome': 'Welcome',
+      'login': 'Login',
+      'signup': 'Sign Up',
+      'email': 'Email',
+      'password': 'Password',
+      'hr': 'Heart Rate',
+      'spo2': 'Oxygen',
+      'bp': 'Blood Pressure',
       'glucose': 'Glucose',
-      'alertsHistory': 'Alerts History',
-      'mentalHealth': 'Mental Health',
-      'aiBot': 'AI Bot',
-      'medReminders': 'Medication Reminders',
-      'trends': 'Trends',
-      'waitingForVitals': 'Waiting for more vitals to show charts...',
-      'useFakeData': 'Use Fake Sensor Data',
-      'fakeInterval': 'Fake interval (sec)',
-      'emergencyNum': 'Emergency Number',
-      'sosMsg': 'SOS Message',
-      'saveSettings': 'Save Settings',
-      'toggleLang': 'تغيير إلى العربية',
-      'settingsSaved': 'Settings saved',
+      'temp': 'Temperature',
+      'sos': 'SOS',
+      'sos_sent': 'SOS Alert Sent!',
+      'medications': 'Medications',
+      'doctor_notes': 'Doctor Notes',
+      'mood': 'Mood',
+      'reports': 'Reports',
+      'alerts_history': 'Alerts History',
+      'ai_bot': 'AI Assistant',
+      'connect_device': 'Connect Device',
+      'disconnect': 'Disconnect',
+      'save': 'Save',
+      'logout': 'Logout',
+      'change_lang': 'Change Language',
     },
     'ar': {
-      'appTitle': 'سمارت كير',
-      'iAmAPatient': 'أنا مريض',
-      'iAmADoctor': 'أنا طبيب',
-      'iAmAParent': 'أنا ولي أمر',
-      'doctorSignUp': 'تسجيل طبيب',
-      'fullName': 'الاسم الكامل',
-      'createDoctorAccount': 'إنشاء حساب طبيب',
-      'dr': 'د.',
-      'noPatients': 'لا يوجد مرضى مرتبطين بك حتى الآن.',
-      'age': 'العمر',
-      'last': 'آخر قراءة',
-      'patientSignUp': 'تسجيل مريض',
-      'gender': 'الجنس',
-      'female': 'أنثى',
-      'male': 'ذكر',
-      'other': 'آخر',
-      'occupation': 'الوظيفة',
-      'location': 'الموقع',
-      'maritalStatus': 'الحالة الاجتماعية',
-      'single': 'أعزب',
-      'married': 'متزوج',
-      'divorced': 'مطلق',
-      'widowed': 'أرمل',
-      'numChildren': 'عدد الأطفال',
-      'emailOptional': 'البريد الإلكتروني (اختياري)',
-      'doctorID': 'معرّف الطبيب',
-      'createPatient': 'إنشاء حساب مريض',
-      'specialCondition': 'حالة خاصة (مثال: توحد)',
-      'parentIDRequired': 'معرّف ولي الأمر (مطلوب لمن هم أقل من 18)',
-      'welcome': 'أهلاً بك',
+      'app_title': 'رعايتي (SmartCare)',
+      'home': 'الرئيسية',
+      'services': 'الخدمات',
       'settings': 'الإعدادات',
-      'sos': 'نجدة',
-      'heartRate': 'معدل النبض',
+      'welcome': 'مرحباً',
+      'login': 'تسجيل الدخول',
+      'signup': 'إنشاء حساب',
+      'email': 'البريد الإلكتروني',
+      'password': 'كلمة المرور',
+      'hr': 'نبض القلب',
       'spo2': 'الأكسجين',
+      'bp': 'ضغط الدم',
+      'glucose': 'السكر',
       'temp': 'الحرارة',
-      'glucose': 'الجلوكوز',
-      'alertsHistory': 'سجل التنبيهات',
-      'mentalHealth': 'الصحة النفسية',
-      'aiBot': 'المساعد الذكي',
-      'medReminders': 'تذكير الأدوية',
-      'trends': 'المؤشرات',
-      'waitingForVitals': 'في انتظار المزيد من البيانات لعرض الرسوم البيانية...',
-      'useFakeData': 'استخدام بيانات وهمية',
-      'fakeInterval': 'الفاصل الزمني للبيانات (ثانية)',
-      'emergencyNum': 'رقم الطوارئ',
-      'sosMsg': 'رسالة الطوارئ',
-      'saveSettings': 'حفظ الإعدادات',
-      'toggleLang': 'Switch to English',
-      'settingsSaved': 'تم حفظ الإعدادات',
+      'sos': 'استغاثة (SOS)',
+      'sos_sent': 'تم إرسال الاستغاثة بنجاح!',
+      'medications': 'الأدوية',
+      'doctor_notes': 'ملاحظات الطبيب',
+      'mood': 'الحالة المزاجية',
+      'reports': 'التقارير',
+      'alerts_history': 'سجل التنبيهات',
+      'ai_bot': 'المساعد الذكي',
+      'connect_device': 'ربط الجهاز',
+      'disconnect': 'فصل الاتصال',
+      'save': 'حفظ',
+      'logout': 'خروج',
+      'change_lang': 'تغيير اللغة',
     },
   };
 
-  static String get(BuildContext context, String key, {required Null Function(String? value) onChanged}) {
-    final locale = Provider.of<AppState>(context, listen: false).locale;
-    return _localizedValues[locale.languageCode]![key] ?? key;
+  String translate(String key) {
+    return _localizedValues[locale.languageCode]?[key] ?? key;
   }
+}
+
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => ['en', 'ar'].contains(locale.languageCode);
+
+  @override
+  Future<AppLocalizations> load(Locale locale) async {
+    return AppLocalizations(locale);
+  }
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
 }

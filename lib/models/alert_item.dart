@@ -15,7 +15,7 @@ class AlertItem {
     required this.timestamp,
   });
 
-  factory AlertItem.fromJson(Map<String, dynamic> json) {
+  factory AlertItem.fromJson(Map<String, dynamic> json, String id) {
     return AlertItem(
       id: json['id'] as String? ?? '',
       patientId: json['patientId'] as String,

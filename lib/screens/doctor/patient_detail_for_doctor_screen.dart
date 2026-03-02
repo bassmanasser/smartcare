@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:smartcare/models/doctor_note.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../models/doctor_note.dart';
 import '../../models/patient.dart';
 import '../../providers/app_state.dart';
-import '../../services/medical_report_service.dart';
+import '../../services/pdf_report_service.dart';
 
 class PatientDetailForDoctorScreen extends StatefulWidget {
   final Patient patient;
@@ -16,13 +18,19 @@ class PatientDetailForDoctorScreen extends StatefulWidget {
 
 class _PatientDetailForDoctorScreenState extends State<PatientDetailForDoctorScreen> {
   final _noteCtrl = TextEditingController();
-  
-  get ReportService => null;
+
+  @override
+  void dispose() {
+    _noteCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final app = Provider.of<AppState>(context);
-    final notes = app.notesFor(widget.patient.id).reversed.toList();
+
+    // ✅ FIX: ممكن ترجع null
+    final notes = (app.getNotesForPatient(widget.patient.id) ?? []).reversed.toList();
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.patient.name)),
@@ -30,29 +38,74 @@ class _PatientDetailForDoctorScreenState extends State<PatientDetailForDoctorScr
         padding: const EdgeInsets.all(16),
         children: [
           ElevatedButton.icon(
-            onPressed: () => ReportService.generateAndShareReport(widget.patient, app),
+            onPressed: () {
+              // ⚠️ لو pdf_report_service بيقرأ من collection عامة بدون صلاحيات → هيطلع permission denied
+              PdfReportService.generateAndShareReport(widget.patient, app);
+            },
             icon: const Icon(Icons.picture_as_pdf),
             label: const Text("Export Medical Report"),
           ),
+
           const SizedBox(height: 20),
+
           const Text("Add Doctor Note:", style: TextStyle(fontWeight: FontWeight.bold)),
-          TextField(controller: _noteCtrl, maxLines: 3, decoration: const InputDecoration(border: OutlineInputBorder())),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _noteCtrl,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'Enter clinical notes here...',
+            ),
+          ),
+          const SizedBox(height: 10),
+
           ElevatedButton(
             onPressed: () {
-              if (_noteCtrl.text.isNotEmpty) {
-                app.addDoctorNote(widget.patient.id as DoctorNote, _noteCtrl.text);
-                _noteCtrl.clear();
-              }
+              final text = _noteCtrl.text.trim();
+              if (text.isEmpty) return;
+
+              final doctorId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+              final newNote = DoctorNote(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                patientId: widget.patient.id,
+                text: text,
+                date: DateTime.now(),
+                doctorId: doctorId,
+              );
+
+              app.addDoctorNote(newNote);
+
+              _noteCtrl.clear();
+              FocusScope.of(context).unfocus();
             },
             child: const Text("Save Note"),
           ),
-          const Divider(),
-          ...notes.map((n) => Card(
+
+          const Divider(height: 40),
+
+          if (notes.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Text("No notes yet."),
+              ),
+            )
+          else
+            ...notes.map(
+              (n) => Card(
+                margin: const EdgeInsets.symmetric(vertical: 5),
                 child: ListTile(
+                  leading: const Icon(Icons.note, color: Colors.blueGrey),
                   title: Text(n.text),
-                  subtitle: Text(DateFormat.yMd().add_jm().format(n.date)),
+                  subtitle: Text(
+                    DateFormat('dd/MM/yyyy hh:mm a').format(n.date),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
                 ),
-              )),
+              ),
+            ),
         ],
       ),
     );

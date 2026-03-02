@@ -23,7 +23,7 @@ class MentalCharts extends StatelessWidget {
         x: i,
         barRods: [
           BarChartRodData(
-            toY: item.stress.toDouble(),
+            toY: (item.stress ?? 0).toDouble(),
             color: PETROL_ACC,
             width: 10,
             borderRadius: BorderRadius.circular(4),

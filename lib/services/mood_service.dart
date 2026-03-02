@@ -1,32 +1,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
-class MoodDoc {
-  final String mood;
-  final String? note;
-  final DateTime timestamp;
-
-  MoodDoc({required this.mood, this.note, required this.timestamp});
-
-  factory MoodDoc.fromMap(Map<String, dynamic> m) {
-    return MoodDoc(
-      mood: (m['mood'] ?? '') as String,
-      note: m['note'] as String?,
-      timestamp: ((m['timestamp'] as Timestamp?)?.toDate()) ?? DateTime.now(),
-    );
-  }
-}
+import '../models/mood_record.dart';
 
 class MoodService {
-  final _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  Stream<List<MoodDoc>> moodsStream(String patientId, {int limit = 50}) {
+  // Singleton (اختياري، لتسهيل الوصول)
+  static final MoodService _instance = MoodService._internal();
+  static MoodService get instance => _instance;
+  MoodService._internal();
+
+  // جلب سجل المزاج
+  Stream<List<MoodRecord>> moodsStream(String patientId, {int limit = 50}) {
     return _db
-        .collection('patients')
-        .doc(patientId)
         .collection('moods')
-        .orderBy('timestamp', descending: true)
+        .where('patientId', isEqualTo: patientId)
+        .orderBy('date', descending: true)
         .limit(limit)
         .snapshots()
-        .map((qs) => qs.docs.map((d) => MoodDoc.fromMap(d.data())).toList());
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return MoodRecord.fromJson(data);
+      }).toList();
+    });
+  }
+
+  // إضافة تسجيل جديد
+  Future<void> addMood(MoodRecord record) async {
+    await _db.collection('moods').add(record.toJson());
   }
 }

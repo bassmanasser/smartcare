@@ -1,27 +1,66 @@
 class Doctor {
-  final String id;
+  final String uid;
   final String name;
-  final String? specialty;
+  final String email;
+  final String mainSpecialty;
+  final String subSpecialty;
+
+  /// Verification
+  final String verificationStatus; // pending / approved / rejected
+  final String? rejectionReason;   // optional
+  final String? corneaImageUrl;    // optional (لو حابة تسيبيه)
+  final String? licenseQrData;     // QR payload
 
   Doctor({
-    required this.id,
+    required this.uid,
     required this.name,
-    this.specialty,
+    required this.email,
+    required this.mainSpecialty,
+    required this.subSpecialty,
+    this.verificationStatus = "pending",
+    this.rejectionReason,
+    this.corneaImageUrl,
+    this.licenseQrData,
   });
 
-  factory Doctor.fromJson(Map<String, dynamic> json) {
+  Map<String, dynamic> toMap() {
+    return {
+      "uid": uid,
+      "name": name,
+      "email": email,
+      "mainSpecialty": mainSpecialty,
+      "subSpecialty": subSpecialty,
+      "verificationStatus": verificationStatus,
+      "rejectionReason": rejectionReason,
+      "corneaImageUrl": corneaImageUrl,
+      "licenseQrData": licenseQrData,
+      "createdAt": DateTime.now().toIso8601String(),
+    };
+  }
+
+  factory Doctor.fromMap(Map<String, dynamic> map) {
     return Doctor(
-      id: json['id'] as String,
-      name: json['name'] as String? ?? '',
-      specialty: json['specialty'] as String?,
+      uid: map["uid"] ?? "",
+      name: map["name"] ?? "",
+      email: map["email"] ?? "",
+      mainSpecialty: map["mainSpecialty"] ?? "",
+      subSpecialty: map["subSpecialty"] ?? "",
+      verificationStatus: map["verificationStatus"] ?? "pending",
+      rejectionReason: map["rejectionReason"],
+      corneaImageUrl: map["corneaImageUrl"],
+      licenseQrData: map["licenseQrData"],
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'specialty': specialty,
-    };
-  }
+  List<String> get availableSlots => [];
+
+  String get id => uid;
+
+  String get specialty => "$mainSpecialty - $subSpecialty";
+
+  double get consultationFee => 0.0;
+
+  String get clinicAddress => "Clinic Address";
+
+  static fromJson(Map<String, dynamic> data) {}
 }

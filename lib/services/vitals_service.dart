@@ -23,43 +23,65 @@ class VitalsDoc {
 
   factory VitalsDoc.fromMap(Map<String, dynamic> m) {
     final ts = (m['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+
     return VitalsDoc(
-      hr: (m['hr'] ?? 0) as int,
-      spo2: (m['spo2'] ?? 0) as int,
-      sys: (m['sys'] ?? 0) as int,
-      dia: (m['dia'] ?? 0) as int,
-      glucose: (m['glucose'] ?? 0).toDouble(),
-      temperature: (m['temperature'] ?? 0).toDouble(),
-      fallFlag: (m['fallFlag'] ?? false) as bool,
+      hr: (m['hr'] as num?)?.toInt() ?? 0,
+      spo2: (m['spo2'] as num?)?.toInt() ?? 0,
+      sys: (m['sys'] as num?)?.toInt() ?? 0,
+      dia: (m['dia'] as num?)?.toInt() ?? 0,
+      glucose: (m['glucose'] as num?)?.toDouble() ?? 0.0,
+      temperature: (m['temperature'] as num?)?.toDouble() ?? 0.0,
+      fallFlag: (m['fallFlag'] as bool?) ?? false,
       timestamp: ts,
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'hr': hr,
+      'spo2': spo2,
+      'sys': sys,
+      'dia': dia,
+      'glucose': glucose,
+      'temperature': temperature,
+      'fallFlag': fallFlag,
+      'timestamp': Timestamp.fromDate(timestamp),
+    };
   }
 }
 
 class VitalsService {
-  final _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  CollectionReference<Map<String, dynamic>> _col(String patientId) =>
-      _db.collection('patients').doc(patientId).collection('vitals');
+  CollectionReference<Map<String, dynamic>> _col(String patientId) {
+    return _db.collection('patients').doc(patientId).collection('vitals');
+  }
 
-  // ✅ latest (single doc)
+  /// ✅ Stream آخر قراءة (علشان Home Cards)
   Stream<VitalsDoc?> latestVitalsStream(String patientId) {
     return _col(patientId)
         .orderBy('timestamp', descending: true)
         .limit(1)
         .snapshots()
-        .map((qs) {
-      if (qs.docs.isEmpty) return null;
-      return VitalsDoc.fromMap(qs.docs.first.data());
+        .map((snap) {
+      if (snap.docs.isEmpty) return null;
+      return VitalsDoc.fromMap(snap.docs.first.data());
     });
   }
 
-  // ✅ list (history)
+  /// ✅ Stream history (علشان Vitals History / Charts)
   Stream<List<VitalsDoc>> vitalsStream(String patientId, {int limit = 50}) {
     return _col(patientId)
         .orderBy('timestamp', descending: true)
         .limit(limit)
         .snapshots()
-        .map((qs) => qs.docs.map((d) => VitalsDoc.fromMap(d.data())).toList());
+        .map((snap) => snap.docs.map((d) => VitalsDoc.fromMap(d.data())).toList());
   }
+
+  /// ✅ إضافة قراءة (هنستخدمها لما نربط BLE ESP32)
+  Future<void> addVital(String patientId, VitalsDoc doc) async {
+    await _col(patientId).add(doc.toMap());
+  }
+
+  Future<void> pushVitals(String patientId, VitalsDoc vitals) async {}
 }
