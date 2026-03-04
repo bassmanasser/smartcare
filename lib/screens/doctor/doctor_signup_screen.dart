@@ -42,10 +42,28 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
     }
 
     final inviteCode = inviteController.text.trim();
+
+    // 🚀 السطر السحري للتطوير: لو الكود admin123 هيدخل على طول
+    if (inviteCode == "admin123") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DoctorAdditionalInfoScreen(
+            name: nameController.text.trim(),
+            mainSpecialty: selectedMainSpecialty!,
+            subSpecialty: selectedSubSpecialty!,
+            docImage: optionalDocImage,
+            inviteCode: inviteCode, 
+          ),
+        ),
+      );
+      return; // عشان ميكملش ويروح يدور في الفايربيس
+    }
+
     setState(() => loading = true);
 
     try {
-      // التحقق من كود الدعوة فقط
+      // التحقق من كود الدعوة في فايربيس لو الكود مش admin123
       final inviteDoc = await InviteService.verifyInviteCode(inviteCode);
       if (inviteDoc == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -65,7 +83,7 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
               mainSpecialty: selectedMainSpecialty!,
               subSpecialty: selectedSubSpecialty!,
               docImage: optionalDocImage,
-              inviteCode: inviteCode, // هنمرر الكود عشان نخليه مستخدم هناك
+              inviteCode: inviteCode,
             ),
           ),
         );
@@ -94,7 +112,7 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
                 controller: inviteController,
                 decoration: const InputDecoration(
                   labelText: "Invitation Code (كود الدعوة)",
-                  hintText: "e.g. 8H2K9QAZ",
+                  hintText: "مثال: admin123 للتجربة",
                 ),
                 validator: (v) => (v == null || v.trim().isEmpty)
                     ? "مطلوب"

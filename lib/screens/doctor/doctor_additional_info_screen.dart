@@ -2,7 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../models/doctor.dart';
 import '../../services/storage_service.dart';
+// تأكدي إن مسار صفحة الهوم ده صح على حسب ترتيب الفولدرات عندك
+import '../../screens/doctor/doctor_home_screen.dart'; 
 
 class DoctorAdditionalInfoScreen extends StatefulWidget {
   final String name;
@@ -43,6 +47,7 @@ class _DoctorAdditionalInfoScreenState extends State<DoctorAdditionalInfoScreen>
   }
 
   Future<void> saveDoctorData() async {
+    // التحقق من إن كل البيانات اتكتبت
     if (!_formKey.currentState!.validate() || selectedDays.isEmpty || startTime == null || endTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("برجاء إكمال جميع البيانات واختيار المواعيد")));
       return;
@@ -52,7 +57,7 @@ class _DoctorAdditionalInfoScreenState extends State<DoctorAdditionalInfoScreen>
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (user == null) throw Exception("يجب تسجيل الدخول أولاً");
 
       String? imageUrl;
       if (widget.docImage != null) {
@@ -61,10 +66,10 @@ class _DoctorAdditionalInfoScreenState extends State<DoctorAdditionalInfoScreen>
 
       String doctorID = generateDoctorID();
 
-      // تجهيز بيانات الدكتور
+      // تجهيز البيانات بما يتوافق مع الـ Rules
       final doctorData = {
         "uid": user.uid,
-        "doctorID": doctorID, // كود الربط اللي هيظهر في السيتنج
+        "doctorID": doctorID,
         "name": widget.name,
         "email": user.email,
         "mainSpecialty": widget.mainSpecialty,
@@ -73,18 +78,42 @@ class _DoctorAdditionalInfoScreenState extends State<DoctorAdditionalInfoScreen>
         "address": addressController.text.trim(),
         "workingDays": selectedDays,
         "workingHours": "${startTime!.format(context)} - ${endTime!.format(context)}",
-        "verificationStatus": "approved",
+        "verificationStatus": "approved", // متوافق مع Rules
         "docImageUrl": imageUrl,
         "createdAt": FieldValue.serverTimestamp(),
       };
 
-      await FirebaseFirestore.instance.collection("doctors").doc(user.uid).set(doctorData);
+      // استخدام SetOptions(merge: true) لحل مشكلة الـ Permissions
+      await FirebaseFirestore.instance
+          .collection("doctors")
+          .doc(user.uid)
+          .set(doctorData, SetOptions(merge: true));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("تم تسجيل البيانات بنجاح ✅")));
-        // التوجه لصفحة الهوم الخاصة بالدكتور
-        // عدلي الـ Route حسب اسم صفحة الهوم عندك في الـ main.dart
-        Navigator.pushNamedAndRemoveUntil(context, '/doctorHome', (route) => false);
+        
+        // تجهيز الموديل عشان نبعته لصفحة الهوم
+        final newDoctor = Doctor(
+          uid: user.uid,
+          doctorID: doctorID,
+          name: widget.name,
+          email: user.email ?? "",
+          mainSpecialty: widget.mainSpecialty,
+          subSpecialty: widget.subSpecialty,
+          price: priceController.text.trim(),
+          address: addressController.text.trim(),
+          workingDays: selectedDays,
+          workingHours: "${startTime!.format(context)} - ${endTime!.format(context)}",
+          verificationStatus: "approved",
+          corneaImageUrl: imageUrl,
+        );
+
+        // الانتقال لصفحة الهوم
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => DoctorHomeScreen(doctor: newDoctor)),
+          (route) => false,
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("خطأ: $e")));
