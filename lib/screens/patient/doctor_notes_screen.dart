@@ -47,9 +47,7 @@ class DoctorNotesScreen extends StatelessWidget {
             itemCount: docs.length,
             itemBuilder: (context, index) {
               final data = docs[index].data() as Map<String, dynamic>;
-              // إضافة ID للبيانات عشان الموديل
-              data['id'] = docs[index].id;
-              final note = DoctorNote.fromJson(data);
+              final note = DoctorNote.fromJson(data, docs[index].id);
 
               return Card(
                 elevation: 3,

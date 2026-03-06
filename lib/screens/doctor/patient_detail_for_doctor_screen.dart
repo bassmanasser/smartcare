@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../models/doctor_note.dart';
 import '../../models/patient.dart';
+import '../../models/vital_sample.dart';
+import '../../models/alert_item.dart';
 import '../../providers/app_state.dart';
 import '../../services/pdf_report_service.dart';
 import '../../utils/constants.dart';
@@ -26,13 +28,19 @@ class _PatientDetailForDoctorScreenState
     extends State<PatientDetailForDoctorScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _noteCtrl = TextEditingController();
-
   late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final app = Provider.of<AppState>(context, listen: false);
+      await app.fetchHistory(widget.patient.id);
+      await app.fetchAlerts(widget.patient.id);
+      await app.fetchDoctorNotes(widget.patient.id);
+    });
   }
 
   @override
@@ -67,6 +75,24 @@ class _PatientDetailForDoctorScreenState
   String _patientShortId(String id) {
     if (id.trim().isEmpty) return "N/A";
     return id.length <= 10 ? id : id.substring(0, 10);
+  }
+
+  String _formatDateTime(DateTime? dt) {
+    if (dt == null) return "Not available";
+    return DateFormat('dd/MM/yyyy hh:mm a').format(dt);
+  }
+
+  Color _severityColor(String severity) {
+    switch (severity.toLowerCase()) {
+      case 'critical':
+        return Colors.red.shade700;
+      case 'high':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      default:
+        return Colors.blueGrey;
+    }
   }
 
   Future<void> _exportPdf(AppState app) async {
@@ -120,10 +146,7 @@ class _PatientDetailForDoctorScreenState
                 const SizedBox(height: 16),
                 const Text(
                   "إضافة روشتة علاجية",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 _inputField(
@@ -230,9 +253,9 @@ class _PatientDetailForDoctorScreenState
     final newNote = DoctorNote(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       patientId: widget.patient.id,
+      doctorId: doctorId,
       text: text,
       date: DateTime.now(),
-      doctorId: doctorId,
     );
 
     app.addDoctorNote(newNote);
@@ -281,6 +304,58 @@ class _PatientDetailForDoctorScreenState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _summaryMiniCard({
+    required String title,
+    required String value,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: PETROL.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: PETROL_DARK),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -336,6 +411,105 @@ class _PatientDetailForDoctorScreenState
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _medicalBlock({
+    required String title,
+    required String value,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.035),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: PETROL.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: PETROL_DARK),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _vitalTile({
+    required String title,
+    required String value,
+    required IconData icon,
+    Color? color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: (color ?? PETROL_DARK).withOpacity(0.10),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color ?? PETROL_DARK),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -492,6 +666,191 @@ class _PatientDetailForDoctorScreenState
     );
   }
 
+  Widget _vitalsTab(AppState app) {
+    final VitalSample? latest = app.getLatestVitals(widget.patient.id);
+    final history = app.getVitalsForPatient(widget.patient.id).reversed.toList();
+
+    if (latest == null) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _sectionTitle("Latest Vitals", icon: Icons.monitor_heart_outlined),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: const Text("لا توجد قراءات متاحة لهذا المريض حالياً"),
+          ),
+        ],
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _sectionTitle("Latest Vitals", icon: Icons.monitor_heart_outlined),
+        const SizedBox(height: 10),
+        _vitalTile(
+          title: "Heart Rate",
+          value: "${latest.hr} bpm",
+          icon: Icons.favorite_outline,
+          color: Colors.red,
+        ),
+        const SizedBox(height: 10),
+        _vitalTile(
+          title: "SpO2",
+          value: "${latest.spo2} %",
+          icon: Icons.air_outlined,
+          color: Colors.blue,
+        ),
+        const SizedBox(height: 10),
+        _vitalTile(
+          title: "Blood Pressure",
+          value: "${latest.sys}/${latest.dia} mmHg",
+          icon: Icons.speed_outlined,
+          color: Colors.deepPurple,
+        ),
+        const SizedBox(height: 10),
+        _vitalTile(
+          title: "Glucose",
+          value: "${latest.glucose.toStringAsFixed(1)} mg/dL",
+          icon: Icons.water_drop_outlined,
+          color: Colors.orange,
+        ),
+        const SizedBox(height: 10),
+        _vitalTile(
+          title: "Temperature",
+          value: "${latest.temperature.toStringAsFixed(1)} °C",
+          icon: Icons.thermostat_outlined,
+          color: Colors.teal,
+        ),
+        const SizedBox(height: 10),
+        _vitalTile(
+          title: "Fall Status",
+          value: latest.fallFlag ? "Detected" : "Normal",
+          icon: Icons.directions_run_outlined,
+          color: latest.fallFlag ? Colors.red : Colors.green,
+        ),
+        const SizedBox(height: 10),
+        _vitalTile(
+          title: "Last Update",
+          value: _formatDateTime(latest.timestamp),
+          icon: Icons.access_time_outlined,
+        ),
+        const SizedBox(height: 20),
+        _sectionTitle("Recent Readings", icon: Icons.history_outlined),
+        const SizedBox(height: 10),
+        ...history.take(10).map(
+          (v) => Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: PETROL.withOpacity(0.10),
+                child: const Icon(Icons.monitor_heart, color: PETROL_DARK),
+              ),
+              title: Text(
+                "HR ${v.hr} • SpO2 ${v.spo2}% • Glucose ${v.glucose.toStringAsFixed(1)}",
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                "BP ${v.sys}/${v.dia} • Temp ${v.temperature.toStringAsFixed(1)}°C\n${_formatDateTime(v.timestamp)}",
+              ),
+              isThreeLine: true,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _alertsTab(AppState app) {
+    final List<AlertItem> alerts = app.getAlertsForPatient(widget.patient.id);
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _sectionTitle("Patient Alerts", icon: Icons.warning_amber_rounded),
+        const SizedBox(height: 10),
+        if (alerts.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: const Text("لا توجد Alerts لهذا المريض حالياً"),
+          )
+        else
+          ...alerts.map(
+            (a) => Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: _severityColor(a.severity).withOpacity(0.12),
+                  child: Icon(
+                    Icons.notification_important_outlined,
+                    color: _severityColor(a.severity),
+                  ),
+                ),
+                title: Text(
+                  a.type,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    "${a.message}\n${_formatDateTime(a.timestamp)}",
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _severityColor(a.severity).withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    a.severity.toUpperCase(),
+                    style: TextStyle(
+                      color: _severityColor(a.severity),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                isThreeLine: true,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _notesTab(AppState app, List<DoctorNote> notes) {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -608,7 +967,7 @@ class _PatientDetailForDoctorScreenState
                 subtitle: Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    DateFormat('dd/MM/yyyy  hh:mm a').format(n.date),
+                    _formatDateTime(n.date),
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 12,
@@ -743,113 +1102,19 @@ class _PatientDetailForDoctorScreenState
     );
   }
 
-  Widget _medicalBlock({
-    required String title,
-    required String value,
-    required IconData icon,
-  }) {
+  Widget _topChip(String text) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.035),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(999),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: PETROL.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: PETROL_DARK),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _summaryMiniCard({
-    required String title,
-    required String value,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: PETROL.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: PETROL_DARK),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 12,
-            ),
-          ),
-        ],
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
       ),
     );
   }
@@ -875,6 +1140,8 @@ class _PatientDetailForDoctorScreenState
           tabs: const [
             Tab(text: "Overview"),
             Tab(text: "Medical"),
+            Tab(text: "Vitals"),
+            Tab(text: "Alerts"),
             Tab(text: "Notes"),
             Tab(text: "Reports"),
           ],
@@ -951,29 +1218,14 @@ class _PatientDetailForDoctorScreenState
               children: [
                 _overviewTab(notes),
                 _medicalTab(),
+                _vitalsTab(app),
+                _alertsTab(app),
                 _notesTab(app, notes),
                 _reportsTab(app, notes),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _topChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
       ),
     );
   }

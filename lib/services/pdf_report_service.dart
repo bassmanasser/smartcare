@@ -97,10 +97,10 @@ class PdfReportService {
 
   // ✅ كانت فاضية — دلوقتي شغالة (بدون تغيير UI)
   static Future<void> generateAndShareReport(Patient patient, AppState app) async {
-    final vitalsMap = app.getVitalsForPatient(patient.id)?.map((v) => v.toMap()).toList() ?? [];
-    final alertsMap = app.getAlertsForPatient(patient.id)?.map((a) => a.toMap()).toList() ?? [];
-    final medsMap = app.getMedicationsForPatient(patient.id)?.map((m) => m.toMap()).toList() ?? [];
-    final moodsMap = app.getMoodsForPatient(patient.id)?.map((m) => m.toMap()).toList() ?? [];
+    final vitalsMap = app.getVitalsForPatient(patient.id).map((v) => v.toJson()).toList();
+    final alertsMap = app.getAlertsForPatient(patient.id).map((a) => a.toJson()).toList();
+    final medsMap = app.getMedicationsForPatient(patient.id).map((m) => m.toJson()).toList();
+    final moodsMap = app.getMoodsForPatient(patient.id).map((m) => m.toJson()).toList();
 
     final bytes = await generateReportData(
       patientName: patient.name,

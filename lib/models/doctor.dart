@@ -85,4 +85,6 @@ class Doctor {
   String get clinicAddress => address ?? "لم يتم تحديد العنوان";
 
   static fromJson(Map<String, dynamic> data) {}
+
+  toJson() {}
 }

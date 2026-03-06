@@ -13,7 +13,7 @@ class DoctorNote {
     required this.date,
   });
 
-  factory DoctorNote.fromJson(Map<String, dynamic> json) {
+  factory DoctorNote.fromJson(Map<String, dynamic> json, String id) {
     return DoctorNote(
       id: json['id'] as String? ?? '',
       patientId: json['patientId'] as String,
