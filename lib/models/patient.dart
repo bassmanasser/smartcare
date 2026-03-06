@@ -1,27 +1,27 @@
 class Patient {
   final String id;
   final String name;
-  final DateTime? birthDate; 
+  final DateTime? birthDate;
   final String gender;
   final String? email;
   final String? phone;
   final String? profilePic;
-  
-  // حقول الربط
+
+  // الربط
   final String? doctorId;
   final String? parentId;
 
-  // بيانات طبية (Digital Health Record)
+  // البيانات الطبية
   final String? bloodType;
   final List<String> allergies;
   final List<String> chronicDiseases;
   final List<String> currentMedications;
-  
-  // 🔥 البيانات الجديدة (الوزن والطول)
+
+  // الوزن والطول
   final String? weight;
   final String? height;
-  
-  // بيانات الطوارئ
+
+  // الطوارئ
   final String? emergencyContactName;
   final String? emergencyContactPhone;
 
@@ -39,22 +39,24 @@ class Patient {
     this.allergies = const [],
     this.chronicDiseases = const [],
     this.currentMedications = const [],
-    // 🔥 إضافة الوزن والطول للكونستركتور
     this.weight,
     this.height,
     this.emergencyContactName,
-    this.emergencyContactPhone, required int age,
-    // ❌ شلت required age من هنا لأنه بيتحسب لوحده تحت
+    this.emergencyContactPhone,
   });
 
-  // حساب العمر تلقائياً من تاريخ الميلاد
+  // حساب العمر تلقائياً
   int get age {
     if (birthDate == null) return 0;
+
     DateTime today = DateTime.now();
     int age = today.year - birthDate!.year;
-    if (today.month < birthDate!.month || (today.month == birthDate!.month && today.day < birthDate!.day)) {
+
+    if (today.month < birthDate!.month ||
+        (today.month == birthDate!.month && today.day < birthDate!.day)) {
       age--;
     }
+
     return age;
   }
 
@@ -62,7 +64,9 @@ class Patient {
     return Patient(
       id: json['id'] as String,
       name: json['name'] as String? ?? '',
-      birthDate: json['birthDate'] != null ? DateTime.parse(json['birthDate']) : null,
+      birthDate: json['birthDate'] != null
+          ? DateTime.parse(json['birthDate'])
+          : null,
       gender: json['gender'] as String? ?? 'Unknown',
       email: json['email'] as String?,
       phone: json['phone'] as String?,
@@ -73,12 +77,10 @@ class Patient {
       allergies: List<String>.from(json['allergies'] ?? []),
       chronicDiseases: List<String>.from(json['chronicDiseases'] ?? []),
       currentMedications: List<String>.from(json['currentMedications'] ?? []),
-      // 🔥 قراءة الوزن والطول من الـ JSON
       weight: json['weight'] as String?,
       height: json['height'] as String?,
       emergencyContactName: json['emergencyContactName'] as String?,
       emergencyContactPhone: json['emergencyContactPhone'] as String?,
-      age: json['age'] as int? ?? 0,
     );
   }
 
@@ -97,12 +99,11 @@ class Patient {
       'allergies': allergies,
       'chronicDiseases': chronicDiseases,
       'currentMedications': currentMedications,
-      // 🔥 حفظ الوزن والطول في الـ JSON
       'weight': weight,
       'height': height,
       'emergencyContactName': emergencyContactName,
       'emergencyContactPhone': emergencyContactPhone,
-      'age': age, // بيتحفظ كقيمة محسوبة عشان السهولة في الفايربيس
+      'age': age,
     };
   }
 }

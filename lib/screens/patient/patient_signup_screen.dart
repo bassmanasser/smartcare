@@ -93,7 +93,6 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
       
       doctorId: _doctorId.text.trim().isEmpty ? null : _doctorId.text.trim(),
       parentId: _parentId.text.trim().isEmpty ? null : _parentId.text.trim(),
-      age: DateTime.now().year - _selectedBirthDate!.year,
     );
 
     // حفظ البيانات في Firestore
