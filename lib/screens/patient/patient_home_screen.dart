@@ -4,12 +4,16 @@ import 'package:provider/provider.dart';
 // Models
 import '../../models/patient.dart';
 import '../../models/vital_sample.dart';
+import '../../models/care_link.dart';
+
+// Providers / Services
 import '../../providers/app_state.dart';
 import '../../services/auth_service.dart';
+import '../../services/care_link_service.dart';
+
+// Utils
 import '../../utils/constants.dart';
 import '../../utils/localization.dart';
-
-// Glucose Advisor
 import '../../utils/glucose_advisor.dart';
 
 // Screens
@@ -42,8 +46,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final app = Provider.of<AppState>(context, listen: false);
       app.fetchHistory(widget.patient.id);
-
-      // يفضل تعملي reconnect لو محتاجة فقط
       app.connectDevice(widget.patient.id);
     });
   }
@@ -96,7 +98,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.person_search_rounded),
-              label: "Doctors",
+              label: 'Doctors',
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.settings_rounded),
@@ -110,7 +112,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 }
 
 // ==================================================================
-// 🏠 TAB 1: HOME
+// HOME TAB
 // ==================================================================
 
 class _PatientHomeTab extends StatelessWidget {
@@ -127,7 +129,7 @@ class _PatientHomeTab extends StatelessWidget {
         final VitalSample? v = vitalsList.isNotEmpty ? vitalsList.last : null;
 
         final bool isMeasuringGlucose =
-            (v != null && (v.glucose == 0 || v.glucose == 0.0));
+            v != null && (v.glucose == 0 || v.glucose == 0.0);
 
         final String glucoseText = (v == null)
             ? '--'
@@ -139,11 +141,8 @@ class _PatientHomeTab extends StatelessWidget {
         final String tempText =
             (v == null) ? '--' : v.temperature.toStringAsFixed(1);
 
-        final advice = GlucoseAdvisor.getAdvice(v?.glucose ?? 0.0);
-
-        final doctors =
-            app.doctors?.values.where((d) => d.id == patient.doctorId).toList() ??
-                [];
+        final String advice =
+            GlucoseAdvisor.getAdvice(v?.glucose ?? 0.0).toString();
 
         return SafeArea(
           child: RefreshIndicator(
@@ -156,15 +155,14 @@ class _PatientHomeTab extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(context, patient, app, lang),
-
                   const SizedBox(height: 16),
 
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildHealthOverview(v, glucoseText, glucoseUnit, tempText),
+                    child: _buildHealthOverview(v, tempText),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
 
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -176,7 +174,7 @@ class _PatientHomeTab extends StatelessWidget {
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      "طاقمي الطبي",
+                      'Care Team',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -185,10 +183,7 @@ class _PatientHomeTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildCareTeam(doctors),
-                  ),
+                  _buildCareTeam(patient.id),
 
                   const SizedBox(height: 20),
 
@@ -203,23 +198,28 @@ class _PatientHomeTab extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 10),
 
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildVitalsSection(lang, v, glucoseText, glucoseUnit, tempText),
+                    child: _buildVitalsSection(
+                      lang,
+                      v,
+                      glucoseText,
+                      glucoseUnit,
+                      tempText,
+                    ),
                   ),
 
                   if (!isMeasuringGlucose && v != null && v.glucose > 0) ...[
                     const SizedBox(height: 14),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _buildAdviceCard(advice.toString()),
+                      child: _buildAdviceCard(advice),
                     ),
                   ],
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 16),
 
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -269,7 +269,7 @@ class _PatientHomeTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Welcome back",
+                      'Welcome back',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.85),
                         fontSize: 13,
@@ -286,7 +286,7 @@ class _PatientHomeTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "${lang.translate('age')}: ${patient.age}",
+                      '${lang.translate('age')}: ${patient.age}',
                       style: const TextStyle(color: Colors.white70),
                     ),
                   ],
@@ -310,8 +310,8 @@ class _PatientHomeTab extends StatelessWidget {
                 Expanded(
                   child: Text(
                     app.isDeviceConnected
-                        ? "Your device is connected and monitoring is active"
-                        : "Device is disconnected, reconnect to continue monitoring",
+                        ? 'Your device is connected and monitoring is active'
+                        : 'Device is disconnected, reconnect to continue monitoring',
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),
@@ -347,7 +347,7 @@ class _PatientHomeTab extends StatelessWidget {
           ),
           const SizedBox(width: 5),
           Text(
-            connected ? "Connected" : "Disconnected",
+            connected ? 'Connected' : 'Disconnected',
             style: TextStyle(
               color: connected ? Colors.greenAccent : Colors.redAccent,
               fontWeight: FontWeight.bold,
@@ -359,19 +359,14 @@ class _PatientHomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildHealthOverview(
-    VitalSample? v,
-    String glucoseText,
-    String glucoseUnit,
-    String tempText,
-  ) {
+  Widget _buildHealthOverview(VitalSample? v, String tempText) {
     return Row(
       children: [
         Expanded(
           child: _MiniStatusCard(
-            title: "Heart Rate",
-            value: "${v?.hr ?? '--'}",
-            subtitle: "bpm",
+            title: 'Heart Rate',
+            value: '${v?.hr ?? '--'}',
+            subtitle: 'bpm',
             icon: Icons.favorite_rounded,
             color: Colors.red,
           ),
@@ -379,9 +374,9 @@ class _PatientHomeTab extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _MiniStatusCard(
-            title: "SpO2",
-            value: "${v?.spo2 ?? '--'}",
-            subtitle: "%",
+            title: 'SpO2',
+            value: '${v?.spo2 ?? '--'}',
+            subtitle: '%',
             icon: Icons.water_drop_rounded,
             color: Colors.blue,
           ),
@@ -389,9 +384,9 @@ class _PatientHomeTab extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _MiniStatusCard(
-            title: "Temp",
+            title: 'Temp',
             value: tempText,
-            subtitle: "°C",
+            subtitle: '°C',
             icon: Icons.thermostat_rounded,
             color: Colors.orange,
           ),
@@ -405,7 +400,7 @@ class _PatientHomeTab extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Quick Actions",
+          'Quick Actions',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -418,7 +413,7 @@ class _PatientHomeTab extends StatelessWidget {
             Expanded(
               child: _QuickActionButton(
                 icon: Icons.picture_as_pdf_rounded,
-                label: "Reports",
+                label: 'Reports',
                 color: Colors.red.shade700,
                 onTap: () {
                   Navigator.push(
@@ -437,7 +432,7 @@ class _PatientHomeTab extends StatelessWidget {
             Expanded(
               child: _QuickActionButton(
                 icon: Icons.medication_rounded,
-                label: "Medications",
+                label: 'Medications',
                 color: Colors.blue,
                 onTap: () {
                   Navigator.push(
@@ -457,7 +452,7 @@ class _PatientHomeTab extends StatelessWidget {
             Expanded(
               child: _QuickActionButton(
                 icon: Icons.note_alt_rounded,
-                label: "Doctor Notes",
+                label: 'Doctor Notes',
                 color: Colors.indigo,
                 onTap: () {
                   Navigator.push(
@@ -473,7 +468,7 @@ class _PatientHomeTab extends StatelessWidget {
             Expanded(
               child: _QuickActionButton(
                 icon: Icons.show_chart_rounded,
-                label: "Charts",
+                label: 'Charts',
                 color: Colors.green,
                 onTap: () {
                   Navigator.push(
@@ -491,107 +486,122 @@ class _PatientHomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildCareTeam(List doctors) {
-    if (doctors.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 8),
-          ],
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.person_off_rounded, color: Colors.grey),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                "لا يوجد طبيب مرتبط حالياً",
-                style: TextStyle(color: Colors.grey),
+  Widget _buildCareTeam(String patientId) {
+    return StreamBuilder<List<CareLink>>(
+      stream: CareLinkService().approvedDoctorsForPatient(patientId),
+      builder: (context, snapshot) {
+        final links = snapshot.data ?? [];
+
+        if (links.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 8),
+                ],
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.person_off_rounded, color: Colors.grey),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'No linked doctors yet',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: 105,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: doctors.length,
-        itemBuilder: (context, i) {
-          final d = doctors[i];
-          return Container(
-            width: 230,
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 8),
-              ],
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: PETROL.withOpacity(0.12),
-                  child: const Icon(Icons.person, color: PETROL_DARK),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        d.name ?? "Doctor",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        d.specialty ?? "Specialist",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          "Linked",
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              ],
-            ),
           );
-        },
-      ),
+        }
+
+        return SizedBox(
+          height: 118,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: links.length,
+            itemBuilder: (context, i) {
+              final link = links[i];
+              return Container(
+                width: 240,
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 8),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: PETROL.withOpacity(0.12),
+                      child: const Icon(Icons.medical_services, color: PETROL_DARK),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            link.relationshipLabel.isNotEmpty
+                                ? link.relationshipLabel
+                                : 'Doctor',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'ID: ${link.linkedUserId}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: link.isPrimary
+                                  ? Colors.green.withOpacity(0.10)
+                                  : Colors.blue.withOpacity(0.10),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              link.isPrimary ? 'Primary Doctor' : 'Approved',
+                              style: TextStyle(
+                                color: link.isPrimary ? Colors.green : Colors.blue,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -610,8 +620,8 @@ class _PatientHomeTab extends StatelessWidget {
               child: _VitalCard(
                 icon: Icons.favorite,
                 title: lang.translate('hr'),
-                value: "${v?.hr ?? '--'}",
-                unit: "bpm",
+                value: '${v?.hr ?? '--'}',
+                unit: 'bpm',
                 color: Colors.red,
               ),
             ),
@@ -620,8 +630,8 @@ class _PatientHomeTab extends StatelessWidget {
               child: _VitalCard(
                 icon: Icons.water_drop,
                 title: lang.translate('spo2'),
-                value: "${v?.spo2 ?? '--'}",
-                unit: "%",
+                value: '${v?.spo2 ?? '--'}',
+                unit: '%',
                 color: Colors.blue,
               ),
             ),
@@ -634,8 +644,8 @@ class _PatientHomeTab extends StatelessWidget {
               child: _VitalCard(
                 icon: Icons.compress_rounded,
                 title: lang.translate('bp'),
-                value: "${v?.sys ?? '--'}/${v?.dia ?? '--'}",
-                unit: "mmHg",
+                value: '${v?.sys ?? '--'}/${v?.dia ?? '--'}',
+                unit: 'mmHg',
                 color: Colors.purple,
               ),
             ),
@@ -654,9 +664,9 @@ class _PatientHomeTab extends StatelessWidget {
         const SizedBox(height: 10),
         _VitalCard(
           icon: Icons.thermostat,
-          title: "Temperature",
+          title: 'Temperature',
           value: tempText,
-          unit: "°C",
+          unit: '°C',
           color: Colors.orange,
           fullWidth: true,
         ),
@@ -681,10 +691,7 @@ class _PatientHomeTab extends StatelessWidget {
           Expanded(
             child: Text(
               advice,
-              style: const TextStyle(
-                fontSize: 14,
-                height: 1.4,
-              ),
+              style: const TextStyle(fontSize: 14, height: 1.4),
             ),
           ),
         ],
@@ -713,12 +720,12 @@ class _PatientHomeTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Emergency Help",
+                  'Emergency Help',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 4),
                 Text(
-                  "Use this section to quickly alert or contact support in critical situations.",
+                  'Use this section later for emergency alerts to doctor or family.',
                   style: TextStyle(color: Colors.black54),
                 ),
               ],
@@ -735,21 +742,21 @@ class _PatientHomeTab extends StatelessWidget {
               showDialog(
                 context: context,
                 builder: (_) => AlertDialog(
-                  title: const Text("Emergency"),
+                  title: const Text('Emergency'),
                   content: const Text(
-                    "اعملي هنا بعد كده ربط حقيقي مع زر طوارئ أو إرسال تنبيه للدكتور/الولي.",
+                    'اعملي هنا بعد كده ربط حقيقي مع emergency alert للدكتور أو الأهل.',
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text("OK"),
+                      child: const Text('OK'),
                     ),
                   ],
                 ),
               );
             },
             child: const Text(
-              "Alert",
+              'Alert',
               style: TextStyle(color: Colors.white),
             ),
           ),
@@ -760,7 +767,7 @@ class _PatientHomeTab extends StatelessWidget {
 }
 
 // ==================================================================
-// 🧩 TAB 2: SERVICES
+// SERVICES TAB
 // ==================================================================
 
 class _PatientServicesTab extends StatelessWidget {
@@ -797,7 +804,7 @@ class _PatientServicesTab extends StatelessWidget {
         (_) => MoodScreen(patientId: patient.id),
       ),
       _Svc(
-        "Charts",
+        'Charts',
         Icons.show_chart,
         Colors.green,
         (_) => ChartsScreen(patientId: patient.id),
@@ -815,7 +822,7 @@ class _PatientServicesTab extends StatelessWidget {
         (_) => ArrhythmiaCheckScreen(patientId: patient.id),
       ),
       _Svc(
-        "Resp. Check",
+        'Resp. Check',
         Icons.graphic_eq,
         Colors.teal,
         (_) => const RespiratoryTestScreen(),
@@ -871,11 +878,7 @@ class _PatientServicesTab extends StatelessWidget {
                           color: svc.color.withOpacity(0.10),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
-                          svc.icon,
-                          size: 30,
-                          color: svc.color,
-                        ),
+                        child: Icon(svc.icon, size: 30, color: svc.color),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -959,7 +962,7 @@ class _VitalCard extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                "$value $unit",
+                '$value $unit',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,

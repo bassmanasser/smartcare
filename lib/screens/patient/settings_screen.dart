@@ -1,220 +1,327 @@
-import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
-import '../../providers/app_state.dart'; 
-import '../../utils/localization.dart';
-import '../auth/login_screen.dart';
-import 'edit_patient_profile_screen.dart';
+import 'linked_accounts_screen.dart';
 
-class PatientSettingsScreen extends StatefulWidget {
-  final String? patientId; 
-  final VoidCallback? onLogout;
+class PatientSettingsScreen extends StatelessWidget {
+  final String patientId;
+  final Future<void> Function() onLogout;
 
-  const PatientSettingsScreen({super.key, this.patientId, this.onLogout});
-
-  @override
-  State<PatientSettingsScreen> createState() => _PatientSettingsScreenState();
-}
-
-class _PatientSettingsScreenState extends State<PatientSettingsScreen> {
-  final _doctorIdCtrl = TextEditingController();
-  final _parentIdCtrl = TextEditingController();
-  bool _saving = false;
-
-  String get _uid => widget.patientId ?? FirebaseAuth.instance.currentUser?.uid ?? '';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadLinks();
-  }
-
-  @override
-  void dispose() {
-    _doctorIdCtrl.dispose();
-    _parentIdCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadLinks() async {
-    if (_uid.isEmpty) return;
-    final doc = await FirebaseFirestore.instance.collection('users').doc(_uid).get();
-    if (doc.exists) {
-      final data = doc.data()!;
-      _doctorIdCtrl.text = data['doctorId'] ?? '';
-      _parentIdCtrl.text = data['parentId'] ?? '';
-      if (mounted) setState(() {});
-    }
-  }
-
-  Future<void> _saveLinks() async {
-    setState(() => _saving = true);
-    await FirebaseFirestore.instance.collection('users').doc(_uid).update({
-      'doctorId': _doctorIdCtrl.text.trim(),
-      'parentId': _parentIdCtrl.text.trim(),
-    });
-    if (mounted) {
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Links Saved Successfully')));
-    }
-  }
-
-  Future<void> _handleLogout() async {
-    try {
-      await Provider.of<AppState>(context, listen: false).disconnectDevice();
-      await FirebaseAuth.instance.signOut();
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const LoginScreen()), 
-          (route) => false
-        );
-      }
-    } catch (e) {
-      debugPrint("Logout Error: $e");
-    }
-  }
-
-  InputDecoration _inputDecor(String label, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon, color: Colors.grey[700], size: 20),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      filled: true, fillColor: Colors.grey.shade50,
-    );
-  }
+  const PatientSettingsScreen({
+    super.key,
+    required this.patientId,
+    required this.onLogout,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final lang = AppLocalizations.of(context);
-    final app = Provider.of<AppState>(context);
+    return Consumer<AppState>(
+      builder: (context, app, child) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFF6F8FB),
+          appBar: AppBar(
+            title: const Text('Settings'),
+            backgroundColor: PETROL_DARK,
+            centerTitle: true,
+            automaticallyImplyLeading: false,
+            elevation: 0,
+          ),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildSectionTitle('Account'),
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(title: Text(lang.translate('settings')), backgroundColor: PETROL_DARK),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // 1. زر تعديل البيانات الشخصية
-            InkWell(
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const EditPatientProfileScreen()));
-              },
-              child: Container(
-                padding: const EdgeInsets.all(20),
+              _SettingsTile(
+                icon: Icons.people_alt_rounded,
+                iconColor: Colors.indigo,
+                title: 'Linked Doctors & Family',
+                subtitle: 'Manage requests, permissions and relationships',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LinkedAccountsScreen(patientId: patientId),
+                    ),
+                  );
+                },
+              ),
+
+              _SettingsTile(
+                icon: Icons.person_search_rounded,
+                iconColor: Colors.blue,
+                title: 'Care Team Management',
+                subtitle: 'Invite doctors and family members securely',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LinkedAccountsScreen(patientId: patientId),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 18),
+              _buildSectionTitle('Device'),
+
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))],
-                  border: Border.all(color: Colors.grey.shade200)
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 8),
+                  ],
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Row(
                   children: [
-                    Text("Update Personal Info", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                    CircleAvatar(
+                      backgroundColor: app.isDeviceConnected
+                          ? Colors.green.withOpacity(0.12)
+                          : Colors.red.withOpacity(0.12),
+                      child: Icon(
+                        app.isDeviceConnected
+                            ? Icons.bluetooth_connected
+                            : Icons.bluetooth_disabled,
+                        color:
+                            app.isDeviceConnected ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Device Status',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            app.isDeviceConnected
+                                ? 'Connected and monitoring is active'
+                                : 'Disconnected',
+                            style: TextStyle(
+                              color: app.isDeviceConnected
+                                  ? Colors.green
+                                  : Colors.red,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
 
-            const SizedBox(height: 24),
-
-            // 2. Links (Doctor & Parent)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: const Color(0xFFF0F4F4), borderRadius: BorderRadius.circular(16)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  const Text('Connected Accounts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 12),
-                  TextFormField(controller: _doctorIdCtrl, decoration: _inputDecor('Doctor ID', Icons.medical_services).copyWith(fillColor: Colors.white)),
-                  const SizedBox(height: 12),
-                  TextFormField(controller: _parentIdCtrl, decoration: _inputDecor('Parent ID', Icons.family_restroom).copyWith(fillColor: Colors.white)),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _saveLinks,
-                      style: ElevatedButton.styleFrom(backgroundColor: PETROL, foregroundColor: Colors.white),
-                      child: _saving ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white)) : const Text("Save Links"),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.bluetooth_connected),
+                      label: const Text('Connect'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: () async {
+                        await app.connectDevice(patientId);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Connecting device...')),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.bluetooth_disabled, color: Colors.white),
+                      label: const Text(
+                        'Disconnect',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: () async {
+                        await app.disconnectDevice();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Device disconnected')),
+                          );
+                        }
+                      },
                     ),
                   ),
                 ],
               ),
-            ),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 18),
+              _buildSectionTitle('App'),
 
-            // 3. Device Connection
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: const Color(0xFFF0F4F4), borderRadius: BorderRadius.circular(16)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Device', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(app.isDeviceConnected ? Icons.bluetooth_connected : Icons.bluetooth_disabled, 
-                         color: app.isDeviceConnected ? PETROL : Colors.grey),
-                    title: Text(app.isDeviceConnected ? "Connected" : "Disconnected"),
-                    subtitle: Text(app.deviceStatus),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: (app.isDeviceConnected || app.deviceStatus == "Scanning...") ? null : () => app.connectDevice(_uid),
-                          style: ElevatedButton.styleFrom(backgroundColor: PETROL, foregroundColor: Colors.white),
-                          icon: const Icon(Icons.bluetooth),
-                          label: const Text('Connect'),
-                        ),
+              _SettingsTile(
+                icon: Icons.language_rounded,
+                iconColor: Colors.teal,
+                title: 'Language',
+                subtitle: 'Arabic / English',
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Language'),
+                      content: const Text(
+                        'لو عندك change language function جاهزة في AppState أو localization، وصّليها هنا.',
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: app.isDeviceConnected ? () => app.disconnectDevice() : null,
-                          child: const Text('Disconnect'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              _SettingsTile(
+                icon: Icons.info_outline_rounded,
+                iconColor: Colors.orange,
+                title: 'About',
+                subtitle: 'SmartCare patient settings and linked accounts',
+                onTap: () {
+                  showAboutDialog(
+                    context: context,
+                    applicationName: 'SmartCare',
+                    applicationVersion: '1.0.0',
+                    applicationLegalese: 'Patient monitoring application',
+                  );
+                },
+              ),
+
+              const SizedBox(height: 22),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  label: const Text(
+                    'Logout',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ],
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: PETROL_DARK,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: () async {
+                    final ok = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Logout'),
+                        content: const Text('Are you sure you want to logout?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Logout'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (ok == true) {
+                      await onLogout();
+                    }
+                  },
+                ),
               ),
-            ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-            const SizedBox(height: 24),
-
-            // 4. Language & Logout
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const CircleAvatar(backgroundColor: Colors.orangeAccent, child: Icon(Icons.language, color: Colors.white)),
-              title: Text(lang.translate('change_lang')),
-              trailing: Switch(activeColor: PETROL, value: app.currentLocale.languageCode == 'ar', onChanged: (val) => app.changeLanguage(val ? 'ar' : 'en')),
-            ),
-            
-            const Divider(),
-            const SizedBox(height: 10),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _handleLogout, 
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD32F2F), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16)),
-                icon: const Icon(Icons.logout),
-                label: Text(lang.translate('logout')),
-              ),
-            ),
-          ],
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: PETROL_DARK,
         ),
+      ),
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _SettingsTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 8),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: CircleAvatar(
+          backgroundColor: iconColor.withOpacity(0.12),
+          child: Icon(icon, color: iconColor),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(subtitle),
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+        onTap: onTap,
       ),
     );
   }
