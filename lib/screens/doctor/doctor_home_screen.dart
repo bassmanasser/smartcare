@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../models/doctor.dart';
+import '../../models/care_link.dart';
 import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
 import '../auth/welcome_screen.dart';
@@ -13,6 +14,7 @@ import '../auth/welcome_screen.dart';
 import 'patient_detail_for_doctor_screen.dart';
 import 'doctor_appointments_screen.dart';
 import 'doctor_stats_screen.dart';
+import 'doctor_requests_screen.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   final Doctor doctor;
@@ -200,15 +202,18 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     final nameCtrl =
         TextEditingController(text: (currentData['name'] ?? '').toString());
     final mainSpecCtrl = TextEditingController(
-        text: (currentData['mainSpecialty'] ?? '').toString());
+      text: (currentData['mainSpecialty'] ?? '').toString(),
+    );
     final subSpecCtrl = TextEditingController(
-        text: (currentData['subSpecialty'] ?? '').toString());
+      text: (currentData['subSpecialty'] ?? '').toString(),
+    );
     final priceCtrl =
         TextEditingController(text: (currentData['price'] ?? '').toString());
     final addressCtrl =
         TextEditingController(text: (currentData['address'] ?? '').toString());
     final hoursCtrl = TextEditingController(
-        text: (currentData['workingHours'] ?? '').toString());
+      text: (currentData['workingHours'] ?? '').toString(),
+    );
 
     showModalBottomSheet(
       context: context,
@@ -322,9 +327,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
-  // =========================
-  // UI helpers
-  // =========================
   Widget _field(
     String label,
     TextEditingController c, {
@@ -344,79 +346,175 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
+  Stream<List<String>> _approvedPatientIdsStream(String doctorLinkId) {
+    return FirebaseFirestore.instance
+        .collection('care_links')
+        .where('linkedUserId', isEqualTo: doctorLinkId)
+        .where('linkedUserRole', isEqualTo: 'doctor')
+        .where('status', isEqualTo: 'approved')
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => (d.data()['patientId'] ?? '').toString())
+            .where((id) => id.isNotEmpty)
+            .toList());
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = Provider.of<AppState>(context);
-
     final patientsMap = app.patients ?? {};
-    final myPatients = patientsMap.values
-        .where((p) => p.doctorId == widget.doctor.id)
-        .toList();
 
-    final pages = <Widget>[
-      _DoctorDashboardTab(
-        doctorName: widget.doctor.name,
-        doctorModel: widget.doctor,
-        myPatients: myPatients,
-        fetchDoctorProfile: _fetchDoctorProfile,
-        resolveDoctorId: _resolveDoctorId,
-        shortDoctorId: _shortDoctorId,
-        onCopy: _copy,
-        onShowId: _showDoctorIdDialog,
-        onShowQr: _showDoctorQrSheet,
-      ),
-      _DoctorPatientsTab(myPatients: myPatients),
-      DoctorAppointmentsScreen(myPatients: myPatients),
-      _DoctorSettingsTab(
-        fetchDoctorProfile: _fetchDoctorProfile,
-        resolveDoctorId: _resolveDoctorId,
-        onEdit: _openEditProfileSheet,
-        onLogout: _logout,
-        onCopy: _copy,
-        onShowId: _showDoctorIdDialog,
-        onShowQr: _showDoctorQrSheet,
-      ),
-    ];
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _fetchDoctorProfile(),
+      builder: (context, profileSnap) {
+        if (profileSnap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        backgroundColor: PETROL_DARK,
-        title: Text("د. ${widget.doctor.name}"),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            tooltip: "Logout",
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
-        ],
-      ),
-      body: SafeArea(child: pages[_tab]),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _tab,
-        onTap: (i) => setState(() => _tab = i),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: PETROL_DARK,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.groups_2_rounded),
-            label: "Patients",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.event_available_rounded),
-            label: "Sessions",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_rounded),
-            label: "Settings",
-          ),
-        ],
-      ),
+        final profileData = profileSnap.data ?? {};
+        final doctorLinkId = _resolveDoctorId(profileData);
+
+        return StreamBuilder<List<String>>(
+          stream: _approvedPatientIdsStream(doctorLinkId),
+          builder: (context, linksSnap) {
+            final approvedIds = linksSnap.data ?? [];
+
+            final myPatients = patientsMap.values.where((p) {
+              final pid = (p.id ?? '').toString();
+              final legacyDoctorId = (p.doctorId ?? '').toString();
+              return approvedIds.contains(pid) ||
+                  legacyDoctorId == widget.doctor.id ||
+                  legacyDoctorId == doctorLinkId;
+            }).toList();
+
+            final pages = <Widget>[
+              _DoctorDashboardTab(
+                doctorName: widget.doctor.name,
+                doctorModel: widget.doctor,
+                myPatients: myPatients,
+                doctorLinkId: doctorLinkId,
+                fetchDoctorProfile: _fetchDoctorProfile,
+                resolveDoctorId: _resolveDoctorId,
+                shortDoctorId: _shortDoctorId,
+                onCopy: _copy,
+                onShowId: _showDoctorIdDialog,
+                onShowQr: _showDoctorQrSheet,
+              ),
+              _DoctorPatientsTab(
+                myPatients: myPatients,
+                doctorLinkId: doctorLinkId,
+              ),
+              DoctorAppointmentsScreen(myPatients: myPatients),
+              _DoctorSettingsTab(
+                doctorLinkId: doctorLinkId,
+                linkedPatientsCount: myPatients.length,
+                fetchDoctorProfile: _fetchDoctorProfile,
+                resolveDoctorId: _resolveDoctorId,
+                onEdit: _openEditProfileSheet,
+                onLogout: _logout,
+                onCopy: _copy,
+                onShowId: _showDoctorIdDialog,
+                onShowQr: _showDoctorQrSheet,
+              ),
+            ];
+
+            return Scaffold(
+              backgroundColor: Colors.grey[50],
+              appBar: AppBar(
+                backgroundColor: PETROL_DARK,
+                title: Text("د. ${widget.doctor.name}"),
+                centerTitle: false,
+                actions: [
+                  StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: FirebaseFirestore.instance
+                        .collection('care_links')
+                        .where('linkedUserId', isEqualTo: doctorLinkId)
+                        .where('status', isEqualTo: 'pending')
+                        .snapshots(),
+                    builder: (context, snap) {
+                      final count = snap.data?.docs.length ?? 0;
+
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          IconButton(
+                            tooltip: "Requests",
+                            icon: const Icon(Icons.mark_email_unread_outlined),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      DoctorRequestsScreen(doctorId: doctorLinkId),
+                                ),
+                              );
+                            },
+                          ),
+                          if (count > 0)
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  count > 99 ? '99+' : '$count',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                  IconButton(
+                    tooltip: "Logout",
+                    icon: const Icon(Icons.logout),
+                    onPressed: _logout,
+                  ),
+                ],
+              ),
+              body: SafeArea(child: pages[_tab]),
+              bottomNavigationBar: BottomNavigationBar(
+                currentIndex: _tab,
+                onTap: (i) => setState(() => _tab = i),
+                type: BottomNavigationBarType.fixed,
+                selectedItemColor: PETROL_DARK,
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.home_rounded),
+                    label: "Home",
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.groups_2_rounded),
+                    label: "Patients",
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.event_available_rounded),
+                    label: "Sessions",
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.settings_rounded),
+                    label: "Settings",
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -428,6 +526,7 @@ class _DoctorDashboardTab extends StatelessWidget {
   final String doctorName;
   final Doctor doctorModel;
   final List<dynamic> myPatients;
+  final String doctorLinkId;
 
   final Future<Map<String, dynamic>> Function() fetchDoctorProfile;
   final String Function(Map<String, dynamic>) resolveDoctorId;
@@ -440,6 +539,7 @@ class _DoctorDashboardTab extends StatelessWidget {
     required this.doctorName,
     required this.doctorModel,
     required this.myPatients,
+    required this.doctorLinkId,
     required this.fetchDoctorProfile,
     required this.resolveDoctorId,
     required this.shortDoctorId,
@@ -451,7 +551,6 @@ class _DoctorDashboardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final patientsToday = myPatients.length;
-    final alertsToday = 0;
     final sessionsToday = myPatients.length;
 
     return FutureBuilder<Map<String, dynamic>>(
@@ -463,249 +562,280 @@ class _DoctorDashboardTab extends StatelessWidget {
         final subSpec = (data['subSpecialty'] ?? '').toString().trim();
         final ver = (data['verificationStatus'] ?? 'pending').toString();
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 14,
-                      offset: const Offset(0, 8),
+        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('care_links')
+              .where('linkedUserId', isEqualTo: doctorLinkId)
+              .where('status', isEqualTo: 'pending')
+              .snapshots(),
+          builder: (context, reqSnap) {
+            final pendingRequests = reqSnap.data?.docs.length ?? 0;
+            final pendingDocs = reqSnap.data?.docs ?? [];
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 14,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: PETROL.withOpacity(0.12),
-                      child: const Icon(
-                        Icons.medical_services,
-                        color: PETROL_DARK,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "د. $doctorName",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 17,
-                            ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: PETROL.withOpacity(0.12),
+                          child: const Icon(
+                            Icons.medical_services,
+                            color: PETROL_DARK,
+                            size: 28,
                           ),
-                          const SizedBox(height: 4),
-                          if ([mainSpec, subSpec]
-                              .where((e) => e.isNotEmpty)
-                              .isNotEmpty)
-                            Text(
-                              [mainSpec, subSpec]
-                                  .where((e) => e.isNotEmpty)
-                                  .join(" • "),
-                              style: TextStyle(
-                                color: Colors.grey.shade700,
-                                fontSize: 12,
-                              ),
-                            ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 7,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: ver == 'approved'
-                                      ? Colors.green.withOpacity(0.12)
-                                      : Colors.orange.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  ver == 'approved' ? "Verified" : "Pending",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    color: ver == 'approved'
-                                        ? Colors.green
-                                        : Colors.orange,
-                                    fontSize: 12,
-                                  ),
+                              Text(
+                                "د. $doctorName",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 17,
                                 ),
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 7,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  "ID: ${shortDoctorId(doctorId)}",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
+                              const SizedBox(height: 4),
+                              if ([mainSpec, subSpec]
+                                  .where((e) => e.isNotEmpty)
+                                  .isNotEmpty)
+                                Text(
+                                  [mainSpec, subSpec]
+                                      .where((e) => e.isNotEmpty)
+                                      .join(" • "),
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
                                     fontSize: 12,
                                   ),
                                 ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 7,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: ver == 'approved'
+                                          ? Colors.green.withOpacity(0.12)
+                                          : Colors.orange.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      ver == 'approved'
+                                          ? "Verified"
+                                          : "Pending",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: ver == 'approved'
+                                            ? Colors.green
+                                            : Colors.orange,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 7,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      "ID: ${shortDoctorId(doctorId)}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      children: [
-                        IconButton(
-                          tooltip: "Copy ID",
-                          onPressed: () => onCopy(doctorId),
-                          icon: const Icon(Icons.copy_rounded),
                         ),
-                        IconButton(
-                          tooltip: "Show QR",
-                          onPressed: () => onShowQr(doctorId),
-                          icon: const Icon(Icons.qr_code_2_rounded),
-                        ),
+                        Column(
+                          children: [
+                            IconButton(
+                              tooltip: "Copy ID",
+                              onPressed: () => onCopy(doctorId),
+                              icon: const Icon(Icons.copy_rounded),
+                            ),
+                            IconButton(
+                              tooltip: "Show QR",
+                              onPressed: () => onShowQr(doctorId),
+                              icon: const Icon(Icons.qr_code_2_rounded),
+                            ),
+                          ],
+                        )
                       ],
-                    )
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              // Stats
-              Row(
-                children: [
-                  _statCard(
-                    title: "Patients",
-                    value: "$patientsToday",
-                    icon: Icons.groups_2_rounded,
+                    ),
                   ),
-                  const SizedBox(width: 10),
-                  _statCard(
-                    title: "Alerts",
-                    value: "$alertsToday",
-                    icon: Icons.notifications_active_rounded,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  _statCard(
-                    title: "Sessions",
-                    value: "$sessionsToday",
-                    icon: Icons.event_available_rounded,
-                  ),
-                  const SizedBox(width: 10),
-                  _statCard(
-                    title: "Rating",
-                    value: "4.8",
-                    icon: Icons.star_rounded,
-                  ),
-                ],
-              ),
 
-              const SizedBox(height: 18),
+                  const SizedBox(height: 14),
 
-              Text(
-                "Quick Actions",
-                style: TextStyle(
-                  color: Colors.grey.shade800,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              _pill(
-                icon: Icons.bar_chart_rounded,
-                title: "الإحصائيات",
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => DoctorStatsScreen(
-                        fee: doctorModel.consultationFee,
-                        totalPatients: myPatients.length,
+                  // Stats
+                  Row(
+                    children: [
+                      _statCard(
+                        title: "Patients",
+                        value: "$patientsToday",
+                        icon: Icons.groups_2_rounded,
                       ),
+                      const SizedBox(width: 10),
+                      _statCard(
+                        title: "Requests",
+                        value: "$pendingRequests",
+                        icon: Icons.mark_email_unread_outlined,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      _statCard(
+                        title: "Sessions",
+                        value: "$sessionsToday",
+                        icon: Icons.event_available_rounded,
+                      ),
+                      const SizedBox(width: 10),
+                      _statCard(
+                        title: "Rating",
+                        value: "4.8",
+                        icon: Icons.star_rounded,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  Text(
+                    "Quick Actions",
+                    style: TextStyle(
+                      color: Colors.grey.shade800,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
                     ),
-                  );
-                },
-              ),
-              const SizedBox(height: 10),
+                  ),
+                  const SizedBox(height: 10),
 
-              _pill(
-                icon: Icons.event_available_rounded,
-                title: "Sessions / Appointments",
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          DoctorAppointmentsScreen(myPatients: myPatients),
+                  _pill(
+                    icon: Icons.mark_email_unread_outlined,
+                    title: "Incoming Requests",
+                    badge: pendingRequests > 0 ? "$pendingRequests" : null,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              DoctorRequestsScreen(doctorId: doctorLinkId),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  _pill(
+                    icon: Icons.bar_chart_rounded,
+                    title: "الإحصائيات",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DoctorStatsScreen(
+                            fee: doctorModel.consultationFee,
+                            totalPatients: myPatients.length,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  _pill(
+                    icon: Icons.event_available_rounded,
+                    title: "Sessions / Appointments",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              DoctorAppointmentsScreen(myPatients: myPatients),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  _pill(
+                    icon: Icons.groups_2_rounded,
+                    title: "My Patients",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => _DoctorPatientsTab(
+                            myPatients: myPatients,
+                            doctorLinkId: doctorLinkId,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  _pill(
+                    icon: Icons.badge_rounded,
+                    title: "Show Doctor ID",
+                    onTap: () => onShowId(doctorId),
+                  ),
+                  const SizedBox(height: 10),
+
+                  _pill(
+                    icon: Icons.qr_code_2_rounded,
+                    title: "Show QR Code",
+                    onTap: () => onShowQr(doctorId),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    "Pending Requests",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                  );
-                },
-              ),
-              const SizedBox(height: 10),
+                  ),
+                  const SizedBox(height: 10),
 
-              _pill(
-                icon: Icons.groups_2_rounded,
-                title: "My Patients",
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => _DoctorPatientsTab(myPatients: myPatients),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 10),
-
-              _pill(
-                icon: Icons.badge_rounded,
-                title: "Show Doctor ID",
-                onTap: () => onShowId(doctorId),
-              ),
-              const SizedBox(height: 10),
-
-              _pill(
-                icon: Icons.qr_code_2_rounded,
-                title: "Show QR Code",
-                onTap: () => onShowQr(doctorId),
-              ),
-
-              const SizedBox(height: 20),
-
-              const Text(
-                "أحدث المرضى / الحجوزات",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              myPatients.isEmpty
-                  ? Container(
+                  if (pendingDocs.isEmpty)
+                    Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -713,62 +843,144 @@ class _DoctorDashboardTab extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: Colors.grey.shade200),
                       ),
-                      child: const Text("لا يوجد مرضى أو حجوزات مسجلة حالياً"),
+                      child: const Text("لا توجد طلبات معلقة حالياً"),
                     )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: myPatients.length > 4 ? 4 : myPatients.length,
-                      itemBuilder: (context, index) {
-                        final p = myPatients[index];
-                        final patientName =
-                            (p.name ?? 'Unnamed Patient').toString();
+                  else
+                    ...pendingDocs.take(3).map((doc) {
+                      final data = doc.data();
+                      final patientId =
+                          (data['patientId'] ?? '').toString().trim();
+                      final label = (data['relationshipLabel'] ?? 'Patient')
+                          .toString()
+                          .trim();
+                      final role = (data['linkedUserRole'] ?? 'doctor')
+                          .toString()
+                          .trim();
+                      final isPrimary = data['isPrimary'] == true;
 
-                        return Card(
-                          elevation: 0,
-                          margin: const EdgeInsets.only(bottom: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Colors.grey.shade200),
+                      return Card(
+                        elevation: 0,
+                        margin: const EdgeInsets.only(bottom: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: Colors.grey.shade200),
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.orange.withOpacity(0.12),
+                            child: const Icon(
+                              Icons.mark_email_unread_outlined,
+                              color: Colors.orange,
+                            ),
                           ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: PETROL.withOpacity(0.12),
-                              child: const Icon(
-                                Icons.person_outline_rounded,
-                                color: PETROL_DARK,
-                              ),
+                          title: Text(
+                            label.isEmpty ? "Request" : label,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            "Patient ID: $patientId • Role: $role${isPrimary ? ' • Primary' : ''}",
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
                             ),
-                            title: Text(
-                              patientName,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(
-                              "اليوم - ${index + 9}:00 AM",
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12,
-                              ),
-                            ),
-                            trailing: const Icon(
-                              Icons.arrow_forward_ios,
-                              size: 14,
-                              color: Colors.grey,
-                            ),
-                            onTap: () => Navigator.push(
+                          ),
+                          trailing: const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
+                          onTap: () {
+                            Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) =>
-                                    PatientDetailForDoctorScreen(patient: p),
+                                    DoctorRequestsScreen(doctorId: doctorLinkId),
                               ),
-                            ),
-                          ),
-                        );
-                      },
+                            );
+                          },
+                        ),
+                      );
+                    }),
+
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    "Linked Patients",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-            ],
-          ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  myPatients.isEmpty
+                      ? Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: const Text("لا يوجد مرضى مرتبطين حالياً"),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: myPatients.length > 4 ? 4 : myPatients.length,
+                          itemBuilder: (context, index) {
+                            final p = myPatients[index];
+                            final patientName =
+                                (p.name ?? 'Unnamed Patient').toString();
+
+                            return Card(
+                              elevation: 0,
+                              margin: const EdgeInsets.only(bottom: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                side: BorderSide(color: Colors.grey.shade200),
+                              ),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: PETROL.withOpacity(0.12),
+                                  child: const Icon(
+                                    Icons.person_outline_rounded,
+                                    color: PETROL_DARK,
+                                  ),
+                                ),
+                                title: Text(
+                                  patientName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  "اضغط لعرض التفاصيل",
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                trailing: const Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 14,
+                                  color: Colors.grey,
+                                ),
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        PatientDetailForDoctorScreen(patient: p),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -778,6 +990,7 @@ class _DoctorDashboardTab extends StatelessWidget {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    String? badge,
   }) {
     return InkWell(
       onTap: onTap,
@@ -814,6 +1027,25 @@ class _DoctorDashboardTab extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
+            if (badge != null) ...[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  badge,
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
             const Icon(
               Icons.arrow_forward_ios,
               size: 14,
@@ -891,7 +1123,12 @@ class _DoctorDashboardTab extends StatelessWidget {
 // =====================
 class _DoctorPatientsTab extends StatefulWidget {
   final List<dynamic> myPatients;
-  const _DoctorPatientsTab({required this.myPatients});
+  final String doctorLinkId;
+
+  const _DoctorPatientsTab({
+    required this.myPatients,
+    required this.doctorLinkId,
+  });
 
   @override
   State<_DoctorPatientsTab> createState() => _DoctorPatientsTabState();
@@ -938,42 +1175,99 @@ class _DoctorPatientsTabState extends State<_DoctorPatientsTab> {
                     final patientName =
                         (p.name ?? 'Unnamed Patient').toString();
 
-                    return Card(
-                      elevation: 0,
-                      margin: const EdgeInsets.only(bottom: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: PETROL.withOpacity(0.12),
-                          child: const Icon(Icons.person, color: PETROL_DARK),
-                        ),
-                        title: Text(
-                          patientName,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          "اضغط لعرض التفاصيل",
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 12,
+                    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                      stream: FirebaseFirestore.instance
+                          .collection('care_links')
+                          .where('patientId', isEqualTo: p.id)
+                          .where('linkedUserId', isEqualTo: widget.doctorLinkId)
+                          .where('linkedUserRole', isEqualTo: 'doctor')
+                          .where('status', isEqualTo: 'approved')
+                          .limit(1)
+                          .snapshots(),
+                      builder: (context, snap) {
+                        final linkData = snap.data?.docs.isNotEmpty == true
+                            ? snap.data!.docs.first.data()
+                            : null;
+                        final isPrimary = linkData?['isPrimary'] == true;
+
+                        return Card(
+                          elevation: 0,
+                          margin: const EdgeInsets.only(bottom: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(color: Colors.grey.shade200),
                           ),
-                        ),
-                        trailing: const Icon(
-                          Icons.arrow_forward_ios,
-                          size: 14,
-                          color: Colors.grey,
-                        ),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                PatientDetailForDoctorScreen(patient: p),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: PETROL.withOpacity(0.12),
+                              child: const Icon(
+                                Icons.person,
+                                color: PETROL_DARK,
+                              ),
+                            ),
+                            title: Text(
+                              patientName,
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 4),
+                                Text(
+                                  "اضغط لعرض التفاصيل",
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isPrimary
+                                            ? Colors.green.withOpacity(0.12)
+                                            : Colors.blue.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        isPrimary
+                                            ? "Primary Doctor"
+                                            : "Approved",
+                                        style: TextStyle(
+                                          color: isPrimary
+                                              ? Colors.green
+                                              : Colors.blue,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ),
+                            trailing: const Icon(
+                              Icons.arrow_forward_ios,
+                              size: 14,
+                              color: Colors.grey,
+                            ),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    PatientDetailForDoctorScreen(patient: p),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -987,6 +1281,9 @@ class _DoctorPatientsTabState extends State<_DoctorPatientsTab> {
 // TAB 4: Settings
 // =====================
 class _DoctorSettingsTab extends StatelessWidget {
+  final String doctorLinkId;
+  final int linkedPatientsCount;
+
   final Future<Map<String, dynamic>> Function() fetchDoctorProfile;
   final String Function(Map<String, dynamic>) resolveDoctorId;
   final void Function(Map<String, dynamic>) onEdit;
@@ -996,6 +1293,8 @@ class _DoctorSettingsTab extends StatelessWidget {
   final void Function(String) onShowQr;
 
   const _DoctorSettingsTab({
+    required this.doctorLinkId,
+    required this.linkedPatientsCount,
     required this.fetchDoctorProfile,
     required this.resolveDoctorId,
     required this.onEdit,
@@ -1013,126 +1312,197 @@ class _DoctorSettingsTab extends StatelessWidget {
         final data = snap.data ?? {};
         final doctorId = resolveDoctorId(data);
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Container(
+        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('care_links')
+              .where('linkedUserId', isEqualTo: doctorLinkId)
+              .where('status', isEqualTo: 'pending')
+              .snapshots(),
+          builder: (context, reqSnap) {
+            final pendingRequests = reqSnap.data?.docs.length ?? 0;
+
+            return ListView(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Profile",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.grey.shade200),
                   ),
-                  const SizedBox(height: 10),
-                  _kv("Name", (data['name'] ?? '').toString()),
-                  _kv("Main Specialty", (data['mainSpecialty'] ?? '').toString()),
-                  _kv("Sub Specialty", (data['subSpecialty'] ?? '').toString()),
-                  _kv("Clinic", (data['address'] ?? '').toString()),
-                  _kv("Working Hours", (data['workingHours'] ?? '').toString()),
-                  _kv("Fee", (data['price'] ?? '').toString()),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: PETROL_DARK,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      onPressed: () => onEdit(data),
-                      icon: const Icon(Icons.edit, color: Colors.white),
-                      label: const Text(
-                        "Edit Profile",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Doctor ID",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  SelectableText(doctorId),
-                  const SizedBox(height: 10),
-                  Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => onCopy(doctorId),
-                          icon: const Icon(Icons.copy_rounded),
-                          label: const Text("Copy"),
+                      const Text(
+                        "Profile",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => onShowId(doctorId),
-                          icon: const Icon(Icons.badge_rounded),
-                          label: const Text("Show ID"),
+                      const SizedBox(height: 10),
+                      _kv("Name", (data['name'] ?? '').toString()),
+                      _kv("Main Specialty",
+                          (data['mainSpecialty'] ?? '').toString()),
+                      _kv("Sub Specialty",
+                          (data['subSpecialty'] ?? '').toString()),
+                      _kv("Clinic", (data['address'] ?? '').toString()),
+                      _kv("Working Hours",
+                          (data['workingHours'] ?? '').toString()),
+                      _kv("Fee", (data['price'] ?? '').toString()),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: PETROL_DARK,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          onPressed: () => onEdit(data),
+                          icon: const Icon(Icons.edit, color: Colors.white),
+                          label: const Text(
+                            "Edit Profile",
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => onShowQr(doctorId),
-                      icon: const Icon(Icons.qr_code_2_rounded),
-                      label: const Text("Show QR"),
+                ),
+
+                const SizedBox(height: 12),
+
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Care Access Management",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _infoRow(
+                        icon: Icons.groups_2_rounded,
+                        title: "Linked Patients",
+                        value: "$linkedPatientsCount",
+                      ),
+                      const SizedBox(height: 10),
+                      _infoRow(
+                        icon: Icons.mark_email_unread_outlined,
+                        title: "Pending Requests",
+                        value: "$pendingRequests",
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    DoctorRequestsScreen(doctorId: doctorLinkId),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.mark_email_unread_outlined),
+                          label: const Text("Open Incoming Requests"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Doctor ID",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      SelectableText(doctorId),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => onCopy(doctorId),
+                              icon: const Icon(Icons.copy_rounded),
+                              label: const Text("Copy"),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => onShowId(doctorId),
+                              icon: const Icon(Icons.badge_rounded),
+                              label: const Text("Show ID"),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => onShowQr(doctorId),
+                          icon: const Icon(Icons.qr_code_2_rounded),
+                          label: const Text("Show QR"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                SizedBox(
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: onLogout,
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                    label: const Text(
+                      "Logout",
+                      style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 52,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
                 ),
-                onPressed: onLogout,
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text(
-                  "Logout",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         );
       },
     );
@@ -1163,6 +1533,36 @@ class _DoctorSettingsTab extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _infoRow({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 18,
+          backgroundColor: PETROL.withOpacity(0.12),
+          child: Icon(icon, color: PETROL_DARK, size: 18),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: PETROL_DARK,
+          ),
+        ),
+      ],
     );
   }
 }
