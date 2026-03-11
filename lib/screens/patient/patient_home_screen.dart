@@ -96,9 +96,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               icon: const Icon(Icons.dashboard_customize_rounded),
               label: lang.translate('services'),
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_search_rounded),
-              label: 'Doctors',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.person_search_rounded),
+              label: lang.translate('doctors'),
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.settings_rounded),
@@ -110,10 +110,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     );
   }
 }
-
-// ==================================================================
-// HOME TAB
-// ==================================================================
 
 class _PatientHomeTab extends StatelessWidget {
   final Patient patient;
@@ -148,6 +144,10 @@ class _PatientHomeTab extends StatelessWidget {
           child: RefreshIndicator(
             onRefresh: () async {
               await app.fetchHistory(patient.id);
+              await app.fetchAlerts(patient.id);
+              await app.fetchDoctorNotes(patient.id);
+              await app.fetchMedications(patient.id);
+              await app.fetchMoods(patient.id);
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -155,27 +155,13 @@ class _PatientHomeTab extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(context, patient, app, lang),
-                  const SizedBox(height: 16),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildHealthOverview(v, tempText),
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildQuickActions(context, patient),
-                  ),
-
                   const SizedBox(height: 20),
 
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      'Care Team',
-                      style: TextStyle(
+                      lang.translate('care_team'),
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: PETROL_DARK,
@@ -183,7 +169,7 @@ class _PatientHomeTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _buildCareTeam(patient.id),
+                  _buildCareTeam(patient.id, lang),
 
                   const SizedBox(height: 20),
 
@@ -223,7 +209,7 @@ class _PatientHomeTab extends StatelessWidget {
 
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildEmergencyCard(context),
+                    child: _buildEmergencyCard(context, lang),
                   ),
 
                   const SizedBox(height: 24),
@@ -269,7 +255,7 @@ class _PatientHomeTab extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome back',
+                      lang.translate('welcome_back'),
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.85),
                         fontSize: 13,
@@ -292,7 +278,7 @@ class _PatientHomeTab extends StatelessWidget {
                   ],
                 ),
               ),
-              _buildConnectionStatus(app),
+              _buildConnectionStatus(app, lang),
             ],
           ),
           const SizedBox(height: 18),
@@ -310,8 +296,8 @@ class _PatientHomeTab extends StatelessWidget {
                 Expanded(
                   child: Text(
                     app.isDeviceConnected
-                        ? 'Your device is connected and monitoring is active'
-                        : 'Device is disconnected, reconnect to continue monitoring',
+                        ? lang.translate('device_connected_monitoring_active')
+                        : lang.translate('device_disconnected_reconnect'),
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),
@@ -323,7 +309,7 @@ class _PatientHomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildConnectionStatus(AppState app) {
+  Widget _buildConnectionStatus(AppState app, AppLocalizations lang) {
     final connected = app.isDeviceConnected;
 
     return Container(
@@ -347,7 +333,9 @@ class _PatientHomeTab extends StatelessWidget {
           ),
           const SizedBox(width: 5),
           Text(
-            connected ? 'Connected' : 'Disconnected',
+            connected
+                ? lang.translate('connected')
+                : lang.translate('disconnected'),
             style: TextStyle(
               color: connected ? Colors.greenAccent : Colors.redAccent,
               fontWeight: FontWeight.bold,
@@ -359,134 +347,7 @@ class _PatientHomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildHealthOverview(VitalSample? v, String tempText) {
-    return Row(
-      children: [
-        Expanded(
-          child: _MiniStatusCard(
-            title: 'Heart Rate',
-            value: '${v?.hr ?? '--'}',
-            subtitle: 'bpm',
-            icon: Icons.favorite_rounded,
-            color: Colors.red,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _MiniStatusCard(
-            title: 'SpO2',
-            value: '${v?.spo2 ?? '--'}',
-            subtitle: '%',
-            icon: Icons.water_drop_rounded,
-            color: Colors.blue,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _MiniStatusCard(
-            title: 'Temp',
-            value: tempText,
-            subtitle: '°C',
-            icon: Icons.thermostat_rounded,
-            color: Colors.orange,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickActions(BuildContext context, Patient patient) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Quick Actions',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: PETROL_DARK,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.picture_as_pdf_rounded,
-                label: 'Reports',
-                color: Colors.red.shade700,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ReportScreen(
-                        patientId: patient.id,
-                        patientName: patient.name,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.medication_rounded,
-                label: 'Medications',
-                color: Colors.blue,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => MedicationScreen(patientId: patient.id),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.note_alt_rounded,
-                label: 'Doctor Notes',
-                color: Colors.indigo,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => DoctorNotesScreen(patientId: patient.id),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.show_chart_rounded,
-                label: 'Charts',
-                color: Colors.green,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChartsScreen(patientId: patient.id),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCareTeam(String patientId) {
+  Widget _buildCareTeam(String patientId, AppLocalizations lang) {
     return StreamBuilder<List<CareLink>>(
       stream: CareLinkService().approvedDoctorsForPatient(patientId),
       builder: (context, snapshot) {
@@ -505,14 +366,14 @@ class _PatientHomeTab extends StatelessWidget {
                   BoxShadow(color: Colors.black12, blurRadius: 8),
                 ],
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.person_off_rounded, color: Colors.grey),
-                  SizedBox(width: 10),
+                  const Icon(Icons.person_off_rounded, color: Colors.grey),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'No linked doctors yet',
-                      style: TextStyle(color: Colors.grey),
+                      lang.translate('no_linked_doctors'),
+                      style: const TextStyle(color: Colors.grey),
                     ),
                   ),
                 ],
@@ -556,7 +417,7 @@ class _PatientHomeTab extends StatelessWidget {
                           Text(
                             link.relationshipLabel.isNotEmpty
                                 ? link.relationshipLabel
-                                : 'Doctor',
+                                : lang.translate('doctor'),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -584,7 +445,9 @@ class _PatientHomeTab extends StatelessWidget {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              link.isPrimary ? 'Primary Doctor' : 'Approved',
+                              link.isPrimary
+                                  ? lang.translate('primary_doctor')
+                                  : lang.translate('approved'),
                               style: TextStyle(
                                 color: link.isPrimary ? Colors.green : Colors.blue,
                                 fontWeight: FontWeight.w600,
@@ -664,7 +527,7 @@ class _PatientHomeTab extends StatelessWidget {
         const SizedBox(height: 10),
         _VitalCard(
           icon: Icons.thermostat,
-          title: 'Temperature',
+          title: lang.translate('temperature'),
           value: tempText,
           unit: '°C',
           color: Colors.orange,
@@ -699,7 +562,7 @@ class _PatientHomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildEmergencyCard(BuildContext context) {
+  Widget _buildEmergencyCard(BuildContext context, AppLocalizations lang) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -715,18 +578,18 @@ class _PatientHomeTab extends StatelessWidget {
             child: Icon(Icons.emergency_rounded, color: Colors.red.shade700),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Emergency Help',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  lang.translate('emergency_help'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'Use this section later for emergency alerts to doctor or family.',
-                  style: TextStyle(color: Colors.black54),
+                  lang.translate('emergency_help_desc'),
+                  style: const TextStyle(color: Colors.black54),
                 ),
               ],
             ),
@@ -742,22 +605,20 @@ class _PatientHomeTab extends StatelessWidget {
               showDialog(
                 context: context,
                 builder: (_) => AlertDialog(
-                  title: const Text('Emergency'),
-                  content: const Text(
-                    'اعملي هنا بعد كده ربط حقيقي مع emergency alert للدكتور أو الأهل.',
-                  ),
+                  title: Text(lang.translate('emergency')),
+                  content: Text(lang.translate('emergency_dialog_desc')),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('OK'),
+                      child: Text(lang.translate('ok')),
                     ),
                   ],
                 ),
               );
             },
-            child: const Text(
-              'Alert',
-              style: TextStyle(color: Colors.white),
+            child: Text(
+              lang.translate('alert'),
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -765,10 +626,6 @@ class _PatientHomeTab extends StatelessWidget {
     );
   }
 }
-
-// ==================================================================
-// SERVICES TAB
-// ==================================================================
 
 class _PatientServicesTab extends StatelessWidget {
   final Patient patient;
@@ -804,7 +661,7 @@ class _PatientServicesTab extends StatelessWidget {
         (_) => MoodScreen(patientId: patient.id),
       ),
       _Svc(
-        'Charts',
+        lang.translate('charts'),
         Icons.show_chart,
         Colors.green,
         (_) => ChartsScreen(patientId: patient.id),
@@ -816,13 +673,13 @@ class _PatientServicesTab extends StatelessWidget {
         (_) => AlertsHistoryScreen(patientId: patient.id),
       ),
       _Svc(
-        'Arrhythmia Check',
+        lang.translate('arrhythmia_check'),
         Icons.favorite,
         Colors.red,
         (_) => ArrhythmiaCheckScreen(patientId: patient.id),
       ),
       _Svc(
-        'Resp. Check',
+        lang.translate('resp_check'),
         Icons.graphic_eq,
         Colors.teal,
         (_) => const RespiratoryTestScreen(),
@@ -969,114 +826,6 @@ class _VitalCard extends StatelessWidget {
                   color: PETROL_DARK,
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MiniStatusCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-
-  const _MiniStatusCard({
-    required this.title,
-    required this.value,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 8),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
-          ),
-          const SizedBox(height: 4),
-          FittedBox(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 17,
-                color: PETROL_DARK,
-              ),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: const TextStyle(fontSize: 11, color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: onTap,
-      child: Ink(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 8),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.10),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ],
         ),

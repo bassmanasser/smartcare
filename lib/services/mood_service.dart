@@ -20,8 +20,7 @@ class MoodService {
         .map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data();
-        data['id'] = doc.id;
-        return MoodRecord.fromJson(data);
+        return MoodRecord.fromJson(data, doc.id);
       }).toList();
     });
   }

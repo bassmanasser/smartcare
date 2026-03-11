@@ -25,7 +25,7 @@ class Medication {
     this.reminderEnabled = false,
   });
 
-  factory Medication.fromJson(Map<String, dynamic> json) {
+  factory Medication.fromJson(Map<String, dynamic> json, String id) {
     // نقرأ الساعة والدقيقة لو موجودين من الـ Firestore
     final hour = json['reminderHour'] as int?;
     final minute = json['reminderMinute'] as int?;

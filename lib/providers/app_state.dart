@@ -20,9 +20,15 @@ import '../services/dialog_service.dart';
 import '../services/glucose_api_service.dart';
 
 class AppState extends ChangeNotifier {
+  // ==========================================================
+  // Locale
+  // ==========================================================
   Locale _currentLocale = const Locale('en');
   Locale get currentLocale => _currentLocale;
 
+  // ==========================================================
+  // In-memory state
+  // ==========================================================
   final List<VitalSample> _vitals = [];
   List<VitalSample> get vitals => List.unmodifiable(_vitals);
 
@@ -44,12 +50,18 @@ class AppState extends ChangeNotifier {
   final List<Medication> _medications = [];
   List<Medication> get medications => List.unmodifiable(_medications);
 
+  // ==========================================================
+  // Services / refs
+  // ==========================================================
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final BleEsp32Service _bleService = BleEsp32Service();
 
   StreamSubscription? _bleSub;
   StreamSubscription? _connSub;
 
+  // ==========================================================
+  // Device / BLE state
+  // ==========================================================
   bool isDeviceConnected = false;
   String deviceStatus = "Disconnected";
   bool _isScanning = false;
@@ -170,7 +182,7 @@ class AppState extends ChangeNotifier {
         }
       });
 
-      _setBleStatus(patientId, "online");
+      await _setBleStatus(patientId, "online");
 
       await _bleSub?.cancel();
       _bleSub = _bleService.linesStream.listen((jsonStr) {
@@ -265,7 +277,7 @@ class AppState extends ChangeNotifier {
       isDeviceConnected = false;
       _isScanning = false;
       deviceStatus = "Device not found / Error";
-      _setBleStatus(patientId, "offline");
+      await _setBleStatus(patientId, "offline");
       notifyListeners();
     }
   }
@@ -550,6 +562,25 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchDoctors() async {
+    try {
+      final q = await _usersRef().where('role', isEqualTo: 'doctor').get();
+
+      _doctors.clear();
+
+      for (final doc in q.docs) {
+        final data = doc.data();
+        data['id'] = data['id'] ?? doc.id;
+        final doctor = Doctor.fromJson(data);
+        _doctors[doctor.id] = doctor;
+      }
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint("❌ Fetch doctors error: $e");
+    }
+  }
+
   // ==========================================================
   // Medications
   // ==========================================================
@@ -571,6 +602,23 @@ class AppState extends ChangeNotifier {
     }).toList();
   }
 
+  Future<void> fetchMedications(String patientId) async {
+    if (patientId.isEmpty) return;
+
+    try {
+      final q = await _medicationsRef(patientId).get();
+      _medications.removeWhere((m) => m.toJson()['patientId'] == patientId);
+
+      for (final doc in q.docs) {
+        _medications.add(Medication.fromJson(doc.data(), doc.id));
+      }
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint("❌ Fetch medications error: $e");
+    }
+  }
+
   // ==========================================================
   // Mood
   // ==========================================================
@@ -589,21 +637,62 @@ class AppState extends ChangeNotifier {
     return _moodRecords.where((m) => m.patientId == patientId).toList();
   }
 
+  Future<void> fetchMoods(String patientId) async {
+    if (patientId.isEmpty) return;
+
+    try {
+      final q = await _moodsRef(patientId).get();
+      _moodRecords.removeWhere((m) => m.patientId == patientId);
+
+      for (final doc in q.docs) {
+        _moodRecords.add(MoodRecord.fromJson(doc.data(), doc.id));
+      }
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint("❌ Fetch moods error: $e");
+    }
+  }
+
   // ==========================================================
   // Language / preferences
   // ==========================================================
-  void changeLanguage(String code) async {
-    _currentLocale = Locale(code);
-    notifyListeners();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('lang', code);
+  Future<void> changeLanguage(String code) async {
+    await setLocale(Locale(code));
   }
 
   Future<void> _loadPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lang = prefs.getString('lang') ?? 'en';
-    _currentLocale = Locale(lang);
-    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lang = prefs.getString('lang') ?? 'en';
+      _currentLocale = Locale(lang);
+      notifyListeners();
+    } catch (e) {
+      debugPrint("❌ Load preferences error: $e");
+    }
+  }
+
+  Future<void> setLocale(Locale locale) async {
+    try {
+      if (_currentLocale.languageCode == locale.languageCode) return;
+
+      _currentLocale = locale;
+      notifyListeners();
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('lang', locale.languageCode);
+    } catch (e) {
+      debugPrint("❌ Set locale error: $e");
+    }
+  }
+
+  // ==========================================================
+  // Dispose
+  // ==========================================================
+  @override
+  void dispose() {
+    _bleSub?.cancel();
+    _connSub?.cancel();
+    super.dispose();
   }
 }

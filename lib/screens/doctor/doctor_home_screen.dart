@@ -6,9 +6,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../models/doctor.dart';
-import '../../models/care_link.dart';
 import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
+import '../../utils/localization.dart';
 import '../auth/welcome_screen.dart';
 
 import 'patient_detail_for_doctor_screen.dart';
@@ -37,9 +37,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
-  // =========================
-  // Firestore helpers
-  // =========================
   DocumentReference<Map<String, dynamic>> get _docRef {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     return FirebaseFirestore.instance
@@ -254,11 +251,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 const SizedBox(height: 8),
                 _field("الاسم", nameCtrl, icon: Icons.person),
                 const SizedBox(height: 10),
-                _field("التخصص الرئيسي", mainSpecCtrl,
-                    icon: Icons.medical_services),
+                _field("التخصص الرئيسي", mainSpecCtrl, icon: Icons.medical_services),
                 const SizedBox(height: 10),
-                _field("التخصص الفرعي", subSpecCtrl,
-                    icon: Icons.local_hospital),
+                _field("التخصص الفرعي", subSpecCtrl, icon: Icons.local_hospital),
                 const SizedBox(height: 10),
                 _field(
                   "سعر الكشف",
@@ -362,6 +357,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final app = Provider.of<AppState>(context);
+    final lang = AppLocalizations.of(context);
     final patientsMap = app.patients ?? {};
 
     return FutureBuilder<Map<String, dynamic>>(
@@ -440,7 +436,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                         alignment: Alignment.center,
                         children: [
                           IconButton(
-                            tooltip: "Requests",
+                            tooltip: lang.translate('requests'),
                             icon: const Icon(Icons.mark_email_unread_outlined),
                             onPressed: () {
                               Navigator.push(
@@ -480,7 +476,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                     },
                   ),
                   IconButton(
-                    tooltip: "Logout",
+                    tooltip: lang.translate('logout'),
                     icon: const Icon(Icons.logout),
                     onPressed: _logout,
                   ),
@@ -492,22 +488,22 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 onTap: (i) => setState(() => _tab = i),
                 type: BottomNavigationBarType.fixed,
                 selectedItemColor: PETROL_DARK,
-                items: const [
+                items: [
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.home_rounded),
-                    label: "Home",
+                    icon: const Icon(Icons.home_rounded),
+                    label: lang.translate('home'),
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.groups_2_rounded),
-                    label: "Patients",
+                    icon: const Icon(Icons.groups_2_rounded),
+                    label: lang.translate('patients'),
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.event_available_rounded),
-                    label: "Sessions",
+                    icon: const Icon(Icons.event_available_rounded),
+                    label: lang.translate('sessions'),
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.settings_rounded),
-                    label: "Settings",
+                    icon: const Icon(Icons.settings_rounded),
+                    label: lang.translate('settings'),
                   ),
                 ],
               ),
@@ -519,9 +515,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 }
 
-// =====================
-// TAB 1: Dashboard
-// =====================
 class _DoctorDashboardTab extends StatelessWidget {
   final String doctorName;
   final Doctor doctorModel;
@@ -550,6 +543,7 @@ class _DoctorDashboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
     final patientsToday = myPatients.length;
     final sessionsToday = myPatients.length;
 
@@ -577,7 +571,6 @@ class _DoctorDashboardTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header Card
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -647,8 +640,8 @@ class _DoctorDashboardTab extends StatelessWidget {
                                     ),
                                     child: Text(
                                       ver == 'approved'
-                                          ? "Verified"
-                                          : "Pending",
+                                          ? lang.translate('verified')
+                                          : lang.translate('pending'),
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         color: ver == 'approved'
@@ -683,12 +676,12 @@ class _DoctorDashboardTab extends StatelessWidget {
                         Column(
                           children: [
                             IconButton(
-                              tooltip: "Copy ID",
+                              tooltip: lang.translate('copy'),
                               onPressed: () => onCopy(doctorId),
                               icon: const Icon(Icons.copy_rounded),
                             ),
                             IconButton(
-                              tooltip: "Show QR",
+                              tooltip: lang.translate('show_qr'),
                               onPressed: () => onShowQr(doctorId),
                               icon: const Icon(Icons.qr_code_2_rounded),
                             ),
@@ -700,17 +693,16 @@ class _DoctorDashboardTab extends StatelessWidget {
 
                   const SizedBox(height: 14),
 
-                  // Stats
                   Row(
                     children: [
                       _statCard(
-                        title: "Patients",
+                        title: lang.translate('patients'),
                         value: "$patientsToday",
                         icon: Icons.groups_2_rounded,
                       ),
                       const SizedBox(width: 10),
                       _statCard(
-                        title: "Requests",
+                        title: lang.translate('requests'),
                         value: "$pendingRequests",
                         icon: Icons.mark_email_unread_outlined,
                       ),
@@ -720,114 +712,24 @@ class _DoctorDashboardTab extends StatelessWidget {
                   Row(
                     children: [
                       _statCard(
-                        title: "Sessions",
+                        title: lang.translate('sessions'),
                         value: "$sessionsToday",
                         icon: Icons.event_available_rounded,
                       ),
                       const SizedBox(width: 10),
                       _statCard(
-                        title: "Rating",
+                        title: lang.translate('rating'),
                         value: "4.8",
                         icon: Icons.star_rounded,
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 18),
-
-                  Text(
-                    "Quick Actions",
-                    style: TextStyle(
-                      color: Colors.grey.shade800,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  _pill(
-                    icon: Icons.mark_email_unread_outlined,
-                    title: "Incoming Requests",
-                    badge: pendingRequests > 0 ? "$pendingRequests" : null,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              DoctorRequestsScreen(doctorId: doctorLinkId),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
-
-                  _pill(
-                    icon: Icons.bar_chart_rounded,
-                    title: "الإحصائيات",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => DoctorStatsScreen(
-                            fee: doctorModel.consultationFee,
-                            totalPatients: myPatients.length,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
-
-                  _pill(
-                    icon: Icons.event_available_rounded,
-                    title: "Sessions / Appointments",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              DoctorAppointmentsScreen(myPatients: myPatients),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
-
-                  _pill(
-                    icon: Icons.groups_2_rounded,
-                    title: "My Patients",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => _DoctorPatientsTab(
-                            myPatients: myPatients,
-                            doctorLinkId: doctorLinkId,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
-
-                  _pill(
-                    icon: Icons.badge_rounded,
-                    title: "Show Doctor ID",
-                    onTap: () => onShowId(doctorId),
-                  ),
-                  const SizedBox(height: 10),
-
-                  _pill(
-                    icon: Icons.qr_code_2_rounded,
-                    title: "Show QR Code",
-                    onTap: () => onShowQr(doctorId),
-                  ),
-
                   const SizedBox(height: 20),
 
-                  const Text(
-                    "Pending Requests",
-                    style: TextStyle(
+                  Text(
+                    lang.translate('pending_requests'),
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -843,7 +745,7 @@ class _DoctorDashboardTab extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: Colors.grey.shade200),
                       ),
-                      child: const Text("لا توجد طلبات معلقة حالياً"),
+                      child: Text(lang.translate('no_pending_requests')),
                     )
                   else
                     ...pendingDocs.take(3).map((doc) {
@@ -874,7 +776,7 @@ class _DoctorDashboardTab extends StatelessWidget {
                             ),
                           ),
                           title: Text(
-                            label.isEmpty ? "Request" : label,
+                            label.isEmpty ? lang.translate('request') : label,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
@@ -904,9 +806,9 @@ class _DoctorDashboardTab extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  const Text(
-                    "Linked Patients",
-                    style: TextStyle(
+                  Text(
+                    lang.translate('linked_patients'),
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -922,7 +824,7 @@ class _DoctorDashboardTab extends StatelessWidget {
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: Colors.grey.shade200),
                           ),
-                          child: const Text("لا يوجد مرضى مرتبطين حالياً"),
+                          child: Text(lang.translate('no_linked_patients')),
                         )
                       : ListView.builder(
                           shrinkWrap: true,
@@ -955,7 +857,7 @@ class _DoctorDashboardTab extends StatelessWidget {
                                   ),
                                 ),
                                 subtitle: Text(
-                                  "اضغط لعرض التفاصيل",
+                                  lang.translate('tap_to_view_details'),
                                   style: TextStyle(
                                     color: Colors.grey.shade600,
                                     fontSize: 12,
@@ -983,77 +885,6 @@ class _DoctorDashboardTab extends StatelessWidget {
           },
         );
       },
-    );
-  }
-
-  Widget _pill({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    String? badge,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: PETROL.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: PETROL_DARK),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-            if (badge != null) ...[
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  badge,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 14,
-              color: Colors.grey,
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1118,9 +949,6 @@ class _DoctorDashboardTab extends StatelessWidget {
   }
 }
 
-// =====================
-// TAB 2: Patients
-// =====================
 class _DoctorPatientsTab extends StatefulWidget {
   final List<dynamic> myPatients;
   final String doctorLinkId;
@@ -1139,6 +967,8 @@ class _DoctorPatientsTabState extends State<_DoctorPatientsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     final filtered = widget.myPatients.where((p) {
       final name = (p.name ?? '').toString().toLowerCase();
       return name.contains(q.trim().toLowerCase());
@@ -1151,7 +981,7 @@ class _DoctorPatientsTabState extends State<_DoctorPatientsTab> {
           child: TextField(
             onChanged: (v) => setState(() => q = v),
             decoration: InputDecoration(
-              hintText: "ابحث عن مريض...",
+              hintText: lang.translate('search_patient'),
               prefixIcon: const Icon(Icons.search),
               filled: true,
               fillColor: Colors.white,
@@ -1164,8 +994,8 @@ class _DoctorPatientsTabState extends State<_DoctorPatientsTab> {
         ),
         Expanded(
           child: filtered.isEmpty
-              ? const Center(
-                  child: Text("لا يوجد مرضى مرتبطين حالياً"),
+              ? Center(
+                  child: Text(lang.translate('no_linked_patients')),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -1214,7 +1044,7 @@ class _DoctorPatientsTabState extends State<_DoctorPatientsTab> {
                               children: [
                                 const SizedBox(height: 4),
                                 Text(
-                                  "اضغط لعرض التفاصيل",
+                                  lang.translate('tap_to_view_details'),
                                   style: TextStyle(
                                     color: Colors.grey.shade600,
                                     fontSize: 12,
@@ -1238,8 +1068,8 @@ class _DoctorPatientsTabState extends State<_DoctorPatientsTab> {
                                       ),
                                       child: Text(
                                         isPrimary
-                                            ? "Primary Doctor"
-                                            : "Approved",
+                                            ? lang.translate('primary_doctor')
+                                            : lang.translate('approved'),
                                         style: TextStyle(
                                           color: isPrimary
                                               ? Colors.green
@@ -1277,9 +1107,6 @@ class _DoctorPatientsTabState extends State<_DoctorPatientsTab> {
   }
 }
 
-// =====================
-// TAB 4: Settings
-// =====================
 class _DoctorSettingsTab extends StatelessWidget {
   final String doctorLinkId;
   final int linkedPatientsCount;
@@ -1306,6 +1133,8 @@ class _DoctorSettingsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     return FutureBuilder<Map<String, dynamic>>(
       future: fetchDoctorProfile(),
       builder: (context, snap) {
@@ -1334,22 +1163,19 @@ class _DoctorSettingsTab extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "Profile",
-                        style: TextStyle(
+                      Text(
+                        lang.translate('profile'),
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
                       const SizedBox(height: 10),
                       _kv("Name", (data['name'] ?? '').toString()),
-                      _kv("Main Specialty",
-                          (data['mainSpecialty'] ?? '').toString()),
-                      _kv("Sub Specialty",
-                          (data['subSpecialty'] ?? '').toString()),
+                      _kv("Main Specialty", (data['mainSpecialty'] ?? '').toString()),
+                      _kv("Sub Specialty", (data['subSpecialty'] ?? '').toString()),
                       _kv("Clinic", (data['address'] ?? '').toString()),
-                      _kv("Working Hours",
-                          (data['workingHours'] ?? '').toString()),
+                      _kv("Working Hours", (data['workingHours'] ?? '').toString()),
                       _kv("Fee", (data['price'] ?? '').toString()),
                       const SizedBox(height: 12),
                       SizedBox(
@@ -1364,9 +1190,9 @@ class _DoctorSettingsTab extends StatelessWidget {
                           ),
                           onPressed: () => onEdit(data),
                           icon: const Icon(Icons.edit, color: Colors.white),
-                          label: const Text(
-                            "Edit Profile",
-                            style: TextStyle(color: Colors.white),
+                          label: Text(
+                            lang.translate('edit_profile'),
+                            style: const TextStyle(color: Colors.white),
                           ),
                         ),
                       ),
@@ -1386,9 +1212,9 @@ class _DoctorSettingsTab extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "Care Access Management",
-                        style: TextStyle(
+                      Text(
+                        lang.translate('care_access_management'),
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -1396,13 +1222,13 @@ class _DoctorSettingsTab extends StatelessWidget {
                       const SizedBox(height: 12),
                       _infoRow(
                         icon: Icons.groups_2_rounded,
-                        title: "Linked Patients",
+                        title: lang.translate('linked_patients'),
                         value: "$linkedPatientsCount",
                       ),
                       const SizedBox(height: 10),
                       _infoRow(
                         icon: Icons.mark_email_unread_outlined,
-                        title: "Pending Requests",
+                        title: lang.translate('pending_requests'),
                         value: "$pendingRequests",
                       ),
                       const SizedBox(height: 14),
@@ -1420,7 +1246,7 @@ class _DoctorSettingsTab extends StatelessWidget {
                             );
                           },
                           icon: const Icon(Icons.mark_email_unread_outlined),
-                          label: const Text("Open Incoming Requests"),
+                          label: Text(lang.translate('open_incoming_requests')),
                         ),
                       ),
                     ],
@@ -1439,9 +1265,9 @@ class _DoctorSettingsTab extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "Doctor ID",
-                        style: TextStyle(
+                      Text(
+                        lang.translate('doctor_id'),
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -1455,7 +1281,7 @@ class _DoctorSettingsTab extends StatelessWidget {
                             child: OutlinedButton.icon(
                               onPressed: () => onCopy(doctorId),
                               icon: const Icon(Icons.copy_rounded),
-                              label: const Text("Copy"),
+                              label: Text(lang.translate('copy')),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -1463,7 +1289,7 @@ class _DoctorSettingsTab extends StatelessWidget {
                             child: OutlinedButton.icon(
                               onPressed: () => onShowId(doctorId),
                               icon: const Icon(Icons.badge_rounded),
-                              label: const Text("Show ID"),
+                              label: Text(lang.translate('show_id')),
                             ),
                           ),
                         ],
@@ -1474,7 +1300,7 @@ class _DoctorSettingsTab extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: () => onShowQr(doctorId),
                           icon: const Icon(Icons.qr_code_2_rounded),
-                          label: const Text("Show QR"),
+                          label: Text(lang.translate('show_qr')),
                         ),
                       ),
                     ],
@@ -1494,9 +1320,9 @@ class _DoctorSettingsTab extends StatelessWidget {
                     ),
                     onPressed: onLogout,
                     icon: const Icon(Icons.logout, color: Colors.white),
-                    label: const Text(
-                      "Logout",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    label: Text(
+                      lang.translate('logout'),
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
                 ),

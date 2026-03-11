@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
+import '../../utils/localization.dart';
 import 'linked_accounts_screen.dart';
 
 class PatientSettingsScreen extends StatelessWidget {
@@ -19,10 +20,12 @@ class PatientSettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, app, child) {
+        final lang = AppLocalizations.of(context);
+
         return Scaffold(
           backgroundColor: const Color(0xFFF6F8FB),
           appBar: AppBar(
-            title: const Text('Settings'),
+            title: Text(lang.translate('settings')),
             backgroundColor: PETROL_DARK,
             centerTitle: true,
             automaticallyImplyLeading: false,
@@ -31,13 +34,15 @@ class PatientSettingsScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildSectionTitle('Account'),
+              _buildSectionTitle(lang.translate('account')),
 
               _SettingsTile(
                 icon: Icons.people_alt_rounded,
                 iconColor: Colors.indigo,
-                title: 'Linked Doctors & Family',
-                subtitle: 'Manage requests, permissions and relationships',
+                title: lang.translate('linked_doctors_family'),
+                subtitle: lang.translate(
+                  'manage_requests_permissions_relationships',
+                ),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -51,8 +56,8 @@ class PatientSettingsScreen extends StatelessWidget {
               _SettingsTile(
                 icon: Icons.person_search_rounded,
                 iconColor: Colors.blue,
-                title: 'Care Team Management',
-                subtitle: 'Invite doctors and family members securely',
+                title: lang.translate('care_team_management'),
+                subtitle: lang.translate('invite_doctors_family_securely'),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -64,7 +69,7 @@ class PatientSettingsScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 18),
-              _buildSectionTitle('Device'),
+              _buildSectionTitle(lang.translate('device')),
 
               Container(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -95,9 +100,9 @@ class PatientSettingsScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Device Status',
-                            style: TextStyle(
+                          Text(
+                            lang.translate('device_status'),
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
@@ -105,8 +110,8 @@ class PatientSettingsScreen extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             app.isDeviceConnected
-                                ? 'Connected and monitoring is active'
-                                : 'Disconnected',
+                                ? lang.translate('connected_monitoring_active')
+                                : lang.translate('disconnected'),
                             style: TextStyle(
                               color: app.isDeviceConnected
                                   ? Colors.green
@@ -126,7 +131,7 @@ class PatientSettingsScreen extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.bluetooth_connected),
-                      label: const Text('Connect'),
+                      label: Text(lang.translate('connect')),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -137,7 +142,9 @@ class PatientSettingsScreen extends StatelessWidget {
                         await app.connectDevice(patientId);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Connecting device...')),
+                            SnackBar(
+                              content: Text(lang.translate('connecting_device')),
+                            ),
                           );
                         }
                       },
@@ -147,9 +154,9 @@ class PatientSettingsScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.bluetooth_disabled, color: Colors.white),
-                      label: const Text(
-                        'Disconnect',
-                        style: TextStyle(color: Colors.white),
+                      label: Text(
+                        lang.translate('disconnect'),
+                        style: const TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
@@ -162,7 +169,9 @@ class PatientSettingsScreen extends StatelessWidget {
                         await app.disconnectDevice();
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Device disconnected')),
+                            SnackBar(
+                              content: Text(lang.translate('device_disconnected')),
+                            ),
                           );
                         }
                       },
@@ -172,27 +181,37 @@ class PatientSettingsScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 18),
-              _buildSectionTitle('App'),
+              _buildSectionTitle(lang.translate('app')),
 
               _SettingsTile(
                 icon: Icons.language_rounded,
                 iconColor: Colors.teal,
-                title: 'Language',
-                subtitle: 'Arabic / English',
+                title: lang.translate('language'),
+                subtitle: lang.translate('arabic_english'),
                 onTap: () {
                   showDialog(
                     context: context,
                     builder: (_) => AlertDialog(
-                      title: const Text('Language'),
-                      content: const Text(
-                        'لو عندك change language function جاهزة في AppState أو localization، وصّليها هنا.',
+                      title: Text(lang.translate('language')),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            title: const Text('English'),
+                            onTap: () async {
+                              await app.setLocale(const Locale('en'));
+                              if (context.mounted) Navigator.pop(context);
+                            },
+                          ),
+                          ListTile(
+                            title: const Text('العربية'),
+                            onTap: () async {
+                              await app.setLocale(const Locale('ar'));
+                              if (context.mounted) Navigator.pop(context);
+                            },
+                          ),
+                        ],
                       ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('OK'),
-                        ),
-                      ],
                     ),
                   );
                 },
@@ -201,8 +220,8 @@ class PatientSettingsScreen extends StatelessWidget {
               _SettingsTile(
                 icon: Icons.info_outline_rounded,
                 iconColor: Colors.orange,
-                title: 'About',
-                subtitle: 'SmartCare patient settings and linked accounts',
+                title: lang.translate('about'),
+                subtitle: lang.translate('smartcare_patient_settings_about'),
                 onTap: () {
                   showAboutDialog(
                     context: context,
@@ -219,9 +238,9 @@ class PatientSettingsScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.logout, color: Colors.white),
-                  label: const Text(
-                    'Logout',
-                    style: TextStyle(
+                  label: Text(
+                    lang.translate('logout'),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -237,16 +256,16 @@ class PatientSettingsScreen extends StatelessWidget {
                     final ok = await showDialog<bool>(
                       context: context,
                       builder: (_) => AlertDialog(
-                        title: const Text('Logout'),
-                        content: const Text('Are you sure you want to logout?'),
+                        title: Text(lang.translate('logout')),
+                        content: Text(lang.translate('logout_confirm')),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
+                            child: Text(lang.translate('cancel')),
                           ),
                           ElevatedButton(
                             onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Logout'),
+                            child: Text(lang.translate('logout')),
                           ),
                         ],
                       ),

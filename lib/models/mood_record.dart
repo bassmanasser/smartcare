@@ -14,7 +14,7 @@ class MoodRecord {
   });
 
   // تحويل البيانات القادمة من Firestore
-  factory MoodRecord.fromJson(Map<String, dynamic> json) {
+  factory MoodRecord.fromJson(Map<String, dynamic> json, String id) {
     return MoodRecord(
       id: json['id'],
       patientId: json['patientId'] ?? '',

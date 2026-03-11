@@ -13,8 +13,7 @@ class MedicationsService {
         .map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data();
-        data['id'] = doc.id;
-        return Medication.fromJson(data);
+        return Medication.fromJson(data, doc.id);
       }).toList();
     });
   }
