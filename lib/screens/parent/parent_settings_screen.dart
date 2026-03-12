@@ -1,211 +1,519 @@
-import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 
-import '../../models/parent.dart';
 import '../../utils/constants.dart';
 import '../auth/welcome_screen.dart';
 
-class ParentSettingsScreen extends StatelessWidget {
-  final Parent parent;
+class ParentSettingsScreen extends StatefulWidget {
+  const ParentSettingsScreen({super.key});
 
-  const ParentSettingsScreen({super.key, required this.parent});
+  @override
+  State<ParentSettingsScreen> createState() => _ParentSettingsScreenState();
+}
 
-  Future<void> _logout(BuildContext context) async {
+class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
+  String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
+
+  Future<Map<String, dynamic>> _fetchParentData() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_uid)
+        .get();
+    return snap.data() ?? {};
+  }
+
+  Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
-    if (!context.mounted) return;
+    if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-      (r) => false,
+      (route) => false,
+    );
+  }
+
+  Future<void> _refresh() async {
+    if (!mounted) return;
+    setState(() {});
+    await Future.delayed(const Duration(milliseconds: 250));
+  }
+
+  void _openEditParentProfileSheet(Map<String, dynamic> currentData) {
+    final nameCtrl =
+        TextEditingController(text: (currentData['name'] ?? '').toString());
+    final phoneCtrl =
+        TextEditingController(text: (currentData['phone'] ?? '').toString());
+    final relationCtrl =
+        TextEditingController(text: (currentData['relation'] ?? '').toString());
+    final addressCtrl =
+        TextEditingController(text: (currentData['address'] ?? '').toString());
+    final emergencyCtrl = TextEditingController(
+      text: (currentData['emergencyPhone'] ?? '').toString(),
+    );
+    final nationalIdCtrl =
+        TextEditingController(text: (currentData['nationalId'] ?? '').toString());
+    final genderCtrl =
+        TextEditingController(text: (currentData['gender'] ?? '').toString());
+    final dobCtrl =
+        TextEditingController(text: (currentData['dateOfBirth'] ?? '').toString());
+
+    bool notificationsEnabled = currentData['notificationsEnabled'] == true;
+    bool criticalAlertsOnly = currentData['criticalAlertsOnly'] == true;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Edit Parent Profile',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    _field('Name', nameCtrl, icon: Icons.person),
+                    const SizedBox(height: 10),
+
+                    _field(
+                      'Phone',
+                      phoneCtrl,
+                      icon: Icons.phone,
+                      keyboard: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 10),
+
+                    _field(
+                      'Relation',
+                      relationCtrl,
+                      icon: Icons.family_restroom,
+                    ),
+                    const SizedBox(height: 10),
+
+                    _field(
+                      'Address',
+                      addressCtrl,
+                      icon: Icons.location_on,
+                    ),
+                    const SizedBox(height: 10),
+
+                    _field(
+                      'Emergency Phone',
+                      emergencyCtrl,
+                      icon: Icons.emergency,
+                      keyboard: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 10),
+
+                    _field(
+                      'National ID',
+                      nationalIdCtrl,
+                      icon: Icons.badge,
+                      keyboard: TextInputType.number,
+                    ),
+                    const SizedBox(height: 10),
+
+                    _field(
+                      'Gender',
+                      genderCtrl,
+                      icon: Icons.wc,
+                    ),
+                    const SizedBox(height: 10),
+
+                    _field(
+                      'Date of Birth',
+                      dobCtrl,
+                      icon: Icons.calendar_today,
+                    ),
+                    const SizedBox(height: 10),
+
+                    SwitchListTile(
+                      value: notificationsEnabled,
+                      onChanged: (v) {
+                        setModalState(() => notificationsEnabled = v);
+                      },
+                      title: const Text('Enable Notifications'),
+                      activeColor: PETROL_DARK,
+                    ),
+
+                    SwitchListTile(
+                      value: criticalAlertsOnly,
+                      onChanged: (v) {
+                        setModalState(() => criticalAlertsOnly = v);
+                      },
+                      title: const Text('Critical Alerts Only'),
+                      activeColor: PETROL_DARK,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: PETROL_DARK,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: () async {
+                          try {
+                            await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(_uid)
+                                .set({
+                              'uid': _uid,
+                              'role': 'parent',
+                              'name': nameCtrl.text.trim(),
+                              'phone': phoneCtrl.text.trim(),
+                              'relation': relationCtrl.text.trim(),
+                              'address': addressCtrl.text.trim(),
+                              'emergencyPhone': emergencyCtrl.text.trim(),
+                              'nationalId': nationalIdCtrl.text.trim(),
+                              'gender': genderCtrl.text.trim(),
+                              'dateOfBirth': dobCtrl.text.trim(),
+                              'notificationsEnabled': notificationsEnabled,
+                              'criticalAlertsOnly': criticalAlertsOnly,
+                              'profileCompleted': true,
+                              'updatedAt': FieldValue.serverTimestamp(),
+                            }, SetOptions(merge: true));
+
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Parent profile updated ✅'),
+                              ),
+                            );
+                            setState(() {});
+                          } catch (e) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e')),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.save, color: Colors.white),
+                        label: const Text(
+                          'Save Changes',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _field(
+    String label,
+    TextEditingController controller, {
+    IconData? icon,
+    TextInputType keyboard = TextInputType.text,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboard,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: icon == null ? null : Icon(icon),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+    );
+  }
+
+  Widget _infoTile(String title, String value, IconData icon) {
+    if (value.trim().isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: PETROL.withOpacity(0.12),
+            child: Icon(icon, size: 18, color: PETROL_DARK),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _boolTile(String title, bool value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: PETROL.withOpacity(0.12),
+            child: Icon(icon, size: 18, color: PETROL_DARK),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            value ? "Enabled" : "Disabled",
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: value ? Colors.green : Colors.redAccent,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
-        title: const Text('My Profile'),
         backgroundColor: PETROL_DARK,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () => _logout(context),
-            tooltip: 'Logout',
-          ),
-        ],
+        title: const Text(
+          'Parent Settings',
+          style: TextStyle(color: Colors.white),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // --- 1. Parent ID Card (أهم جزء) ---
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: PETROL.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: PETROL, width: 1),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    "YOUR PARENT ID",
-                    style: TextStyle(
-                      color: PETROL_DARK, 
-                      fontWeight: FontWeight.bold, 
-                      letterSpacing: 1.2
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SelectableText(
-                    parent.id,
-                    style: const TextStyle(
-                      fontSize: 20, 
-                      fontWeight: FontWeight.w900, 
-                      color: Colors.black87
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: parent.id));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('ID Copied to clipboard!')),
-                      );
-                    },
-                    icon: const Icon(Icons.copy, size: 18),
-                    label: const Text("Copy ID"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: PETROL,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Share this ID with the Patient to link accounts.",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _fetchParentData(),
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            const SizedBox(height: 24),
+          final data = snap.data ?? {};
+          final name = (data['name'] ?? '').toString();
+          final phone = (data['phone'] ?? '').toString();
+          final relation = (data['relation'] ?? '').toString();
+          final address = (data['address'] ?? '').toString();
+          final emergencyPhone = (data['emergencyPhone'] ?? '').toString();
+          final nationalId = (data['nationalId'] ?? '').toString();
+          final gender = (data['gender'] ?? '').toString();
+          final dateOfBirth = (data['dateOfBirth'] ?? '').toString();
+          final notificationsEnabled = data['notificationsEnabled'] == true;
+          final criticalAlertsOnly = data['criticalAlertsOnly'] == true;
+          final linkedPatients =
+              List<String>.from(data['linkedPatients'] ?? const []);
 
-            // --- 2. Personal Info ---
-            _SectionHeader(title: "Personal Information"),
-            _InfoTile(icon: Icons.person, label: "Full Name", value: parent.name),
-            _InfoTile(icon: Icons.badge, label: "National ID", value: parent.nationalId ?? '--'),
-            _InfoTile(icon: Icons.phone, label: "Phone", value: parent.phone ?? '--'),
-            _InfoTile(icon: Icons.email, label: "Email", value: parent.email ?? '--'),
-            _InfoTile(icon: Icons.family_restroom, label: "Relation", value: parent.relation),
-
-            const SizedBox(height: 24),
-
-            // --- 3. Medical & Address ---
-            _SectionHeader(title: "Additional Details"),
-            _InfoTile(icon: Icons.home, label: "Address", value: parent.homeAddress ?? 'Not set'),
-            
-            // Family History List
-            Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.history_edu, color: PETROL),
-                        SizedBox(width: 12),
-                        Text("Family Medical History", style: TextStyle(color: Colors.grey)),
-                      ],
+          return RefreshIndicator(
+            color: PETROL_DARK,
+            onRefresh: _refresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [PETROL_DARK, PETROL],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    const SizedBox(height: 8),
-                    if (parent.familyMedicalHistory.isEmpty)
-                      const Text("None recorded.", style: TextStyle(fontWeight: FontWeight.bold))
-                    else
-                      Wrap(
-                        spacing: 8,
-                        children: parent.familyMedicalHistory.map((disease) => Chip(
-                          label: Text(disease),
-                          backgroundColor: Colors.red.shade50,
-                          labelStyle: const TextStyle(color: Colors.red),
-                        )).toList(),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Column(
+                    children: [
+                      const CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.white,
+                        child: Icon(
+                          Icons.family_restroom_rounded,
+                          color: PETROL_DARK,
+                          size: 30,
+                        ),
                       ),
-                  ],
+                      const SizedBox(height: 12),
+                      Text(
+                        name.isEmpty ? "Parent Profile" : name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        relation.isEmpty ? "Family Account" : relation,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
+                const SizedBox(height: 16),
 
-            const SizedBox(height: 30),
-            
-            // Logout Button (Large)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _logout(context),
-                icon: const Icon(Icons.logout, color: Colors.red),
-                label: const Text("Log Out", style: TextStyle(color: Colors.red)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: const BorderSide(color: Colors.red),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Profile Information",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: PETROL_DARK,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _infoTile("Name", name, Icons.person),
+                      _infoTile("Phone", phone, Icons.phone),
+                      _infoTile(
+                          "Relation", relation, Icons.family_restroom_rounded),
+                      _infoTile("Address", address, Icons.location_on),
+                      _infoTile("Emergency Phone", emergencyPhone,
+                          Icons.emergency_rounded),
+                      _infoTile(
+                          "National ID", nationalId, Icons.badge_rounded),
+                      _infoTile("Gender", gender, Icons.wc),
+                      _infoTile("Date of Birth", dateOfBirth,
+                          Icons.calendar_today_rounded),
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 12),
+
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Preferences",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: PETROL_DARK,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _boolTile("Notifications", notificationsEnabled,
+                          Icons.notifications_active_rounded),
+                      _boolTile("Critical Alerts Only", criticalAlertsOnly,
+                          Icons.warning_amber_rounded),
+                      _infoTile("Linked Patients", "${linkedPatients.length}",
+                          Icons.people_alt_rounded),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: PETROL_DARK,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: () => _openEditParentProfileSheet(data),
+                    icon: const Icon(Icons.edit, color: Colors.white),
+                    label: const Text(
+                      "Edit Profile",
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                    label: const Text(
+                      "Logout",
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  const _SectionHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18, 
-            fontWeight: FontWeight.bold, 
-            color: PETROL_DARK
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _InfoTile({required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Icon(icon, color: PETROL),
-        title: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        subtitle: Text(
-          value, 
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)
-        ),
+          );
+        },
       ),
     );
   }

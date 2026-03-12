@@ -75,12 +75,10 @@ class _SplashScreenState extends State<SplashScreen> {
       );
     } else if (role == 'parent') {
       data['id'] = doc.id;
-      final p = Parent.fromJson(data);
+      final p = ParentModel.fromMap(data);
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => ParentHomeScreen(parent: p),
-        ),
+        MaterialPageRoute(builder: (_) => const ParentHomeScreen()),
       );
     } else {
       Navigator.pushReplacement(

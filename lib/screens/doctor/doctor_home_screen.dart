@@ -37,6 +37,12 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
+  Future<void> _refreshAll() async {
+    if (!mounted) return;
+    setState(() {});
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
   DocumentReference<Map<String, dynamic>> get _docRef {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     return FirebaseFirestore.instance
@@ -54,12 +60,10 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 
   String _resolveDoctorId(Map<String, dynamic> data) {
-    final raw = (data['doctorID'] ??
-            data['doctorId'] ??
-            data['uid'] ??
-            widget.doctor.id)
-        .toString()
-        .trim();
+    final raw =
+        (data['doctorID'] ?? data['doctorId'] ?? data['uid'] ?? widget.doctor.id)
+            .toString()
+            .trim();
 
     if (raw.isEmpty) return widget.doctor.id;
     return raw;
@@ -251,9 +255,11 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 const SizedBox(height: 8),
                 _field("الاسم", nameCtrl, icon: Icons.person),
                 const SizedBox(height: 10),
-                _field("التخصص الرئيسي", mainSpecCtrl, icon: Icons.medical_services),
+                _field("التخصص الرئيسي", mainSpecCtrl,
+                    icon: Icons.medical_services),
                 const SizedBox(height: 10),
-                _field("التخصص الفرعي", subSpecCtrl, icon: Icons.local_hospital),
+                _field("التخصص الفرعي", subSpecCtrl,
+                    icon: Icons.local_hospital),
                 const SizedBox(height: 10),
                 _field(
                   "سعر الكشف",
@@ -397,6 +403,16 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 onCopy: _copy,
                 onShowId: _showDoctorIdDialog,
                 onShowQr: _showDoctorQrSheet,
+                onOpenRequests: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          DoctorRequestsScreen(doctorId: doctorLinkId),
+                    ),
+                  );
+                },
+                onRefresh: _refreshAll,
               ),
               _DoctorPatientsTab(
                 myPatients: myPatients,
@@ -442,8 +458,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) =>
-                                      DoctorRequestsScreen(doctorId: doctorLinkId),
+                                  builder: (_) => DoctorRequestsScreen(
+                                    doctorId: doctorLinkId,
+                                  ),
                                 ),
                               );
                             },
@@ -482,7 +499,13 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                   ),
                 ],
               ),
-              body: SafeArea(child: pages[_tab]),
+              body: SafeArea(
+                child: RefreshIndicator(
+                  color: PETROL_DARK,
+                  onRefresh: _refreshAll,
+                  child: pages[_tab],
+                ),
+              ),
               bottomNavigationBar: BottomNavigationBar(
                 currentIndex: _tab,
                 onTap: (i) => setState(() => _tab = i),
@@ -527,6 +550,8 @@ class _DoctorDashboardTab extends StatelessWidget {
   final Future<void> Function(String) onCopy;
   final void Function(String) onShowId;
   final void Function(String) onShowQr;
+  final VoidCallback onOpenRequests;
+  final Future<void> Function() onRefresh;
 
   const _DoctorDashboardTab({
     required this.doctorName,
@@ -539,6 +564,8 @@ class _DoctorDashboardTab extends StatelessWidget {
     required this.onCopy,
     required this.onShowId,
     required this.onShowQr,
+    required this.onOpenRequests,
+    required this.onRefresh,
   });
 
   @override
@@ -567,6 +594,7 @@ class _DoctorDashboardTab extends StatelessWidget {
             final pendingDocs = reqSnap.data?.docs ?? [];
 
             return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -690,9 +718,7 @@ class _DoctorDashboardTab extends StatelessWidget {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 14),
-
                   Row(
                     children: [
                       _statCard(
@@ -724,9 +750,105 @@ class _DoctorDashboardTab extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 20),
-
+                  const Text(
+                    "Quick Actions",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _quickActionCard(
+                          title: "Requests",
+                          icon: Icons.mark_email_unread_outlined,
+                          color: Colors.orange,
+                          onTap: onOpenRequests,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _quickActionCard(
+                          title: "Doctor ID",
+                          icon: Icons.badge_rounded,
+                          color: PETROL_DARK,
+                          onTap: () => onShowId(doctorId),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _quickActionCard(
+                          title: "QR Code",
+                          icon: Icons.qr_code_2_rounded,
+                          color: Colors.deepPurple,
+                          onTap: () => onShowQr(doctorId),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _quickActionCard(
+                          title: "Refresh",
+                          icon: Icons.refresh_rounded,
+                          color: Colors.green,
+                          onTap: () => onRefresh(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Professional Info",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _infoTile(
+                          Icons.medical_services_rounded,
+                          "Main Specialty",
+                          mainSpec.isEmpty ? "Not added yet" : mainSpec,
+                        ),
+                        const SizedBox(height: 10),
+                        _infoTile(
+                          Icons.local_hospital_rounded,
+                          "Sub Specialty",
+                          subSpec.isEmpty ? "Not added yet" : subSpec,
+                        ),
+                        const SizedBox(height: 10),
+                        _infoTile(
+                          Icons.verified_user_rounded,
+                          "Verification",
+                          ver == 'approved' ? "Verified" : "Pending",
+                        ),
+                        const SizedBox(height: 10),
+                        _infoTile(
+                          Icons.people_alt_rounded,
+                          "Linked Patients",
+                          "${myPatients.length}",
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   Text(
                     lang.translate('pending_requests'),
                     style: const TextStyle(
@@ -735,7 +857,6 @@ class _DoctorDashboardTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-
                   if (pendingDocs.isEmpty)
                     Container(
                       width: double.infinity,
@@ -755,9 +876,8 @@ class _DoctorDashboardTab extends StatelessWidget {
                       final label = (data['relationshipLabel'] ?? 'Patient')
                           .toString()
                           .trim();
-                      final role = (data['linkedUserRole'] ?? 'doctor')
-                          .toString()
-                          .trim();
+                      final role =
+                          (data['linkedUserRole'] ?? 'doctor').toString().trim();
                       final isPrimary = data['isPrimary'] == true;
 
                       return Card(
@@ -791,21 +911,11 @@ class _DoctorDashboardTab extends StatelessWidget {
                             size: 14,
                             color: Colors.grey,
                           ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    DoctorRequestsScreen(doctorId: doctorLinkId),
-                              ),
-                            );
-                          },
+                          onTap: onOpenRequests,
                         ),
                       );
                     }),
-
                   const SizedBox(height: 20),
-
                   Text(
                     lang.translate('linked_patients'),
                     style: const TextStyle(
@@ -814,7 +924,6 @@ class _DoctorDashboardTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-
                   myPatients.isEmpty
                       ? Container(
                           width: double.infinity,
@@ -829,7 +938,8 @@ class _DoctorDashboardTab extends StatelessWidget {
                       : ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: myPatients.length > 4 ? 4 : myPatients.length,
+                          itemCount:
+                              myPatients.length > 4 ? 4 : myPatients.length,
                           itemBuilder: (context, index) {
                             final p = myPatients[index];
                             final patientName =
@@ -947,6 +1057,86 @@ class _DoctorDashboardTab extends StatelessWidget {
       ),
     );
   }
+
+  Widget _quickActionCard({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: color.withOpacity(0.12),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoTile(IconData icon, String title, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 18,
+          backgroundColor: PETROL.withOpacity(0.10),
+          child: Icon(icon, size: 18, color: PETROL_DARK),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _DoctorPatientsTab extends StatefulWidget {
@@ -974,6 +1164,8 @@ class _DoctorPatientsTabState extends State<_DoctorPatientsTab> {
       return name.contains(q.trim().toLowerCase());
     }).toList();
 
+    final totalCount = widget.myPatients.length;
+
     return Column(
       children: [
         Padding(
@@ -992,10 +1184,65 @@ class _DoctorPatientsTabState extends State<_DoctorPatientsTab> {
             ),
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Text(
+                "Results: ${filtered.length} / $totalCount",
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
         Expanded(
           child: filtered.isEmpty
               ? Center(
-                  child: Text(lang.translate('no_linked_patients')),
+                  child: Container(
+                    margin: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: PETROL.withOpacity(0.10),
+                          child: const Icon(
+                            Icons.group_off_rounded,
+                            color: PETROL_DARK,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          lang.translate('no_linked_patients'),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          "No patients match your current search.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -1009,7 +1256,8 @@ class _DoctorPatientsTabState extends State<_DoctorPatientsTab> {
                       stream: FirebaseFirestore.instance
                           .collection('care_links')
                           .where('patientId', isEqualTo: p.id)
-                          .where('linkedUserId', isEqualTo: widget.doctorLinkId)
+                          .where('linkedUserId',
+                              isEqualTo: widget.doctorLinkId)
                           .where('linkedUserRole', isEqualTo: 'doctor')
                           .where('status', isEqualTo: 'approved')
                           .limit(1)
@@ -1037,7 +1285,8 @@ class _DoctorPatientsTabState extends State<_DoctorPatientsTab> {
                             ),
                             title: Text(
                               patientName,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1140,6 +1389,8 @@ class _DoctorSettingsTab extends StatelessWidget {
       builder: (context, snap) {
         final data = snap.data ?? {};
         final doctorId = resolveDoctorId(data);
+        final verification =
+            (data['verificationStatus'] ?? 'pending').toString();
 
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
           stream: FirebaseFirestore.instance
@@ -1151,6 +1402,7 @@ class _DoctorSettingsTab extends StatelessWidget {
             final pendingRequests = reqSnap.data?.docs.length ?? 0;
 
             return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
                 Container(
@@ -1172,11 +1424,15 @@ class _DoctorSettingsTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       _kv("Name", (data['name'] ?? '').toString()),
-                      _kv("Main Specialty", (data['mainSpecialty'] ?? '').toString()),
-                      _kv("Sub Specialty", (data['subSpecialty'] ?? '').toString()),
+                      _kv("Main Specialty",
+                          (data['mainSpecialty'] ?? '').toString()),
+                      _kv("Sub Specialty",
+                          (data['subSpecialty'] ?? '').toString()),
                       _kv("Clinic", (data['address'] ?? '').toString()),
-                      _kv("Working Hours", (data['workingHours'] ?? '').toString()),
+                      _kv("Working Hours",
+                          (data['workingHours'] ?? '').toString()),
                       _kv("Fee", (data['price'] ?? '').toString()),
+                      _kv("Verification", verification),
                       const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
@@ -1199,9 +1455,7 @@ class _DoctorSettingsTab extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -1246,15 +1500,14 @@ class _DoctorSettingsTab extends StatelessWidget {
                             );
                           },
                           icon: const Icon(Icons.mark_email_unread_outlined),
-                          label: Text(lang.translate('open_incoming_requests')),
+                          label:
+                              Text(lang.translate('open_incoming_requests')),
                         ),
                       ),
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -1306,9 +1559,40 @@ class _DoctorSettingsTab extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Account Summary",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _infoRow(
+                        icon: Icons.badge_rounded,
+                        title: "Doctor Link ID",
+                        value: shortText(doctorId),
+                      ),
+                      const SizedBox(height: 10),
+                      _infoRow(
+                        icon: Icons.verified_user_rounded,
+                        title: "Status",
+                        value: verification,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
                 SizedBox(
                   height: 52,
                   child: ElevatedButton.icon(
@@ -1322,7 +1606,8 @@ class _DoctorSettingsTab extends StatelessWidget {
                     icon: const Icon(Icons.logout, color: Colors.white),
                     label: Text(
                       lang.translate('logout'),
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
                 ),
@@ -1332,6 +1617,11 @@ class _DoctorSettingsTab extends StatelessWidget {
         );
       },
     );
+  }
+
+  String shortText(String text) {
+    if (text.length <= 14) return text;
+    return "${text.substring(0, 14)}...";
   }
 
   Widget _kv(String k, String v) {

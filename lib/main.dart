@@ -154,8 +154,7 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
             Doctor d = Doctor.fromJson(userData..['id'] = widget.uid);
             return DoctorHomeScreen(doctor: d);
           } else if (role == 'parent') {
-            Parent p = Parent.fromJson(userData..['id'] = widget.uid);
-            return ParentHomeScreen(parent: p);
+            return const ParentHomeScreen();
           } else {
             return const Scaffold(
               body: Center(child: Text("Unknown User Role")),

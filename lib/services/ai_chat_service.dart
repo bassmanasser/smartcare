@@ -1,9 +1,7 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:google_generative_ai/google_generative_ai.dart';
 
 class AiChatService {
-  // غيري اللينك ده للباك إند بتاعك
-  static const String baseUrl = 'https://YOUR_BACKEND_URL';
+  static const String _apiKey = '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';
 
   static Future<String> sendMessage({
     required String patientId,
@@ -12,27 +10,34 @@ class AiChatService {
     required String languageCode,
     Map<String, dynamic>? latestVitals,
   }) async {
-    final uri = Uri.parse('$baseUrl/ai/chat');
+    try {
+      final model = GenerativeModel(
+        model: 'gemini-1.5-flash',
+        apiKey: _apiKey,
+      );
 
-    final response = await http.post(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'patientId': patientId,
-        'patientName': patientName,
-        'message': message,
-        'language': languageCode,
-        'latestVitals': latestVitals,
-      }),
-    );
+      // تحويل العلامات الحيوية لنص عشان الـ AI يفهمها
+      String vitalsInfo = latestVitals != null 
+          ? "القراءات الحالية للمريض: ضغط الدم ${latestVitals['sys']}/${latestVitals['dia']}, نبض القلب ${latestVitals['hr']}, الأكسجين ${latestVitals['spo2']}%, السكر ${latestVitals['glucose']}."
+          : "لا توجد قراءات حيوية متاحة حالياً.";
 
-    if (response.statusCode != 200) {
-      throw Exception('AI request failed: ${response.body}');
+      final prompt = """
+      أنت مساعد طبي ذكي في تطبيق SmartCare. 
+      اسم المريض: $patientName.
+      $vitalsInfo
+      اللغة المطلوبة للرد: $languageCode.
+      
+      أجب على استفسار المريض بناءً على حالته الصحية الموضحة أعلاه. 
+      إذا كانت القراءات خطيرة، اطلب منه التوجه للطوارئ فوراً.
+      سؤال المريض: $message
+      """;
+
+      final content = [Content.text(prompt)];
+      final response = await model.generateContent(content);
+      
+      return response.text ?? "عذراً، لم أستطع تحليل الطلب.";
+    } catch (e) {
+      throw Exception("Error: $e");
     }
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    return (data['reply'] ?? '').toString();
   }
 }
