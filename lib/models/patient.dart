@@ -20,7 +20,7 @@ class Patient {
   // الوزن والطول
   final String? weight;
   final String? height;
-
+  
   // الطوارئ
   final String? emergencyContactName;
   final String? emergencyContactPhone;
@@ -83,7 +83,6 @@ class Patient {
       emergencyContactPhone: json['emergencyContactPhone'] as String?,
     );
   }
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,

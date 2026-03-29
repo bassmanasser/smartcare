@@ -16,7 +16,9 @@ class Doctor {
   final String verificationStatus; // pending / approved / rejected
   final String? rejectionReason;   // optional
   final String? corneaImageUrl;    
-  final String? licenseQrData;     // QR payload
+  final String? licenseQrData;
+
+  var fee;     // QR payload
 
   Doctor({
     required this.uid,
@@ -83,6 +85,10 @@ class Doctor {
   double get consultationFee => double.tryParse(price ?? "0") ?? 0.0;
 
   String get clinicAddress => address ?? "لم يتم تحديد العنوان";
+
+  get isApproved => null;
+
+  get doctorId => null;
 
   static fromJson(Map<String, dynamic> data) {}
 

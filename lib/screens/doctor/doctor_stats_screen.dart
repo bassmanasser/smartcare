@@ -5,7 +5,7 @@ class DoctorStatsScreen extends StatelessWidget {
   final double fee;
   final int totalPatients;
 
-  const DoctorStatsScreen({super.key, required this.fee, required this.totalPatients});
+  const DoctorStatsScreen({super.key, required this.fee, required this.totalPatients, required List<dynamic> myPatients});
 
   @override
   Widget build(BuildContext context) {
