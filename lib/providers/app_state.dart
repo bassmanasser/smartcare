@@ -741,7 +741,7 @@ class AppState extends ChangeNotifier {
   get moodRecords => null;
   get patients => null;
 
-  Future<void> registerPatient(dynamic p) async {
+  Future<void> registerPatient(dynamic p, {required String institutionCode}) async {
     await _db.collection('users').doc(p.id).set(p.toJson());
   }
 

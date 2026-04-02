@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import '../../utils/constants.dart';
 import '../user_type_selection_screen.dart';
-import 'welcome_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -15,7 +13,6 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   final _email = TextEditingController();
   final _pass = TextEditingController();
-
   bool _isLogin = true;
   bool _loading = false;
 
@@ -28,10 +25,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   void _snack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
     );
   }
 
@@ -39,12 +33,12 @@ class _AuthScreenState extends State<AuthScreen> {
     final email = _email.text.trim();
     final pass = _pass.text.trim();
 
-    if (email.isEmpty || !email.contains("@")) {
-      _snack("Enter a valid email");
+    if (email.isEmpty || !email.contains('@')) {
+      _snack('Enter a valid email');
       return;
     }
     if (pass.length < 6) {
-      _snack("Password must be at least 6 characters");
+      _snack('Password must be at least 6 characters');
       return;
     }
 
@@ -52,25 +46,27 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       if (_isLogin) {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: pass);
-
-        // ✅ لا نعمل Navigator للهوم هنا
-        // الـAuthWrapper في main.dart هيحول تلقائيًا للـHome بعد نجاح الدخول
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: pass,
+        );
       } else {
-        await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: pass);
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: pass,
+        );
 
         if (!mounted) return;
-        // ✅ بعد SignUp: نسأل Role
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const UserTypeSelectionScreen()),
-          (r) => false,
+          (_) => false,
         );
       }
     } on FirebaseAuthException catch (e) {
-      _snack(e.message ?? (_isLogin ? "Login Failed" : "Signup Failed"));
-    } catch (_) {
-      _snack("Unexpected error");
+      _snack(e.message ?? (_isLogin ? 'Login failed' : 'Signup failed'));
+    } catch (e) {
+      _snack('Unexpected error: $e');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -78,12 +74,13 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = PETROL_DARK; // نفس لون التصميم بتاعك
+    final primary = PETROL_DARK;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primary,
-        title: Text(_isLogin ? "Login" : "Sign Up"),
+        foregroundColor: Colors.white,
+        title: Text(_isLogin ? 'Login' : 'Create Account'),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -95,58 +92,37 @@ class _AuthScreenState extends State<AuthScreen> {
               CircleAvatar(
                 radius: 42,
                 backgroundColor: primary,
-                child: const Icon(Icons.person, size: 40, color: Colors.white),
+                child: const Icon(Icons.local_hospital, size: 40, color: Colors.white),
               ),
-              const SizedBox(height: 34),
-
-              // Email
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Email Address",
-                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
-                ),
+              const SizedBox(height: 20),
+              Text(
+                _isLogin
+                    ? 'Login to Smart Medical Dispatching System'
+                    : 'Create your account first, then choose role',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[700]),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 28),
               TextField(
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
+                  labelText: 'Email Address',
                   prefixIcon: Icon(Icons.email, color: primary),
-                  hintText: "example@email.com",
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: primary, width: 1.6),
-                  ),
                 ),
               ),
               const SizedBox(height: 18),
-
-              // Password
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Password",
-                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
-                ),
-              ),
-              const SizedBox(height: 6),
               TextField(
                 controller: _pass,
                 obscureText: true,
                 decoration: InputDecoration(
+                  labelText: 'Password',
                   prefixIcon: Icon(Icons.lock, color: primary),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: primary, width: 1.6),
-                  ),
                 ),
               ),
               const SizedBox(height: 26),
-
-              // Button
               SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -155,24 +131,28 @@ class _AuthScreenState extends State<AuthScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   child: _loading
                       ? const CircularProgressIndicator(color: Colors.white)
                       : Text(
-                          _isLogin ? "Login" : "Sign Up",
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                          _isLogin ? 'Login' : 'Continue',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                 ),
               ),
-
               const SizedBox(height: 18),
-
-              // Toggle text
               GestureDetector(
                 onTap: _loading ? null : () => setState(() => _isLogin = !_isLogin),
                 child: Text(
-                  _isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login",
+                  _isLogin
+                      ? "Don't have an account? Create one"
+                      : 'Already have an account? Login',
                   style: const TextStyle(color: Colors.purple),
                 ),
               ),

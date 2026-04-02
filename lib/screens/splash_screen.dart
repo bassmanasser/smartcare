@@ -78,7 +78,7 @@ class _SplashScreenState extends State<SplashScreen> {
       final p = ParentModel.fromMap(data);
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const ParentHomeScreen()),
+        MaterialPageRoute(builder: (_) => const ParentHomeScreen(parent: null,)),
       );
     } else {
       Navigator.pushReplacement(

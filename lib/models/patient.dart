@@ -7,9 +7,18 @@ class Patient {
   final String? phone;
   final String? profilePic;
 
-  // الربط
+  // الربط القديم
   final String? doctorId;
   final String? parentId;
+
+  // الربط الجديد بالمؤسسة
+  final String? assignedInstitutionId;
+  final String? assignedInstitutionCode;
+  final String? assignedInstitutionName;
+  final String? assignedDepartment;
+  final String? assignedDoctorUid;
+  final String? queuePriority;
+  final String? workflowStage;
 
   // البيانات الطبية
   final String? bloodType;
@@ -20,7 +29,7 @@ class Patient {
   // الوزن والطول
   final String? weight;
   final String? height;
-  
+
   // الطوارئ
   final String? emergencyContactName;
   final String? emergencyContactPhone;
@@ -35,6 +44,13 @@ class Patient {
     this.profilePic,
     this.doctorId,
     this.parentId,
+    this.assignedInstitutionId,
+    this.assignedInstitutionCode,
+    this.assignedInstitutionName,
+    this.assignedDepartment,
+    this.assignedDoctorUid,
+    this.queuePriority,
+    this.workflowStage,
     this.bloodType,
     this.allergies = const [],
     this.chronicDiseases = const [],
@@ -43,46 +59,61 @@ class Patient {
     this.height,
     this.emergencyContactName,
     this.emergencyContactPhone,
+    required int age,
   });
 
-  // حساب العمر تلقائياً
   int get age {
     if (birthDate == null) return 0;
 
-    DateTime today = DateTime.now();
-    int age = today.year - birthDate!.year;
+    final today = DateTime.now();
+    int calculatedAge = today.year - birthDate!.year;
 
     if (today.month < birthDate!.month ||
         (today.month == birthDate!.month && today.day < birthDate!.day)) {
-      age--;
+      calculatedAge--;
     }
 
-    return age;
+    return calculatedAge;
   }
 
   factory Patient.fromJson(Map<String, dynamic> json) {
     return Patient(
-      id: json['id'] as String,
-      name: json['name'] as String? ?? '',
-      birthDate: json['birthDate'] != null
-          ? DateTime.parse(json['birthDate'])
+      id: (json['id'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      birthDate: json['birthDate'] != null && json['birthDate'].toString().isNotEmpty
+          ? DateTime.tryParse(json['birthDate'].toString())
           : null,
-      gender: json['gender'] as String? ?? 'Unknown',
-      email: json['email'] as String?,
-      phone: json['phone'] as String?,
-      profilePic: json['profilePic'] as String?,
-      doctorId: json['doctorId'] as String?,
-      parentId: json['parentId'] as String?,
-      bloodType: json['bloodType'] as String?,
-      allergies: List<String>.from(json['allergies'] ?? []),
-      chronicDiseases: List<String>.from(json['chronicDiseases'] ?? []),
-      currentMedications: List<String>.from(json['currentMedications'] ?? []),
-      weight: json['weight'] as String?,
-      height: json['height'] as String?,
-      emergencyContactName: json['emergencyContactName'] as String?,
-      emergencyContactPhone: json['emergencyContactPhone'] as String?,
+      gender: (json['gender'] ?? 'Unknown').toString(),
+      email: json['email']?.toString(),
+      phone: json['phone']?.toString(),
+      profilePic: json['profilePic']?.toString(),
+
+      // القديم
+      doctorId: json['doctorId']?.toString(),
+      parentId: json['parentId']?.toString(),
+
+      // الجديد
+      assignedInstitutionId: json['assignedInstitutionId']?.toString(),
+      assignedInstitutionCode: json['assignedInstitutionCode']?.toString(),
+      assignedInstitutionName: json['assignedInstitutionName']?.toString(),
+      assignedDepartment: json['assignedDepartment']?.toString(),
+      assignedDoctorUid: json['assignedDoctorUid']?.toString(),
+      queuePriority: json['queuePriority']?.toString(),
+      workflowStage: json['workflowStage']?.toString(),
+
+      bloodType: json['bloodType']?.toString(),
+      allergies: List<String>.from(json['allergies'] ?? const []),
+      chronicDiseases: List<String>.from(json['chronicDiseases'] ?? const []),
+      currentMedications:
+          List<String>.from(json['currentMedications'] ?? const []),
+      weight: json['weight']?.toString(),
+      height: json['height']?.toString(),
+      emergencyContactName: json['emergencyContactName']?.toString(),
+      emergencyContactPhone: json['emergencyContactPhone']?.toString(),
+      age: 0,
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -92,8 +123,20 @@ class Patient {
       'email': email,
       'phone': phone,
       'profilePic': profilePic,
+
+      // القديم
       'doctorId': doctorId,
       'parentId': parentId,
+
+      // الجديد
+      'assignedInstitutionId': assignedInstitutionId,
+      'assignedInstitutionCode': assignedInstitutionCode,
+      'assignedInstitutionName': assignedInstitutionName,
+      'assignedDepartment': assignedDepartment,
+      'assignedDoctorUid': assignedDoctorUid,
+      'queuePriority': queuePriority,
+      'workflowStage': workflowStage,
+
       'bloodType': bloodType,
       'allergies': allergies,
       'chronicDiseases': chronicDiseases,
@@ -104,5 +147,65 @@ class Patient {
       'emergencyContactPhone': emergencyContactPhone,
       'age': age,
     };
+  }
+
+  Patient copyWith({
+    String? id,
+    String? name,
+    DateTime? birthDate,
+    String? gender,
+    String? email,
+    String? phone,
+    String? profilePic,
+    String? doctorId,
+    String? parentId,
+    String? assignedInstitutionId,
+    String? assignedInstitutionCode,
+    String? assignedInstitutionName,
+    String? assignedDepartment,
+    String? assignedDoctorUid,
+    String? queuePriority,
+    String? workflowStage,
+    String? bloodType,
+    List<String>? allergies,
+    List<String>? chronicDiseases,
+    List<String>? currentMedications,
+    String? weight,
+    String? height,
+    String? emergencyContactName,
+    String? emergencyContactPhone,
+  }) {
+    return Patient(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      birthDate: birthDate ?? this.birthDate,
+      gender: gender ?? this.gender,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      profilePic: profilePic ?? this.profilePic,
+      doctorId: doctorId ?? this.doctorId,
+      parentId: parentId ?? this.parentId,
+      assignedInstitutionId:
+          assignedInstitutionId ?? this.assignedInstitutionId,
+      assignedInstitutionCode:
+          assignedInstitutionCode ?? this.assignedInstitutionCode,
+      assignedInstitutionName:
+          assignedInstitutionName ?? this.assignedInstitutionName,
+      assignedDepartment: assignedDepartment ?? this.assignedDepartment,
+      assignedDoctorUid: assignedDoctorUid ?? this.assignedDoctorUid,
+      queuePriority: queuePriority ?? this.queuePriority,
+      workflowStage: workflowStage ?? this.workflowStage,
+      bloodType: bloodType ?? this.bloodType,
+      allergies: allergies ?? this.allergies,
+      chronicDiseases: chronicDiseases ?? this.chronicDiseases,
+      currentMedications: currentMedications ?? this.currentMedications,
+      weight: weight ?? this.weight,
+      height: height ?? this.height,
+      emergencyContactName:
+          emergencyContactName ?? this.emergencyContactName,
+      emergencyContactPhone:
+          emergencyContactPhone ?? this.emergencyContactPhone,
+      age: age,
+    );
   }
 }

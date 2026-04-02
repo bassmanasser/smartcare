@@ -10,7 +10,7 @@ import '../doctor/patient_detail_for_doctor_screen.dart';
 import 'parent_settings_screen.dart';
 
 class ParentHomeScreen extends StatefulWidget {
-  const ParentHomeScreen({super.key});
+  const ParentHomeScreen({super.key, required parent});
 
   @override
   State<ParentHomeScreen> createState() => _ParentHomeScreenState();

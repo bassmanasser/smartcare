@@ -32,8 +32,21 @@ class DoctorAdditionalInfoScreen extends StatefulWidget {
 class _DoctorAdditionalInfoScreenState
     extends State<DoctorAdditionalInfoScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  // القديم
   final priceController = TextEditingController();
   final addressController = TextEditingController();
+
+  // الجديد - Institution based
+  final institutionNameController = TextEditingController();
+  final institutionCodeController = TextEditingController();
+  final departmentController = TextEditingController();
+  final employeeIdController = TextEditingController();
+  final licenseNumberController = TextEditingController();
+  final workPhoneController = TextEditingController();
+
+  String selectedStaffRole = 'doctor';
+  String selectedMedicalRole = 'Attending Physician';
 
   final List<String> days = const [
     "السبت",
@@ -54,6 +67,14 @@ class _DoctorAdditionalInfoScreenState
   void dispose() {
     priceController.dispose();
     addressController.dispose();
+
+    institutionNameController.dispose();
+    institutionCodeController.dispose();
+    departmentController.dispose();
+    employeeIdController.dispose();
+    licenseNumberController.dispose();
+    workPhoneController.dispose();
+
     super.dispose();
   }
 
@@ -63,6 +84,29 @@ class _DoctorAdditionalInfoScreenState
 
   String _workingHoursText() {
     return "${startTime!.format(context)} - ${endTime!.format(context)}";
+  }
+
+  String _normalizedInstitutionId() {
+    final raw = institutionCodeController.text.trim().isNotEmpty
+        ? institutionCodeController.text.trim()
+        : institutionNameController.text.trim();
+
+    return raw
+        .toLowerCase()
+        .replaceAll('&', 'and')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
+  }
+
+  String _normalizedDepartmentId() {
+    return departmentController.text
+        .trim()
+        .toLowerCase()
+        .replaceAll('&', 'and')
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp(r'^_|_$'), '');
   }
 
   Future<void> saveDoctorData() async {
@@ -108,8 +152,20 @@ class _DoctorAdditionalInfoScreenState
       final firestore = FirebaseFirestore.instance;
       final userRef = firestore.collection("users").doc(freshUser.uid);
       final doctorRef = firestore.collection("doctors").doc(freshUser.uid);
+      final staffRequestRef =
+          firestore.collection("staff_requests").doc(freshUser.uid);
+
+      final institutionId = _normalizedInstitutionId();
+      final departmentId = _normalizedDepartmentId();
+
+      final institutionRef =
+          firestore.collection("institutions").doc(institutionId);
+      final departmentRef = firestore
+          .collection("departments")
+          .doc("${institutionId}_$departmentId");
 
       final userData = {
+        // القديم
         "uid": freshUser.uid,
         "role": "doctor",
         "name": widget.name,
@@ -120,9 +176,25 @@ class _DoctorAdditionalInfoScreenState
         "subSpecialty": widget.subSpecialty,
         "profileCompleted": true,
         "updatedAt": FieldValue.serverTimestamp(),
+
+        // الجديد
+        "staffRole": selectedStaffRole,
+        "medicalRole": selectedMedicalRole,
+        "institutionId": institutionId,
+        "institutionName": institutionNameController.text.trim(),
+        "institutionCode": institutionCodeController.text.trim(),
+        "departmentId": departmentId,
+        "departmentName": departmentController.text.trim(),
+        "employeeId": employeeIdController.text.trim(),
+        "licenseNumber": licenseNumberController.text.trim(),
+        "workPhone": workPhoneController.text.trim(),
+        "approvalStatus": "pending",
+        "availabilityStatus": "available",
+        "workflowType": "institution_staff_member",
       };
 
       final doctorData = {
+        // القديم
         "uid": freshUser.uid,
         "doctorID": doctorID,
         "name": widget.name,
@@ -138,32 +210,106 @@ class _DoctorAdditionalInfoScreenState
         "inviteCode": widget.inviteCode,
         "createdAt": FieldValue.serverTimestamp(),
         "updatedAt": FieldValue.serverTimestamp(),
+
+        // الجديد
+        "staffRole": selectedStaffRole,
+        "medicalRole": selectedMedicalRole,
+        "institutionId": institutionId,
+        "institutionName": institutionNameController.text.trim(),
+        "institutionCode": institutionCodeController.text.trim(),
+        "departmentId": departmentId,
+        "departmentName": departmentController.text.trim(),
+        "employeeId": employeeIdController.text.trim(),
+        "licenseNumber": licenseNumberController.text.trim(),
+        "workPhone": workPhoneController.text.trim(),
+        "approvalStatus": "pending",
+        "availabilityStatus": "available",
+      };
+
+      final staffRequestData = {
+        "uid": freshUser.uid,
+        "doctorID": doctorID,
+        "name": widget.name,
+        "email": freshUser.email,
+        "phone": freshUser.phoneNumber,
+        "mainSpecialty": widget.mainSpecialty,
+        "subSpecialty": widget.subSpecialty,
+        "staffRole": selectedStaffRole,
+        "medicalRole": selectedMedicalRole,
+        "institutionId": institutionId,
+        "institutionName": institutionNameController.text.trim(),
+        "institutionCode": institutionCodeController.text.trim(),
+        "departmentId": departmentId,
+        "departmentName": departmentController.text.trim(),
+        "employeeId": employeeIdController.text.trim(),
+        "licenseNumber": licenseNumberController.text.trim(),
+        "workPhone": workPhoneController.text.trim(),
+        "price": priceController.text.trim(),
+        "address": addressController.text.trim(),
+        "workingDays": selectedDays,
+        "workingHours": workingHours,
+        "docImageUrl": imageUrl,
+        "inviteCode": widget.inviteCode,
+        "approvalStatus": "pending",
+        "availabilityStatus": "available",
+        "submittedAt": FieldValue.serverTimestamp(),
+        "updatedAt": FieldValue.serverTimestamp(),
+      };
+
+      final institutionData = {
+        "id": institutionId,
+        "name": institutionNameController.text.trim(),
+        "code": institutionCodeController.text.trim(),
+        "type": "Hospital",
+        "address": addressController.text.trim(),
+        "phone": workPhoneController.text.trim(),
+        "email": freshUser.email,
+        "departments": FieldValue.arrayUnion([departmentController.text.trim()]),
+        "status": "active",
+        "updatedAt": FieldValue.serverTimestamp(),
+      };
+
+      final departmentData = {
+        "id": departmentId,
+        "institutionId": institutionId,
+        "name": departmentController.text.trim(),
+        "updatedAt": FieldValue.serverTimestamp(),
       };
 
       final batch = firestore.batch();
       batch.set(userRef, userData, SetOptions(merge: true));
       batch.set(doctorRef, doctorData, SetOptions(merge: true));
+      batch.set(staffRequestRef, staffRequestData, SetOptions(merge: true));
+      batch.set(institutionRef, institutionData, SetOptions(merge: true));
+      batch.set(departmentRef, departmentData, SetOptions(merge: true));
       await batch.commit();
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("تم تسجيل البيانات بنجاح ✅")),
+        const SnackBar(
+          content: Text("تم تسجيل البيانات وإرسال طلب الانضمام للمؤسسة ✅"),
+        ),
       );
 
       final newDoctor = Doctor(
         uid: freshUser.uid,
-        doctorID: doctorID,
+        institutionId: institutionId,
+        institutionName: institutionNameController.text.trim(),
+        institutionCode: institutionCodeController.text.trim(),
+        departmentId: departmentId,
+        departmentName: departmentController.text.trim(),
+        staffRole: selectedStaffRole,
+        medicalRole: selectedMedicalRole,
+        employeeId: employeeIdController.text.trim(),
+        licenseNumber: licenseNumberController.text.trim(),
+        workPhone: workPhoneController.text.trim(),
+        approvalStatus: "pending",
+        availabilityStatus: "available",
         name: widget.name,
         email: freshUser.email ?? "",
         mainSpecialty: widget.mainSpecialty,
         subSpecialty: widget.subSpecialty,
-        price: priceController.text.trim(),
-        address: addressController.text.trim(),
-        workingDays: selectedDays,
-        workingHours: workingHours,
-        verificationStatus: "approved",
-        corneaImageUrl: imageUrl,
       );
 
       Navigator.pushAndRemoveUntil(
@@ -272,6 +418,151 @@ class _DoctorAdditionalInfoScreenState
                       ),
                     ),
                     const SizedBox(height: 20),
+
+                    const Text(
+                      "بيانات المؤسسة الطبية",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+
+                    TextFormField(
+                      controller: institutionNameController,
+                      decoration: _inputDecoration(
+                        "اسم المستشفى / المؤسسة",
+                        Icons.local_hospital,
+                      ),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? "مطلوب" : null,
+                    ),
+                    const SizedBox(height: 15),
+
+                    TextFormField(
+                      controller: institutionCodeController,
+                      decoration: _inputDecoration(
+                        "Institution Code / Hospital Code",
+                        Icons.qr_code_2,
+                      ),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? "مطلوب" : null,
+                    ),
+                    const SizedBox(height: 15),
+
+                    TextFormField(
+                      controller: departmentController,
+                      decoration: _inputDecoration(
+                        "القسم / Department",
+                        Icons.apartment,
+                      ),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? "مطلوب" : null,
+                    ),
+                    const SizedBox(height: 15),
+
+                    DropdownButtonFormField<String>(
+                      value: selectedStaffRole,
+                      decoration: _inputDecoration(
+                        "الدور داخل النظام",
+                        Icons.badge,
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'doctor',
+                          child: Text('Doctor'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'nurse',
+                          child: Text('Nurse'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'triage_staff',
+                          child: Text('Triage Staff'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'hospital_admin',
+                          child: Text('Hospital Admin'),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        setState(() {
+                          selectedStaffRole = v ?? 'doctor';
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 15),
+
+                    DropdownButtonFormField<String>(
+                      value: selectedMedicalRole,
+                      decoration: _inputDecoration(
+                        "Medical Role",
+                        Icons.medical_services,
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'Attending Physician',
+                          child: Text('Attending Physician'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Resident Doctor',
+                          child: Text('Resident Doctor'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Consultant',
+                          child: Text('Consultant'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Nurse',
+                          child: Text('Nurse'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Triage Officer',
+                          child: Text('Triage Officer'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Hospital Admin',
+                          child: Text('Hospital Admin'),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        setState(() {
+                          selectedMedicalRole = v ?? 'Attending Physician';
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 15),
+
+                    TextFormField(
+                      controller: employeeIdController,
+                      decoration: _inputDecoration(
+                        "Employee ID",
+                        Icons.confirmation_number,
+                      ),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? "مطلوب" : null,
+                    ),
+                    const SizedBox(height: 15),
+
+                    TextFormField(
+                      controller: licenseNumberController,
+                      decoration: _inputDecoration(
+                        "License Number",
+                        Icons.verified_user,
+                      ),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? "مطلوب" : null,
+                    ),
+                    const SizedBox(height: 15),
+
+                    TextFormField(
+                      controller: workPhoneController,
+                      decoration: _inputDecoration(
+                        "Work Phone",
+                        Icons.phone,
+                      ),
+                    ),
+                    const SizedBox(height: 25),
 
                     const Text(
                       "بيانات العيادة",

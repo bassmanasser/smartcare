@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 import '../utils/constants.dart';
-import 'patient/patient_signup_screen.dart';
+import 'admin/admin_home_screen.dart';
 import 'doctor/doctor_signup_screen.dart';
 import 'parent/parent_signup_screen.dart';
+import 'patient/patient_signup_screen.dart';
 
 class UserTypeSelectionScreen extends StatefulWidget {
   const UserTypeSelectionScreen({super.key});
@@ -26,7 +27,7 @@ class _UserTypeSelectionScreenState extends State<UserTypeSelectionScreen> {
   Future<void> _setRoleAndGo(String role) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      _snack("No logged in user. Please sign up again.");
+      _snack('No logged in user. Please sign up again.');
       return;
     }
 
@@ -35,122 +36,106 @@ class _UserTypeSelectionScreenState extends State<UserTypeSelectionScreen> {
     try {
       final uid = user.uid;
       final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
-
-      // ✅ لو role اتحدد قبل كده: ماينفعش يتغير (عشان الـRules بتمنع التغيير)
       final existing = await docRef.get();
+
       if (existing.exists) {
         final data = existing.data() as Map<String, dynamic>;
-        final existingRole = data['role'];
+        final existingRole = (data['role'] ?? '').toString().trim();
 
-        if (existingRole != null && existingRole.toString().trim().isNotEmpty) {
-          // لو نفس الدور نكمل عادي ونروح لصفحة بياناته
-          if (existingRole == role) {
-            await _goToRoleScreen(role);
-            return;
-          }
-
-          // لو مختلف: امنع التغيير
-          _snack("Role already set to: $existingRole (cannot change).");
+        if (existingRole.isNotEmpty && existingRole != role) {
+          _snack('Role already set to $existingRole and cannot be changed.');
           if (mounted) setState(() => _loading = false);
           return;
         }
       }
 
-      // ✅ Save role لأول مرة
       await docRef.set({
-        "role": role,
-        "profileCompleted": false,
-        "createdAt": FieldValue.serverTimestamp(),
+        'role': role,
+        'profileCompleted': false,
+        'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
       if (!mounted) return;
 
-      await _goToRoleScreen(role);
+      if (role == 'patient') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const PatientSignUpScreen()),
+        );
+      } else if (role == 'parent') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ParentSignUpScreen()),
+        );
+      } else if (role == 'hospital_admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DoctorSignupScreen()),
+        );
+      }
     } catch (e) {
-      _snack("Failed to save role: $e");
+      _snack('Failed to save role: $e');
       if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _goToRoleScreen(String role) async {
-    if (!mounted) return;
-
-    if (role == "patient") {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const PatientSignUpScreen()),
-      );
-    } else if (role == "doctor") {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const DoctorSignupScreen()),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const ParentSignUpScreen()),
-      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final primary = PETROL_DARK;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Select Role"),
-        backgroundColor: primary,
+        title: const Text('Choose Role'),
+        backgroundColor: PETROL_DARK,
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 22.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: ListView(
           children: [
-            CircleAvatar(
-              radius: 44,
-              backgroundColor: primary,
-              child: const Icon(Icons.person, size: 40, color: Colors.white),
-            ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 28),
             const Text(
-              "Choose your role to continue",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              'Select how you want to use SmartCare',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
-              "This helps us show the correct home screen and profile form.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey),
+              'Medical staff are now registered as part of a hospital / institution workflow.',
+              style: TextStyle(fontSize: 13, color: Colors.grey[700]),
             ),
-            const SizedBox(height: 26),
-
+            const SizedBox(height: 24),
             _roleButton(
-              text: "Patient",
+              text: 'Patient',
+              subtitle: 'Vitals, alerts, QR, care team',
               icon: Icons.favorite,
-              color: primary,
-              onTap: _loading ? null : () => _setRoleAndGo("patient"),
+              onTap: _loading ? null : () => _setRoleAndGo('patient'),
             ),
             const SizedBox(height: 14),
-
             _roleButton(
-              text: "Doctor",
+              text: 'Medical Staff',
+              subtitle: 'Doctor / Nurse / Triage / Hospital Staff',
               icon: Icons.medical_services,
-              color: primary,
-              onTap: _loading ? null : () => _setRoleAndGo("doctor"),
+              onTap: _loading ? null : () => _setRoleAndGo('doctor'),
             ),
             const SizedBox(height: 14),
-
             _roleButton(
-              text: "Parent",
-              icon: Icons.family_restroom,
-              color: primary,
-              onTap: _loading ? null : () => _setRoleAndGo("parent"),
+              text: 'Hospital Admin',
+              subtitle: 'Approve staff and manage institution flow',
+              icon: Icons.admin_panel_settings,
+              onTap: _loading ? null : () => _setRoleAndGo('hospital_admin'),
             ),
-
+            const SizedBox(height: 14),
+            _roleButton(
+              text: 'Parent',
+              subtitle: 'Follow patient status and emergency updates',
+              icon: Icons.family_restroom,
+              onTap: _loading ? null : () => _setRoleAndGo('parent'),
+            ),
             const SizedBox(height: 18),
             if (_loading) const LinearProgressIndicator(),
           ],
@@ -161,24 +146,40 @@ class _UserTypeSelectionScreenState extends State<UserTypeSelectionScreen> {
 
   Widget _roleButton({
     required String text,
+    required String subtitle,
     required IconData icon,
-    required Color color,
     required VoidCallback? onTap,
   }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: LIGHT_BG,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: PETROL.withOpacity(0.15)),
         ),
-        onPressed: onTap,
-        icon: Icon(icon),
-        label: Text(
-          text,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: PETROL_DARK,
+              child: Icon(icon, color: Colors.white),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: TextStyle(color: Colors.grey[700], fontSize: 12)),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 16),
+          ],
         ),
       ),
     );

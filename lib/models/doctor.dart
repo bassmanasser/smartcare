@@ -1,96 +1,116 @@
 class Doctor {
   final String uid;
-  final String doctorID; // كود الربط اللي هيظهر للمريض
   final String name;
   final String email;
+
+  // Institution-based fields
+  final String institutionId;
+  final String institutionName;
+  final String institutionCode;
+  final String departmentId;
+  final String departmentName;
+  final String staffRole; // doctor / nurse / triage_staff / hospital_admin
+  final String medicalRole;
+  final String employeeId;
+  final String licenseNumber;
+  final String workPhone;
+  final String approvalStatus; // pending / approved / rejected
+  final String availabilityStatus; // on_duty / off_duty / available / emergency_only
+  final String? rejectionReason;
+  final String? uploadProofUrl;
+
+  // Keep these to avoid breaking older UI pieces
   final String mainSpecialty;
   final String subSpecialty;
-  
-  // البيانات الإضافية للعيادة
-  final String? price; 
-  final String? address; 
-  final List<String>? workingDays; 
-  final String? workingHours;
-
-  /// Verification
-  final String verificationStatus; // pending / approved / rejected
-  final String? rejectionReason;   // optional
-  final String? corneaImageUrl;    
-  final String? licenseQrData;
-
-  var fee;     // QR payload
 
   Doctor({
     required this.uid,
-    this.doctorID = "", // قيمة افتراضية
     required this.name,
     required this.email,
+    required this.institutionId,
+    required this.institutionName,
+    required this.institutionCode,
+    required this.departmentId,
+    required this.departmentName,
+    required this.staffRole,
+    required this.medicalRole,
+    required this.employeeId,
+    required this.licenseNumber,
+    required this.workPhone,
+    required this.approvalStatus,
+    required this.availabilityStatus,
+    this.rejectionReason,
+    this.uploadProofUrl,
     required this.mainSpecialty,
     required this.subSpecialty,
-    this.price,
-    this.address,
-    this.workingDays,
-    this.workingHours,
-    this.verificationStatus = "pending",
-    this.rejectionReason,
-    this.corneaImageUrl,
-    this.licenseQrData,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      "uid": uid,
-      "doctorID": doctorID,
-      "name": name,
-      "email": email,
-      "mainSpecialty": mainSpecialty,
-      "subSpecialty": subSpecialty,
-      "price": price,
-      "address": address,
-      "workingDays": workingDays ?? [],
-      "workingHours": workingHours,
-      "verificationStatus": verificationStatus,
-      "rejectionReason": rejectionReason,
-      "corneaImageUrl": corneaImageUrl,
-      "licenseQrData": licenseQrData,
-      "createdAt": DateTime.now().toIso8601String(),
-    };
-  }
-
-  factory Doctor.fromMap(Map<String, dynamic> map) {
+  factory Doctor.fromJson(Map<dynamic, dynamic> map) {
     return Doctor(
-      uid: map["uid"] ?? "",
-      doctorID: map["doctorID"] ?? "",
-      name: map["name"] ?? "",
-      email: map["email"] ?? "",
-      mainSpecialty: map["mainSpecialty"] ?? "",
-      subSpecialty: map["subSpecialty"] ?? "",
-      price: map["price"],
-      address: map["address"],
-      workingDays: map["workingDays"] != null ? List<String>.from(map["workingDays"]) : [],
-      workingHours: map["workingHours"],
-      verificationStatus: map["verificationStatus"] ?? "pending",
-      rejectionReason: map["rejectionReason"],
-      corneaImageUrl: map["corneaImageUrl"],
-      licenseQrData: map["licenseQrData"],
+      uid: (map['uid'] ?? map['id'] ?? '').toString(),
+      name: (map['name'] ?? '').toString(),
+      email: (map['email'] ?? '').toString(),
+      institutionId: (map['institutionId'] ?? '').toString(),
+      institutionName: (map['institutionName'] ?? '').toString(),
+      institutionCode: (map['institutionCode'] ?? '').toString(),
+      departmentId: (map['departmentId'] ?? '').toString(),
+      departmentName: (map['departmentName'] ?? '').toString(),
+      staffRole: (map['staffRole'] ?? map['role'] ?? 'doctor').toString(),
+      medicalRole: (map['medicalRole'] ?? 'Medical Staff').toString(),
+      employeeId: (map['employeeId'] ?? '').toString(),
+      licenseNumber: (map['licenseNumber'] ?? '').toString(),
+      workPhone: (map['workPhone'] ?? '').toString(),
+      approvalStatus: (map['approvalStatus'] ?? 'pending').toString(),
+      availabilityStatus: (map['availabilityStatus'] ?? 'available').toString(),
+      rejectionReason: map['rejectionReason']?.toString(),
+      uploadProofUrl: map['uploadProofUrl']?.toString(),
+      mainSpecialty: (map['mainSpecialty'] ?? map['specialty'] ?? '').toString(),
+      subSpecialty: (map['subSpecialty'] ?? '').toString(),
     );
   }
 
-  List<String> get availableSlots => ["10:00 AM", "11:00 AM", "12:00 PM", "01:00 PM", "02:00 PM"];
+  Map<String, dynamic> toJson() {
+    return {
+      'uid': uid,
+      'name': name,
+      'email': email,
+      'role': staffRole,
+      'staffRole': staffRole,
+      'institutionId': institutionId,
+      'institutionName': institutionName,
+      'institutionCode': institutionCode,
+      'departmentId': departmentId,
+      'departmentName': departmentName,
+      'medicalRole': medicalRole,
+      'employeeId': employeeId,
+      'licenseNumber': licenseNumber,
+      'workPhone': workPhone,
+      'approvalStatus': approvalStatus,
+      'availabilityStatus': availabilityStatus,
+      'rejectionReason': rejectionReason,
+      'uploadProofUrl': uploadProofUrl,
+      'mainSpecialty': mainSpecialty,
+      'subSpecialty': subSpecialty,
+      'profileCompleted': true,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+  }
 
   String get id => uid;
 
-  String get specialty => "$mainSpecialty - $subSpecialty";
+  String get specialty {
+    if (mainSpecialty.isEmpty && subSpecialty.isEmpty) return departmentName;
+    if (subSpecialty.isEmpty) return mainSpecialty;
+    return '$mainSpecialty - $subSpecialty';
+  }
 
-  double get consultationFee => double.tryParse(price ?? "0") ?? 0.0;
-
-  String get clinicAddress => address ?? "لم يتم تحديد العنوان";
-
-  get isApproved => null;
+  double get consultationFee => 0.0;
+  String get clinicAddress => institutionName;
+  List<dynamic> get availableSlots => [];
 
   get doctorId => null;
 
-  static fromJson(Map<String, dynamic> data) {}
+  get isApproved => null;
 
-  toJson() {}
+  get fee => null;
 }

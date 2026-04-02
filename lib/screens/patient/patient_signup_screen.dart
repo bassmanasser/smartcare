@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
-import '../../providers/app_state.dart';
 import '../../models/patient.dart';
+import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
 import 'patient_home_screen.dart';
 
@@ -16,40 +16,38 @@ class PatientSignUpScreen extends StatefulWidget {
 }
 
 class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
-  // الحقول الأساسية
   final _name = TextEditingController();
-  DateTime? _selectedBirthDate;
-  final _gender = ValueNotifier<String>('Female');
   final _phone = TextEditingController();
-  
-  // 🔥 الحقول الطبية الجديدة
   final _weight = TextEditingController();
   final _height = TextEditingController();
-  final _bloodType = ValueNotifier<String>('O+');
   final _allergies = TextEditingController();
   final _chronicDiseases = TextEditingController();
-  
-  // حقول الطوارئ
   final _emergencyName = TextEditingController();
   final _emergencyPhone = TextEditingController();
-  
-  // حقول الربط (اختياري)
-  final _doctorId = TextEditingController();
-  final _parentId = TextEditingController();
+  final _institutionCode = TextEditingController();
+
+  DateTime? _selectedBirthDate;
+  final _gender = ValueNotifier('Female');
+  final _bloodType = ValueNotifier('O+');
 
   @override
   void dispose() {
-    _name.dispose(); _phone.dispose();
-    _weight.dispose(); _height.dispose();
-    _allergies.dispose(); _chronicDiseases.dispose();
-    _emergencyName.dispose(); _emergencyPhone.dispose();
-    _doctorId.dispose(); _parentId.dispose();
-    _gender.dispose(); _bloodType.dispose();
+    _name.dispose();
+    _phone.dispose();
+    _weight.dispose();
+    _height.dispose();
+    _allergies.dispose();
+    _chronicDiseases.dispose();
+    _emergencyName.dispose();
+    _emergencyPhone.dispose();
+    _institutionCode.dispose();
+    _gender.dispose();
+    _bloodType.dispose();
     super.dispose();
   }
 
   Future<void> _pickDate() async {
-    DateTime? picked = await showDatePicker(
+    final picked = await showDatePicker(
       context: context,
       initialDate: DateTime(2000),
       firstDate: DateTime(1920),
@@ -61,18 +59,21 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
   Future<void> _save() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('You must login first.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must login first.')),
+      );
       return;
     }
 
     if (_name.text.isEmpty || _selectedBirthDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter name and birth date.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter name and birth date.')),
+      );
       return;
     }
 
     final app = Provider.of<AppState>(context, listen: false);
 
-    // إنشاء كائن المريض بجميع البيانات الجديدة
     final p = Patient(
       id: user.uid,
       name: _name.text.trim(),
@@ -80,155 +81,226 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
       birthDate: _selectedBirthDate,
       gender: _gender.value,
       phone: _phone.text.trim(),
-      
-      // ✅ البيانات الجديدة
       weight: _weight.text.trim(),
       height: _height.text.trim(),
       bloodType: _bloodType.value,
       allergies: _allergies.text.isNotEmpty ? _allergies.text.split(',') : [],
-      chronicDiseases: _chronicDiseases.text.isNotEmpty ? _chronicDiseases.text.split(',') : [],
-      
+      chronicDiseases:
+          _chronicDiseases.text.isNotEmpty ? _chronicDiseases.text.split(',') : [],
       emergencyContactName: _emergencyName.text.trim(),
       emergencyContactPhone: _emergencyPhone.text.trim(),
-      
-      doctorId: _doctorId.text.trim().isEmpty ? null : _doctorId.text.trim(),
-      parentId: _parentId.text.trim().isEmpty ? null : _parentId.text.trim(),
+      doctorId: null,
+      parentId: null,
+      age: DateTime.now().year - _selectedBirthDate!.year,
     );
 
-    // حفظ البيانات في Firestore
-    await app.registerPatient(p);
+    await app.registerPatient(p, institutionCode: _institutionCode.text.trim());
 
     if (!mounted) return;
-
-    // الانتقال للصفحة الرئيسية
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => PatientHomeScreen(patient: p)),
-      (route) => false,
+      (_) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Complete Profile'), backgroundColor: PETROL_DARK),
+      appBar: AppBar(
+        title: const Text('Patient Intake'),
+        backgroundColor: PETROL_DARK,
+        foregroundColor: Colors.white,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         child: ListView(
           children: [
-            // --- 1. Basic Info ---
-            const Text("Basic Info", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL)),
+            const Text(
+              'Basic Info',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL),
+            ),
             const SizedBox(height: 10),
             TextField(
-              controller: _name, 
-              decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person))
+              controller: _name,
+              decoration: const InputDecoration(
+                labelText: 'Full Name',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person),
+              ),
             ),
             const SizedBox(height: 10),
             ListTile(
-              title: Text(_selectedBirthDate == null ? 'Select Birth Date' : DateFormat('yyyy-MM-dd').format(_selectedBirthDate!)),
+              title: Text(
+                _selectedBirthDate == null
+                    ? 'Select Birth Date'
+                    : DateFormat('yyyy-MM-dd').format(_selectedBirthDate!),
+              ),
               trailing: const Icon(Icons.calendar_today, color: PETROL),
-              shape: RoundedRectangleBorder(side: const BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(4)),
+              shape: RoundedRectangleBorder(
+                side: const BorderSide(color: Colors.grey),
+                borderRadius: BorderRadius.circular(6),
+              ),
               onTap: _pickDate,
             ),
             const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
-                  child: ValueListenableBuilder(
+                  child: ValueListenableBuilder<String>(
                     valueListenable: _gender,
-                    builder: (_, val, __) => DropdownButtonFormField(
+                    builder: (_, val, __) => DropdownButtonFormField<String>(
                       value: val,
-                      items: ['Female', 'Male'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                      onChanged: (v) => _gender.value = v.toString(),
-                      decoration: const InputDecoration(labelText: 'Gender', border: OutlineInputBorder()),
+                      items: const [
+                        DropdownMenuItem(value: 'Female', child: Text('Female')),
+                        DropdownMenuItem(value: 'Male', child: Text('Male')),
+                      ],
+                      onChanged: (v) => _gender.value = v ?? 'Female',
+                      decoration: const InputDecoration(
+                        labelText: 'Gender',
+                        border: OutlineInputBorder(),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextField(
-                    controller: _phone, 
-                    decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder(), prefixIcon: Icon(Icons.phone)),
+                    controller: _phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.phone),
+                    ),
                     keyboardType: TextInputType.phone,
                   ),
                 ),
               ],
             ),
-            
             const SizedBox(height: 20),
-
-            // --- 2. Medical Info ---
-            const Text("Medical Details", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL)),
+            const Text(
+              'Institution Link',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _institutionCode,
+              decoration: const InputDecoration(
+                labelText: 'Institution Code (optional)',
+                hintText: 'Example: smartcare_hospital',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.local_hospital),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Medical Details',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL),
+            ),
             const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _weight, 
-                    decoration: const InputDecoration(labelText: 'Weight (kg)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.monitor_weight)), 
-                    keyboardType: TextInputType.number
+                    controller: _weight,
+                    decoration: const InputDecoration(
+                      labelText: 'Weight (kg)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.monitor_weight),
+                    ),
+                    keyboardType: TextInputType.number,
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextField(
-                    controller: _height, 
-                    decoration: const InputDecoration(labelText: 'Height (cm)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.height)), 
-                    keyboardType: TextInputType.number
+                    controller: _height,
+                    decoration: const InputDecoration(
+                      labelText: 'Height (cm)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.height),
+                    ),
+                    keyboardType: TextInputType.number,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            ValueListenableBuilder(
+            ValueListenableBuilder<String>(
               valueListenable: _bloodType,
-              builder: (_, val, __) => DropdownButtonFormField(
+              builder: (_, val, __) => DropdownButtonFormField<String>(
                 value: val,
-                items: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                onChanged: (v) => _bloodType.value = v.toString(),
-                decoration: const InputDecoration(labelText: 'Blood Type', border: OutlineInputBorder(), prefixIcon: Icon(Icons.bloodtype)),
+                items: const [
+                  DropdownMenuItem(value: 'A+', child: Text('A+')),
+                  DropdownMenuItem(value: 'A-', child: Text('A-')),
+                  DropdownMenuItem(value: 'B+', child: Text('B+')),
+                  DropdownMenuItem(value: 'B-', child: Text('B-')),
+                  DropdownMenuItem(value: 'O+', child: Text('O+')),
+                  DropdownMenuItem(value: 'O-', child: Text('O-')),
+                  DropdownMenuItem(value: 'AB+', child: Text('AB+')),
+                  DropdownMenuItem(value: 'AB-', child: Text('AB-')),
+                ],
+                onChanged: (v) => _bloodType.value = v ?? 'O+',
+                decoration: const InputDecoration(
+                  labelText: 'Blood Type',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.bloodtype),
+                ),
               ),
             ),
             const SizedBox(height: 10),
             TextField(
-              controller: _chronicDiseases, 
-              decoration: const InputDecoration(labelText: 'Chronic Diseases (comma separated)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.sick))
+              controller: _chronicDiseases,
+              decoration: const InputDecoration(
+                labelText: 'Chronic Diseases (comma separated)',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 10),
             TextField(
-              controller: _allergies, 
-              decoration: const InputDecoration(labelText: 'Allergies (comma separated)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.coronavirus))
+              controller: _allergies,
+              decoration: const InputDecoration(
+                labelText: 'Allergies (comma separated)',
+                border: OutlineInputBorder(),
+              ),
             ),
-
             const SizedBox(height: 20),
-
-            // --- 3. Emergency Contact ---
-            const Text("Emergency Contact", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.red)),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _emergencyName, 
-              decoration: const InputDecoration(labelText: 'Contact Name', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person_outline))
+            const Text(
+              'Emergency Contact',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.red),
             ),
             const SizedBox(height: 10),
             TextField(
-              controller: _emergencyPhone, 
-              decoration: const InputDecoration(labelText: 'Contact Phone', border: OutlineInputBorder(), prefixIcon: Icon(Icons.phone_in_talk)), 
-              keyboardType: TextInputType.phone
+              controller: _emergencyName,
+              decoration: const InputDecoration(
+                labelText: 'Contact Name',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_outline),
+              ),
             ),
-
+            const SizedBox(height: 10),
+            TextField(
+              controller: _emergencyPhone,
+              decoration: const InputDecoration(
+                labelText: 'Contact Phone',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.phone_in_talk),
+              ),
+              keyboardType: TextInputType.phone,
+            ),
             const SizedBox(height: 30),
-            
-            // --- Save Button ---
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _save,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: PETROL, 
+                  backgroundColor: PETROL,
                   padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
                 ),
-                child: const Text('Save & Continue', style: TextStyle(color: Colors.white, fontSize: 16)),
+                child: const Text(
+                  'Save & Continue',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
               ),
             ),
           ],

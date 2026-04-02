@@ -1,7 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/dispatch_decision.dart';
 import '../../models/patient.dart';
 import '../../models/risk_assessment.dart';
 import '../../models/vital_sample.dart';
@@ -13,6 +13,7 @@ import '../../utils/localization.dart';
 import 'ai_bot_screen.dart';
 import 'alerts_history_screen.dart';
 import 'arrhythmia_check_screen.dart';
+import 'care_team_screen.dart';
 import 'charts_screen.dart';
 import 'doctor_notes_screen.dart';
 import 'medication_screen.dart';
@@ -56,14 +57,14 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       _PatientDispatchHomeTab(patient: widget.patient),
       _PatientServicesTab(patient: widget.patient),
       const PatientDoctorSearchScreen(),
-PatientSettingsScreen(
-  patientId: widget.patient.id,
-  patientName: widget.patient.name,
-  onLogout: () async {
-    final app = Provider.of<AppState>(context, listen: false);
-    await app.disconnectDevice();
-  },
-),
+      PatientSettingsScreen(
+        patientId: widget.patient.id,
+        patientName: widget.patient.name,
+        onLogout: () async {
+          final app = Provider.of<AppState>(context, listen: false);
+          await app.disconnectDevice();
+        },
+      ),
     ];
 
     return Scaffold(
@@ -118,7 +119,6 @@ class _PatientDispatchHomeTab extends StatelessWidget {
         final VitalSample? latest = vitals.isNotEmpty ? vitals.last : null;
 
         final assessment = app.currentAssessment;
-        final dispatch = app.currentDispatch;
 
         final bool isMeasuringGlucose =
             latest != null && (latest.glucose == 0 || latest.glucose == 0.0);
@@ -132,160 +132,183 @@ class _PatientDispatchHomeTab extends StatelessWidget {
         final glucoseUnit = isMeasuringGlucose ? '' : 'mg/dL';
         final advice = GlucoseAdvisor.getAdvice(latest?.glucose ?? 0.0);
 
-        return Scaffold(
-          backgroundColor: const Color(0xffF6F8FB),
-          body: SafeArea(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                await app.fetchHistory(patient.id);
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _PatientHeader(
-                      patient: patient,
-                      isConnected: app.isDeviceConnected,
-                      deviceStatus: app.deviceStatus,
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _RiskSummaryCard(
-                        assessment: assessment,
-                        caseStatus: app.caseStatus,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _DispatchDecisionCard(
-                        specialty: dispatch?.specialty ?? 'general',
-                        urgency: dispatch?.urgency.key ?? 'routine',
-                        action: dispatch?.action.key ?? 'self_care',
-                        explanation: dispatch?.explanation ??
-                            'No immediate dispatch recommendation yet.',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _QuickFlagsRow(
-                        arrhythmiaAbnormal: app.arrhythmiaAbnormal,
-                        respiratoryAbnormal: app.respiratoryAbnormal,
-                        alertsCount: app.alerts.length,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Live Vital Signs',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: PETROL_DARK,
-                            ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          Row(
+        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(patient.id)
+              .snapshots(),
+          builder: (context, snapshot) {
+            final liveData = snapshot.data?.data() ?? {};
+
+            final livePatient = patient.copyWith(
+              assignedInstitutionId:
+                  liveData['assignedInstitutionId']?.toString(),
+              assignedInstitutionCode:
+                  liveData['assignedInstitutionCode']?.toString(),
+              assignedInstitutionName:
+                  liveData['assignedInstitutionName']?.toString(),
+              assignedDepartment: liveData['assignedDepartment']?.toString(),
+              assignedDoctorUid: liveData['assignedDoctorUid']?.toString(),
+              queuePriority: liveData['queuePriority']?.toString(),
+              workflowStage: liveData['workflowStage']?.toString(),
+            );
+
+            return Scaffold(
+              backgroundColor: const Color(0xffF6F8FB),
+              body: SafeArea(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await app.fetchHistory(patient.id);
+                  },
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _PatientHeader(
+                          patient: livePatient,
+                          isConnected: app.isDeviceConnected,
+                          deviceStatus: app.deviceStatus,
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _InstitutionWorkflowCard(patient: livePatient),
+                        ),
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _RiskSummaryCard(
+                            assessment: assessment,
+                            caseStatus: app.caseStatus,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _QuickFlagsRow(
+                            arrhythmiaAbnormal: app.arrhythmiaAbnormal,
+                            respiratoryAbnormal: app.respiratoryAbnormal,
+                            alertsCount: app.alerts.length,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _PatientShortcutsCard(patient: livePatient),
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'Live Vital Signs',
+                            style:
+                                Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: PETROL_DARK,
+                                    ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
                             children: [
-                              Expanded(
-                                child: _VitalCard(
-                                  icon: Icons.favorite_rounded,
-                                  title: lang.translate('hr'),
-                                  value: '${latest?.hr ?? '--'}',
-                                  unit: 'bpm',
-                                  color: Colors.red,
-                                ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _VitalCard(
+                                      icon: Icons.favorite_rounded,
+                                      title: lang.translate('hr'),
+                                      value: '${latest?.hr ?? '--'}',
+                                      unit: 'bpm',
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _VitalCard(
+                                      icon: Icons.air_rounded,
+                                      title: lang.translate('spo2'),
+                                      value: '${latest?.spo2 ?? '--'}',
+                                      unit: '%',
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _VitalCard(
-                                  icon: Icons.air_rounded,
-                                  title: lang.translate('spo2'),
-                                  value: '${latest?.spo2 ?? '--'}',
-                                  unit: '%',
-                                  color: Colors.blue,
-                                ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _VitalCard(
+                                      icon: Icons.monitor_heart_rounded,
+                                      title: lang.translate('bp'),
+                                      value:
+                                          '${latest?.sys ?? '--'}/${latest?.dia ?? '--'}',
+                                      unit: 'mmHg',
+                                      color: Colors.purple,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _VitalCard(
+                                      icon: Icons.bloodtype_rounded,
+                                      title: lang.translate('glucose'),
+                                      value: glucoseText,
+                                      unit: glucoseUnit,
+                                      color: Colors.teal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              _VitalCard(
+                                icon: Icons.thermostat_rounded,
+                                title: 'Temperature',
+                                value: latest == null
+                                    ? '--'
+                                    : latest.temperature.toStringAsFixed(1),
+                                unit: '°C',
+                                color: Colors.orange,
                               ),
                             ],
                           ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _VitalCard(
-                                  icon: Icons.monitor_heart_rounded,
-                                  title: lang.translate('bp'),
-                                  value:
-                                      '${latest?.sys ?? '--'}/${latest?.dia ?? '--'}',
-                                  unit: 'mmHg',
-                                  color: Colors.purple,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _VitalCard(
-                                  icon: Icons.bloodtype_rounded,
-                                  title: lang.translate('glucose'),
-                                  value: glucoseText,
-                                  unit: glucoseUnit,
-                                  color: Colors.teal,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          _VitalCard(
-                            icon: Icons.thermostat_rounded,
-                            title: 'Temperature',
-                            value: latest == null
-                                ? '--'
-                                : latest.temperature.toStringAsFixed(1),
-                            unit: '°C',
-                            color: Colors.orange,
+                        ),
+                        if (!isMeasuringGlucose &&
+                            latest != null &&
+                            latest.glucose > 0) ...[
+                          const SizedBox(height: 12),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: _AdviceCard(advice: advice as String),
                           ),
                         ],
-                      ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _ReasonBreakdownCard(
+                            assessment: assessment,
+                            latest: latest,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: _MiniTimelineCard(
+                            latest: latest,
+                            assessment: assessment,
+                            alertsCount: app.alerts.length,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
                     ),
-                    if (!isMeasuringGlucose &&
-                        latest != null &&
-                        latest.glucose > 0) ...[
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _AdviceCard(advice: advice as String),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _ReasonBreakdownCard(
-                        assessment: assessment,
-                        latest: latest,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _MiniTimelineCard(
-                        latest: latest,
-                        assessment: assessment,
-                        alertsCount: app.alerts.length,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -307,6 +330,14 @@ class _PatientServicesTab extends StatelessWidget {
         Icons.qr_code_rounded,
         Colors.teal,
         (_) => PatientQrScreen(patient: patient),
+      ),
+      _Svc(
+        'Care Team',
+        Icons.groups_rounded,
+        Colors.deepPurple,
+        (_) => CareTeamScreen(
+          institutionId: patient.assignedInstitutionId ?? '',
+        ),
       ),
       _Svc(
         lang.translate('reports'),
@@ -533,6 +564,218 @@ class _PatientHeader extends StatelessWidget {
   }
 }
 
+class _InstitutionWorkflowCard extends StatelessWidget {
+  final Patient patient;
+
+  const _InstitutionWorkflowCard({required this.patient});
+
+  Color _priorityColor(String value) {
+    switch (value) {
+      case 'emergency':
+        return Colors.red;
+      case 'urgent':
+        return Colors.deepOrange;
+      case 'high':
+        return Colors.orange;
+      default:
+        return Colors.green;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final institution = patient.assignedInstitutionName ??
+        patient.assignedInstitutionCode ??
+        'Not assigned yet';
+    final department = patient.assignedDepartment ?? 'Pending triage';
+    final stage = patient.workflowStage ?? 'patient_intake';
+    final priority = patient.queuePriority ?? 'routine';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x11000000),
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Institution Workflow',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              color: PETROL_DARK,
+            ),
+          ),
+          const SizedBox(height: 14),
+          _kv('Institution', institution),
+          const SizedBox(height: 8),
+          _kv('Department', department),
+          const SizedBox(height: 8),
+          _kv('Stage', _prettyText(stage)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Text(
+                'Queue Priority:',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: PETROL_DARK,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _priorityColor(priority).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  _prettyText(priority),
+                  style: TextStyle(
+                    color: _priorityColor(priority),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _kv(String key, String value) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 95,
+          child: Text(
+            key,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: PETROL_DARK,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(color: Colors.black54),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PatientShortcutsCard extends StatelessWidget {
+  final Patient patient;
+
+  const _PatientShortcutsCard({required this.patient});
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Quick Access',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              color: PETROL_DARK,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _shortcut(
+                  context,
+                  icon: Icons.groups_rounded,
+                  label: 'Care Team',
+                  color: Colors.deepPurple,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CareTeamScreen(
+                          institutionId: patient.assignedInstitutionId ?? '',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _shortcut(
+                  context,
+                  icon: Icons.qr_code_rounded,
+                  label: 'My QR',
+                  color: Colors.teal,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PatientQrScreen(patient: patient),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _shortcut(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: PETROL_DARK,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _RiskSummaryCard extends StatelessWidget {
   final RiskAssessment? assessment;
   final String caseStatus;
@@ -612,82 +855,6 @@ class _RiskSummaryCard extends StatelessWidget {
           Text(
             'Case status: $caseStatus',
             style: const TextStyle(color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DispatchDecisionCard extends StatelessWidget {
-  final String specialty;
-  final String urgency;
-  final String action;
-  final String explanation;
-
-  const _DispatchDecisionCard({
-    required this.specialty,
-    required this.urgency,
-    required this.action,
-    required this.explanation,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Recommended Medical Dispatch',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-              color: PETROL_DARK,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _InfoPill(
-                  icon: Icons.local_hospital_rounded,
-                  title: 'Specialty',
-                  value: _prettyText(specialty),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _InfoPill(
-                  icon: Icons.priority_high_rounded,
-                  title: 'Urgency',
-                  value: _prettyText(urgency),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _InfoPill(
-            icon: Icons.route_rounded,
-            title: 'Action',
-            value: _prettyText(action),
-            wide: true,
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xffF6F8FB),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              explanation,
-              style: const TextStyle(
-                height: 1.4,
-                color: Colors.black87,
-              ),
-            ),
           ),
         ],
       ),
@@ -974,57 +1141,6 @@ class _SectionCard extends StatelessWidget {
         ],
       ),
       child: child,
-    );
-  }
-}
-
-class _InfoPill extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-  final bool wide;
-
-  const _InfoPill({
-    required this.icon,
-    required this.title,
-    required this.value,
-    this.wide = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: wide ? double.infinity : null,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xffF6F8FB),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: PETROL_DARK),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: PETROL_DARK,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

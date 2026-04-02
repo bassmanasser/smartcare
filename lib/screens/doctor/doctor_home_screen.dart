@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -139,6 +140,11 @@ class _DoctorOverviewTab extends StatelessWidget {
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _InstitutionStatusCard(doctor: doctor),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _StatsGrid(
                   totalPatients: allPatients.length,
                   emergencyCount: emergencyCases.length,
@@ -266,6 +272,8 @@ class _DoctorSettingsTab extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           _DoctorInfoCard(doctor: doctor),
+          const SizedBox(height: 14),
+          _InstitutionInfoCard(doctor: doctor),
           const SizedBox(height: 14),
           _SettingTile(
             icon: Icons.qr_code_scanner_rounded,
@@ -428,6 +436,197 @@ class _DoctorHeader extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _InstitutionStatusCard extends StatelessWidget {
+  final Doctor doctor;
+
+  const _InstitutionStatusCard({required this.doctor});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc((doctor.id).toString())
+          .snapshots(),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data() ?? {};
+        final institutionName =
+            (data['institutionName'] ?? 'Not assigned yet').toString();
+        final departmentName =
+            (data['departmentName'] ?? 'General').toString();
+        final medicalRole =
+            (data['medicalRole'] ?? 'Medical Staff').toString();
+        final approvalStatus =
+            (data['approvalStatus'] ?? 'pending').toString();
+        final employeeId = (data['employeeId'] ?? '--').toString();
+        final availabilityStatus =
+            (data['availabilityStatus'] ?? 'available').toString();
+
+        final statusColor = _approvalColor(approvalStatus);
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x11000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Institution Status',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  color: PETROL_DARK,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _InfoChip(
+                    label: 'Institution',
+                    value: institutionName,
+                    color: Colors.blue,
+                  ),
+                  _InfoChip(
+                    label: 'Department',
+                    value: departmentName,
+                    color: Colors.teal,
+                  ),
+                  _InfoChip(
+                    label: 'Role',
+                    value: medicalRole,
+                    color: Colors.indigo,
+                  ),
+                  _InfoChip(
+                    label: 'Staff ID',
+                    value: employeeId,
+                    color: Colors.deepPurple,
+                  ),
+                  _InfoChip(
+                    label: 'Approval',
+                    value: approvalStatus,
+                    color: statusColor,
+                  ),
+                  _InfoChip(
+                    label: 'Availability',
+                    value: availabilityStatus,
+                    color: Colors.orange,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _InstitutionInfoCard extends StatelessWidget {
+  final Doctor doctor;
+
+  const _InstitutionInfoCard({required this.doctor});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc((doctor.id).toString())
+          .snapshots(),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data() ?? {};
+        final institutionName =
+            (data['institutionName'] ?? 'Not assigned yet').toString();
+        final institutionCode =
+            (data['institutionCode'] ?? '--').toString();
+        final departmentName =
+            (data['departmentName'] ?? 'General').toString();
+        final employeeId = (data['employeeId'] ?? '--').toString();
+        final licenseNumber =
+            (data['licenseNumber'] ?? '--').toString();
+
+        return _SectionCard(
+          child: Column(
+            children: [
+              const CircleAvatar(
+                radius: 34,
+                backgroundColor: Color(0xffE8F3F3),
+                child:
+                    Icon(Icons.local_hospital, size: 34, color: PETROL_DARK),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                institutionName,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Department: $departmentName',
+                style: const TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xffF6F8FB),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  children: [
+                    _simpleInfoRow('Institution Code', institutionCode),
+                    const SizedBox(height: 8),
+                    _simpleInfoRow('Employee ID', employeeId),
+                    const SizedBox(height: 8),
+                    _simpleInfoRow('License Number', licenseNumber),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _simpleInfoRow(String label, String value) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: PETROL_DARK,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(color: Colors.black54),
+        ),
+      ],
     );
   }
 }
@@ -1052,6 +1251,51 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+class _InfoChip extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _InfoChip({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            _pretty(value),
+            style: const TextStyle(
+              color: PETROL_DARK,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _QuickActionItem {
   final String title;
   final IconData icon;
@@ -1171,6 +1415,17 @@ Color _urgencyColor(String urgency) {
     case 'routine':
     default:
       return Colors.green;
+  }
+}
+
+Color _approvalColor(String status) {
+  switch (status) {
+    case 'approved':
+      return Colors.green;
+    case 'rejected':
+      return Colors.red;
+    default:
+      return Colors.orange;
   }
 }
 
