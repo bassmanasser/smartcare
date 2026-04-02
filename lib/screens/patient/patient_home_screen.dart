@@ -18,6 +18,7 @@ import 'doctor_notes_screen.dart';
 import 'medication_screen.dart';
 import 'mood_screen.dart';
 import 'patient_doctor_search_screen.dart';
+import 'patient_qr_screen.dart';
 import 'report_screen.dart';
 import 'respiratory_test_screen.dart';
 import 'settings_screen.dart';
@@ -55,13 +56,14 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       _PatientDispatchHomeTab(patient: widget.patient),
       _PatientServicesTab(patient: widget.patient),
       const PatientDoctorSearchScreen(),
-      PatientSettingsScreen(
-        patientId: widget.patient.id,
-        onLogout: () async {
-          final app = Provider.of<AppState>(context, listen: false);
-          await app.disconnectDevice();
-        },
-      ),
+PatientSettingsScreen(
+  patientId: widget.patient.id,
+  patientName: widget.patient.name,
+  onLogout: () async {
+    final app = Provider.of<AppState>(context, listen: false);
+    await app.disconnectDevice();
+  },
+),
     ];
 
     return Scaffold(
@@ -300,6 +302,12 @@ class _PatientServicesTab extends StatelessWidget {
     final lang = AppLocalizations.of(context);
 
     final services = [
+      _Svc(
+        'My QR Code',
+        Icons.qr_code_rounded,
+        Colors.teal,
+        (_) => PatientQrScreen(patient: patient),
+      ),
       _Svc(
         lang.translate('reports'),
         Icons.picture_as_pdf_rounded,

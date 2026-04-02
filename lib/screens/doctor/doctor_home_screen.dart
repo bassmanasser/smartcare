@@ -9,6 +9,7 @@ import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
 import '../auth/welcome_screen.dart';
 import 'doctor_appointments_screen.dart';
+import 'doctor_scan_patient_screen.dart';
 import 'doctor_stats_screen.dart';
 import 'patient_detail_for_doctor_screen.dart';
 
@@ -51,9 +52,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         final emergencyCases =
             queue.where((e) => e.urgency == 'emergency').toList();
         final urgentCases = queue.where((e) => e.urgency == 'urgent').toList();
-        final priorityCases =
-            queue.where((e) => e.urgency == 'priority').toList();
-        final routineCases = queue.where((e) => e.urgency == 'routine').toList();
 
         final tabs = [
           _DoctorOverviewTab(
@@ -152,6 +150,7 @@ class _DoctorOverviewTab extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _QuickActionsGrid(
+                  doctor: doctor,
                   allPatients: allPatients,
                 ),
               ),
@@ -255,8 +254,6 @@ class _DoctorSettingsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final doctorId = (doctor.doctorId ?? doctor.id).toString();
-
     return Scaffold(
       backgroundColor: const Color(0xffF6F8FB),
       appBar: AppBar(
@@ -268,12 +265,23 @@ class _DoctorSettingsTab extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _DoctorInfoCard(doctor: doctor, doctorId: doctorId),
+          _DoctorInfoCard(doctor: doctor),
           const SizedBox(height: 14),
           _SettingTile(
-            icon: Icons.badge_rounded,
-            title: 'Doctor ID',
-            subtitle: doctorId,
+            icon: Icons.qr_code_scanner_rounded,
+            title: 'Scan Patient QR',
+            subtitle: 'Link a patient by scanning their QR code',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => DoctorScanPatientScreen(
+                    doctorId: (doctor.doctorId ?? doctor.id).toString(),
+                    doctorName: (doctor.name ?? 'Doctor').toString(),
+                  ),
+                ),
+              );
+            },
           ),
           _SettingTile(
             icon: Icons.verified_rounded,
@@ -322,7 +330,7 @@ class _DoctorHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final specialty = (doctor.specialty ?? 'General').toString();
-    final doctorName = doctor.name ?? 'Doctor';
+    final doctorName = (doctor.name ?? 'Doctor').toString();
 
     return Container(
       width: double.infinity,
@@ -370,7 +378,8 @@ class _DoctorHeader extends StatelessWidget {
                       : Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: emergencyCount > 0 ? Colors.redAccent : Colors.white24,
+                    color:
+                        emergencyCount > 0 ? Colors.redAccent : Colors.white24,
                   ),
                 ),
                 child: Column(
@@ -403,11 +412,11 @@ class _DoctorHeader extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.route_rounded, color: Colors.white),
+                const Icon(Icons.qr_code_scanner_rounded, color: Colors.white),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Smart dispatch queue contains $queueCount patient cases.',
+                    'Scan patient QR to link new patient and add to queue.',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -489,13 +498,33 @@ class _StatsGrid extends StatelessWidget {
 }
 
 class _QuickActionsGrid extends StatelessWidget {
+  final Doctor doctor;
   final List allPatients;
 
-  const _QuickActionsGrid({required this.allPatients});
+  const _QuickActionsGrid({
+    required this.doctor,
+    required this.allPatients,
+  });
 
   @override
   Widget build(BuildContext context) {
     final actions = [
+      _QuickActionItem(
+        title: 'Scan Patient',
+        icon: Icons.qr_code_scanner_rounded,
+        color: Colors.teal,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DoctorScanPatientScreen(
+                doctorId: (doctor.doctorId ?? doctor.id).toString(),
+                doctorName: (doctor.name ?? 'Doctor').toString(),
+              ),
+            ),
+          );
+        },
+      ),
       _QuickActionItem(
         title: 'Statistics',
         icon: Icons.bar_chart_rounded,
@@ -506,7 +535,7 @@ class _QuickActionsGrid extends StatelessWidget {
             MaterialPageRoute(
               builder: (_) => DoctorStatsScreen(
                 myPatients: allPatients,
-                fee: widget.doctor.fee ?? 0.0,
+                fee: doctor.fee ?? 0.0,
                 totalPatients: allPatients.length,
               ),
             ),
@@ -516,7 +545,7 @@ class _QuickActionsGrid extends StatelessWidget {
       _QuickActionItem(
         title: 'Appointments',
         icon: Icons.calendar_month_rounded,
-        color: Colors.teal,
+        color: Colors.blue,
         onTap: () {
           Navigator.push(
             context,
@@ -529,12 +558,6 @@ class _QuickActionsGrid extends StatelessWidget {
       _QuickActionItem(
         title: 'Patients',
         icon: Icons.people_alt_rounded,
-        color: Colors.blue,
-        onTap: () {},
-      ),
-      _QuickActionItem(
-        title: 'Dispatch Queue',
-        icon: Icons.local_hospital_rounded,
         color: Colors.red,
         onTap: () {},
       ),
@@ -597,11 +620,6 @@ class _QuickActionsGrid extends StatelessWidget {
     );
   }
 }
-
-mixin widget {
-  static get doctor => null;
-}
-
 
 class _PrioritySection extends StatelessWidget {
   final String title;
@@ -845,11 +863,9 @@ class _CompactPriorityCard extends StatelessWidget {
 
 class _DoctorInfoCard extends StatelessWidget {
   final Doctor doctor;
-  final String doctorId;
 
   const _DoctorInfoCard({
     required this.doctor,
-    required this.doctorId,
   });
 
   @override
@@ -864,7 +880,7 @@ class _DoctorInfoCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            doctor.name ?? 'Doctor',
+            (doctor.name ?? 'Doctor').toString(),
             style: const TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 18,
@@ -872,7 +888,7 @@ class _DoctorInfoCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            doctor.specialty ?? 'General',
+            (doctor.specialty ?? 'General').toString(),
             style: const TextStyle(color: Colors.black54),
           ),
           const SizedBox(height: 12),
@@ -882,9 +898,10 @@ class _DoctorInfoCard extends StatelessWidget {
               color: const Color(0xffF6F8FB),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Text(
-              'Doctor ID: $doctorId',
-              style: const TextStyle(fontWeight: FontWeight.w700),
+            child: const Text(
+              'Use Scan Patient QR to link new patients',
+              style: TextStyle(fontWeight: FontWeight.w700),
+              textAlign: TextAlign.center,
             ),
           ),
         ],
@@ -897,11 +914,13 @@ class _SettingTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
 
   const _SettingTile({
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.onTap,
   });
 
   @override
@@ -913,6 +932,7 @@ class _SettingTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: ListTile(
+        onTap: onTap,
         leading: CircleAvatar(
           backgroundColor: PETROL.withOpacity(0.12),
           child: Icon(icon, color: PETROL_DARK),
@@ -922,6 +942,8 @@ class _SettingTile extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         subtitle: Text(subtitle),
+        trailing:
+            onTap != null ? const Icon(Icons.arrow_forward_ios_rounded, size: 18) : null,
       ),
     );
   }
@@ -1098,14 +1120,10 @@ List<_DoctorQueueItem> _buildQueueData(List patients, AppState app) {
   final items = <_DoctorQueueItem>[];
 
   for (final p in patients) {
-    final riskLevel =
-        app.currentAssessment?.riskLevel.key ?? 'normal';
-    final urgency =
-        app.currentDispatch?.urgency.key ?? 'routine';
-    final specialty =
-        app.currentDispatch?.specialty ?? 'general';
-    final action =
-        app.currentDispatch?.action.key ?? 'self_care';
+    final riskLevel = app.currentAssessment?.riskLevel.key ?? 'normal';
+    final urgency = app.currentDispatch?.urgency.key ?? 'routine';
+    final specialty = app.currentDispatch?.specialty ?? 'general';
+    final action = app.currentDispatch?.action.key ?? 'self_care';
     final explanation = app.currentDispatch?.explanation ??
         'No dispatch recommendation available yet.';
 

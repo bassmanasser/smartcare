@@ -769,4 +769,8 @@ class AppState extends ChangeNotifier {
     if (_vitals.isEmpty) return null;
     return _vitals.last;
   }
+
+  Future<void> fetchDoctorNotes(String id) async {}
+
+  Future<void> setLocale(Locale locale) async {}
 }

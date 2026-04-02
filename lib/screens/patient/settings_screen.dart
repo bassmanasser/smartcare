@@ -5,14 +5,17 @@ import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
 import '../../utils/localization.dart';
 import 'linked_accounts_screen.dart';
+import 'patient_qr_simple_screen.dart';
 
 class PatientSettingsScreen extends StatelessWidget {
   final String patientId;
+  final String patientName;
   final Future<void> Function() onLogout;
 
   const PatientSettingsScreen({
     super.key,
     required this.patientId,
+    required this.patientName,
     required this.onLogout,
   });
 
@@ -35,6 +38,24 @@ class PatientSettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               _buildSectionTitle(lang.translate('account')),
+
+              _SettingsTile(
+                icon: Icons.qr_code_rounded,
+                iconColor: Colors.teal,
+                title: 'My QR Code',
+                subtitle: 'Show your QR code for doctor scan',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PatientQrSimpleScreen(
+                        patientId: patientId,
+                        patientName: patientName,
+                      ),
+                    ),
+                  );
+                },
+              ),
 
               _SettingsTile(
                 icon: Icons.people_alt_rounded,
@@ -91,8 +112,9 @@ class PatientSettingsScreen extends StatelessWidget {
                         app.isDeviceConnected
                             ? Icons.bluetooth_connected
                             : Icons.bluetooth_disabled,
-                        color:
-                            app.isDeviceConnected ? Colors.green : Colors.red,
+                        color: app.isDeviceConnected
+                            ? Colors.green
+                            : Colors.red,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -153,7 +175,10 @@ class PatientSettingsScreen extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton.icon(
-                      icon: const Icon(Icons.bluetooth_disabled, color: Colors.white),
+                      icon: const Icon(
+                        Icons.bluetooth_disabled,
+                        color: Colors.white,
+                      ),
                       label: Text(
                         lang.translate('disconnect'),
                         style: const TextStyle(color: Colors.white),
@@ -170,7 +195,9 @@ class PatientSettingsScreen extends StatelessWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(lang.translate('device_disconnected')),
+                              content: Text(
+                                lang.translate('device_disconnected'),
+                              ),
                             ),
                           );
                         }
