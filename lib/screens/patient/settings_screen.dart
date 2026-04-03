@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
 import '../../utils/localization.dart';
-import 'linked_accounts_screen.dart';
 import 'patient_qr_simple_screen.dart';
 
 class PatientSettingsScreen extends StatelessWidget {
@@ -21,24 +20,22 @@ class PatientSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     return Consumer<AppState>(
       builder: (context, app, child) {
-        final lang = AppLocalizations.of(context);
-
         return Scaffold(
-          backgroundColor: const Color(0xFFF6F8FB),
+          backgroundColor: const Color(0xffF6F8FB),
           appBar: AppBar(
             title: Text(lang.translate('settings')),
-            backgroundColor: PETROL_DARK,
             centerTitle: true,
+            backgroundColor: PETROL_DARK,
             automaticallyImplyLeading: false,
-            elevation: 0,
           ),
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
               _buildSectionTitle(lang.translate('account')),
-
               _SettingsTile(
                 icon: Icons.qr_code_rounded,
                 iconColor: Colors.teal,
@@ -56,42 +53,8 @@ class PatientSettingsScreen extends StatelessWidget {
                   );
                 },
               ),
-
-              _SettingsTile(
-                icon: Icons.people_alt_rounded,
-                iconColor: Colors.indigo,
-                title: lang.translate('linked_doctors_family'),
-                subtitle: lang.translate(
-                  'manage_requests_permissions_relationships',
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => LinkedAccountsScreen(patientId: patientId),
-                    ),
-                  );
-                },
-              ),
-
-              _SettingsTile(
-                icon: Icons.person_search_rounded,
-                iconColor: Colors.blue,
-                title: lang.translate('care_team_management'),
-                subtitle: lang.translate('invite_doctors_family_securely'),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => LinkedAccountsScreen(patientId: patientId),
-                    ),
-                  );
-                },
-              ),
-
               const SizedBox(height: 18),
               _buildSectionTitle(lang.translate('device')),
-
               Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
@@ -99,7 +62,7 @@ class PatientSettingsScreen extends StatelessWidget {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: const [
-                    BoxShadow(color: Colors.black12, blurRadius: 8),
+                    BoxShadow(color: Color(0x11000000), blurRadius: 10),
                   ],
                 ),
                 child: Row(
@@ -112,9 +75,7 @@ class PatientSettingsScreen extends StatelessWidget {
                         app.isDeviceConnected
                             ? Icons.bluetooth_connected
                             : Icons.bluetooth_disabled,
-                        color: app.isDeviceConnected
-                            ? Colors.green
-                            : Colors.red,
+                        color: app.isDeviceConnected ? Colors.green : Colors.red,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -135,9 +96,7 @@ class PatientSettingsScreen extends StatelessWidget {
                                 ? lang.translate('connected_monitoring_active')
                                 : lang.translate('disconnected'),
                             style: TextStyle(
-                              color: app.isDeviceConnected
-                                  ? Colors.green
-                                  : Colors.red,
+                              color: app.isDeviceConnected ? Colors.green : Colors.red,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -147,7 +106,6 @@ class PatientSettingsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-
               Row(
                 children: [
                   Expanded(
@@ -175,10 +133,7 @@ class PatientSettingsScreen extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton.icon(
-                      icon: const Icon(
-                        Icons.bluetooth_disabled,
-                        color: Colors.white,
-                      ),
+                      icon: const Icon(Icons.bluetooth_disabled, color: Colors.white),
                       label: Text(
                         lang.translate('disconnect'),
                         style: const TextStyle(color: Colors.white),
@@ -195,9 +150,7 @@ class PatientSettingsScreen extends StatelessWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                lang.translate('device_disconnected'),
-                              ),
+                              content: Text(lang.translate('device_disconnected')),
                             ),
                           );
                         }
@@ -206,15 +159,13 @@ class PatientSettingsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-
               const SizedBox(height: 18),
               _buildSectionTitle(lang.translate('app')),
-
               _SettingsTile(
                 icon: Icons.language_rounded,
                 iconColor: Colors.teal,
                 title: lang.translate('language'),
-                subtitle: lang.translate('arabic_english'),
+                subtitle: 'Arabic / English',
                 onTap: () {
                   showDialog(
                     context: context,
@@ -226,15 +177,15 @@ class PatientSettingsScreen extends StatelessWidget {
                           ListTile(
                             title: const Text('English'),
                             onTap: () async {
+                              Navigator.pop(context);
                               await app.setLocale(const Locale('en'));
-                              if (context.mounted) Navigator.pop(context);
                             },
                           ),
                           ListTile(
                             title: const Text('العربية'),
                             onTap: () async {
+                              Navigator.pop(context);
                               await app.setLocale(const Locale('ar'));
-                              if (context.mounted) Navigator.pop(context);
                             },
                           ),
                         ],
@@ -243,12 +194,21 @@ class PatientSettingsScreen extends StatelessWidget {
                   );
                 },
               ),
-
+              _SwitchSettingsTile(
+                icon: Icons.dark_mode_rounded,
+                iconColor: Colors.deepPurple,
+                title: 'Dark Mode',
+                subtitle: 'Enable dark theme for the patient app',
+                value: app.isDarkMode ?? false,
+                onChanged: (value) async {
+                  await app.toggleDarkMode(value);
+                },
+              ),
               _SettingsTile(
                 icon: Icons.info_outline_rounded,
                 iconColor: Colors.orange,
                 title: lang.translate('about'),
-                subtitle: lang.translate('smartcare_patient_settings_about'),
+                subtitle: 'SmartCare patient settings',
                 onTap: () {
                   showAboutDialog(
                     context: context,
@@ -258,9 +218,7 @@ class PatientSettingsScreen extends StatelessWidget {
                   );
                 },
               ),
-
               const SizedBox(height: 22),
-
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -349,7 +307,7 @@ class _SettingsTile extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 8),
+          BoxShadow(color: Color(0x11000000), blurRadius: 10),
         ],
       ),
       child: ListTile(
@@ -368,6 +326,58 @@ class _SettingsTile extends StatelessWidget {
         ),
         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _SwitchSettingsTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _SwitchSettingsTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(color: Color(0x11000000), blurRadius: 10),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: CircleAvatar(
+          backgroundColor: iconColor.withOpacity(0.12),
+          child: Icon(icon, color: iconColor),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(subtitle),
+        ),
+        trailing: Switch(
+          value: value,
+          onChanged: onChanged,
+          activeColor: PETROL,
+        ),
       ),
     );
   }

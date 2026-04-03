@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -18,7 +19,7 @@ import 'charts_screen.dart';
 import 'doctor_notes_screen.dart';
 import 'medication_screen.dart';
 import 'mood_screen.dart';
-import 'patient_doctor_search_screen.dart';
+import 'patient_profile_screen.dart';
 import 'patient_qr_screen.dart';
 import 'report_screen.dart';
 import 'respiratory_test_screen.dart';
@@ -56,13 +57,14 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     final tabs = [
       _PatientDispatchHomeTab(patient: widget.patient),
       _PatientServicesTab(patient: widget.patient),
-      const PatientDoctorSearchScreen(),
+      PatientProfileScreen(patient: widget.patient),
       PatientSettingsScreen(
         patientId: widget.patient.id,
         patientName: widget.patient.name,
         onLogout: () async {
           final app = Provider.of<AppState>(context, listen: false);
           await app.disconnectDevice();
+          await FirebaseAuth.instance.signOut();
         },
       ),
     ];
@@ -90,8 +92,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               label: lang.translate('services'),
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.person_search_rounded),
-              label: 'Doctors',
+              icon: Icon(Icons.person_rounded),
+              label: 'Profile',
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.settings_rounded),
@@ -111,8 +113,6 @@ class _PatientDispatchHomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lang = AppLocalizations.of(context);
-
     return Consumer<AppState>(
       builder: (context, app, child) {
         final vitals = app.vitals;
@@ -219,7 +219,7 @@ class _PatientDispatchHomeTab extends StatelessWidget {
                                   Expanded(
                                     child: _VitalCard(
                                       icon: Icons.favorite_rounded,
-                                      title: lang.translate('hr'),
+                                      title: 'HR',
                                       value: '${latest?.hr ?? '--'}',
                                       unit: 'bpm',
                                       color: Colors.red,
@@ -229,7 +229,7 @@ class _PatientDispatchHomeTab extends StatelessWidget {
                                   Expanded(
                                     child: _VitalCard(
                                       icon: Icons.air_rounded,
-                                      title: lang.translate('spo2'),
+                                      title: 'SpO2',
                                       value: '${latest?.spo2 ?? '--'}',
                                       unit: '%',
                                       color: Colors.blue,
@@ -243,7 +243,7 @@ class _PatientDispatchHomeTab extends StatelessWidget {
                                   Expanded(
                                     child: _VitalCard(
                                       icon: Icons.monitor_heart_rounded,
-                                      title: lang.translate('bp'),
+                                      title: 'BP',
                                       value:
                                           '${latest?.sys ?? '--'}/${latest?.dia ?? '--'}',
                                       unit: 'mmHg',
@@ -254,7 +254,7 @@ class _PatientDispatchHomeTab extends StatelessWidget {
                                   Expanded(
                                     child: _VitalCard(
                                       icon: Icons.bloodtype_rounded,
-                                      title: lang.translate('glucose'),
+                                      title: 'Glucose',
                                       value: glucoseText,
                                       unit: glucoseUnit,
                                       color: Colors.teal,

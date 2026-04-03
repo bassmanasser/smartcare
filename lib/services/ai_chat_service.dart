@@ -1,7 +1,7 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class AiChatService {
-  static const String _apiKey = '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';
+  static const String _apiKey = '';
 
   static Future<String> sendMessage({
     required String patientId,

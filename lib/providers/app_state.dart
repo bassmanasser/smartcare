@@ -741,6 +741,8 @@ class AppState extends ChangeNotifier {
   get moodRecords => null;
   get patients => null;
 
+  bool? get isDarkMode => null;
+
   Future<void> registerPatient(dynamic p, {required String institutionCode}) async {
     await _db.collection('users').doc(p.id).set(p.toJson());
   }
@@ -773,4 +775,6 @@ class AppState extends ChangeNotifier {
   Future<void> fetchDoctorNotes(String id) async {}
 
   Future<void> setLocale(Locale locale) async {}
+
+  Future<void> toggleDarkMode(bool value) async {}
 }
