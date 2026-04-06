@@ -309,7 +309,7 @@ class _DoctorAdditionalInfoScreenState
         name: widget.name,
         email: freshUser.email ?? "",
         mainSpecialty: widget.mainSpecialty,
-        subSpecialty: widget.subSpecialty,
+        subSpecialty: widget.subSpecialty, verificationStatus: '', corneaImageUrl: null,
       );
 
       Navigator.pushAndRemoveUntil(

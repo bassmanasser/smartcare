@@ -3,16 +3,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../utils/constants.dart';
-import 'admin/admin_home_screen.dart';
+import '../utils/localization.dart';
+import 'admin/hospital_admin_signup_screen.dart';
 import 'doctor/doctor_signup_screen.dart';
 import 'parent/parent_signup_screen.dart';
 import 'patient/patient_signup_screen.dart';
+import 'staff/support_staff_signup_screen.dart';
 
 class UserTypeSelectionScreen extends StatefulWidget {
   const UserTypeSelectionScreen({super.key});
 
   @override
-  State<UserTypeSelectionScreen> createState() => _UserTypeSelectionScreenState();
+  State<UserTypeSelectionScreen> createState() =>
+      _UserTypeSelectionScreenState();
 }
 
 class _UserTypeSelectionScreenState extends State<UserTypeSelectionScreen> {
@@ -43,7 +46,7 @@ class _UserTypeSelectionScreenState extends State<UserTypeSelectionScreen> {
         final existingRole = (data['role'] ?? '').toString().trim();
 
         if (existingRole.isNotEmpty && existingRole != role) {
-          _snack('Role already set to $existingRole and cannot be changed.');
+          _snack(AppLocalizations.of(context).translate('role_locked'));
           if (mounted) setState(() => _loading = false);
           return;
         }
@@ -57,27 +60,22 @@ class _UserTypeSelectionScreenState extends State<UserTypeSelectionScreen> {
 
       if (!mounted) return;
 
+      Widget next;
+
       if (role == 'patient') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const PatientSignUpScreen()),
-        );
+        next = const PatientSignUpScreen();
       } else if (role == 'parent') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ParentSignUpScreen()),
-        );
+        next = const ParentSignUpScreen();
       } else if (role == 'hospital_admin') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
-        );
+        next = const HospitalAdminSignupScreen();
       } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const DoctorSignupScreen()),
-        );
+        next = SupportStaffSignupScreen(initialRole: role);
       }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => next),
+      );
     } catch (e) {
       _snack('Failed to save role: $e');
       if (mounted) setState(() => _loading = false);
@@ -86,10 +84,12 @@ class _UserTypeSelectionScreenState extends State<UserTypeSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tr = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Choose Role'),
+        title: Text(tr.translate('choose_role')),
         backgroundColor: PETROL_DARK,
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
@@ -99,44 +99,76 @@ class _UserTypeSelectionScreenState extends State<UserTypeSelectionScreen> {
         child: ListView(
           children: [
             const SizedBox(height: 28),
-            const Text(
-              'Select how you want to use SmartCare',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              tr.translate('select_how_to_use'),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Medical staff are now registered as part of a hospital / institution workflow.',
+              tr.translate('institution_workflow'),
               style: TextStyle(fontSize: 13, color: Colors.grey[700]),
             ),
             const SizedBox(height: 24),
+
             _roleButton(
-              text: 'Patient',
-              subtitle: 'Vitals, alerts, QR, care team',
+              text: tr.translate('patient'),
+              subtitle: tr.translate('patient_desc'),
               icon: Icons.favorite,
               onTap: _loading ? null : () => _setRoleAndGo('patient'),
             ),
             const SizedBox(height: 14),
+
             _roleButton(
-              text: 'Medical Staff',
-              subtitle: 'Doctor / Nurse / Triage / Hospital Staff',
-              icon: Icons.medical_services,
-              onTap: _loading ? null : () => _setRoleAndGo('doctor'),
+              text: tr.translate('parent'),
+              subtitle: tr.translate('parent_desc'),
+              icon: Icons.family_restroom,
+              onTap: _loading ? null : () => _setRoleAndGo('parent'),
             ),
             const SizedBox(height: 14),
+
             _roleButton(
-              text: 'Hospital Admin',
-              subtitle: 'Approve staff and manage institution flow',
+              text: tr.translate('hospital_admin'),
+              subtitle: tr.translate('hospital_admin_desc'),
               icon: Icons.admin_panel_settings,
               onTap: _loading ? null : () => _setRoleAndGo('hospital_admin'),
             ),
             const SizedBox(height: 14),
+
             _roleButton(
-              text: 'Parent',
-              subtitle: 'Follow patient status and emergency updates',
-              icon: Icons.family_restroom,
-              onTap: _loading ? null : () => _setRoleAndGo('parent'),
+              text: tr.translate('doctor'),
+              subtitle: tr.translate('doctor_desc'),
+              icon: Icons.medical_services,
+              onTap: _loading ? null : () => _setRoleAndGo('doctor'),
+            ),
+            const SizedBox(height: 14),
+
+            _roleButton(
+              text: tr.translate('nurse'),
+              subtitle: tr.translate('nurse_desc'),
+              icon: Icons.local_hospital,
+              onTap: _loading ? null : () => _setRoleAndGo('nurse'),
+            ),
+            const SizedBox(height: 14),
+
+            _roleButton(
+              text: tr.translate('triage_staff'),
+              subtitle: tr.translate('triage_desc'),
+              icon: Icons.route,
+              onTap: _loading ? null : () => _setRoleAndGo('triage_staff'),
+            ),
+            const SizedBox(height: 14),
+
+            _roleButton(
+              text: tr.translate('support_staff'),
+              subtitle: tr.translate('staff_desc'),
+              icon: Icons.badge,
+              onTap: _loading ? null : () => _setRoleAndGo('support_staff'),
             ),
             const SizedBox(height: 18),
+
             if (_loading) const LinearProgressIndicator(),
           ],
         ),
@@ -174,7 +206,10 @@ class _UserTypeSelectionScreenState extends State<UserTypeSelectionScreen> {
                 children: [
                   Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: TextStyle(color: Colors.grey[700], fontSize: 12)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                  ),
                 ],
               ),
             ),

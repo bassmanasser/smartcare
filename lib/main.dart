@@ -12,10 +12,14 @@ import 'models/parent.dart';
 import 'models/patient.dart';
 import 'providers/app_state.dart';
 import 'screens/admin/admin_home_screen.dart';
+import 'screens/auth/pending_approval_screen.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/doctor/doctor_home_screen.dart';
+import 'screens/nurse/nurse_home_screen.dart';
 import 'screens/parent/parent_home_screen.dart';
 import 'screens/patient/patient_home_screen.dart';
+import 'screens/staff/support_staff_home_screen.dart';
+import 'screens/staff/triage_staff_home_screen.dart';
 import 'screens/user_type_selection_screen.dart';
 import 'services/auth_service.dart';
 import 'services/ble_monitor_manager.dart';
@@ -56,7 +60,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       locale: appState.currentLocale,
-      supportedLocales: const [Locale('en'), Locale('ar')],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('ar'),
+      ],
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -65,7 +72,7 @@ class MyApp extends StatelessWidget {
       ],
       theme: ThemeData(
         primarySwatch: Colors.teal,
-        scaffoldBackgroundColor: Colors.grey,
+        scaffoldBackgroundColor: const Color(0xFFF7F9FB),
         useMaterial3: true,
       ),
       home: const AuthWrapper(),
@@ -99,6 +106,7 @@ class AuthWrapper extends StatelessWidget {
 
 class UserDataFetcher extends StatefulWidget {
   final String uid;
+
   const UserDataFetcher({super.key, required this.uid});
 
   @override
@@ -107,14 +115,21 @@ class UserDataFetcher extends StatefulWidget {
 
 class _UserDataFetcherState extends State<UserDataFetcher> {
   late Future<DocumentSnapshot<Map<String, dynamic>>> _userFuture;
-  
-  get Parent => null;
 
   @override
   void initState() {
     super.initState();
     _userFuture =
         FirebaseFirestore.instance.collection('users').doc(widget.uid).get();
+  }
+
+  bool _isStaffRole(String role) {
+    return [
+      'doctor',
+      'nurse',
+      'triage_staff',
+      'support_staff',
+    ].contains(role);
   }
 
   @override
@@ -141,6 +156,17 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
         try {
           final userData = userSnapshot.data!.data() ?? {};
           final role = (userData['role'] ?? 'patient').toString();
+          final approvalStatus =
+              (userData['approvalStatus'] ?? 'approved').toString();
+
+          if (_isStaffRole(role) && approvalStatus != 'approved') {
+            return PendingApprovalScreen(
+              role: role,
+              status: approvalStatus,
+              institutionName:
+                  (userData['institutionName'] ?? '').toString(),
+            );
+          }
 
           if (role == 'patient') {
             final p = Patient.fromJson({...userData, 'id': widget.uid});
@@ -148,6 +174,7 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
           }
 
           if (role == 'parent') {
+            var Parent;
             final p = Parent.fromJson({...userData, 'id': widget.uid});
             return ParentHomeScreen(parent: p);
           }
@@ -156,9 +183,21 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
             return const AdminHomeScreen();
           }
 
-          if (role == 'doctor' || role == 'nurse' || role == 'triage_staff') {
+          if (role == 'doctor') {
             final d = Doctor.fromJson({...userData, 'id': widget.uid});
             return DoctorHomeScreen(doctor: d);
+          }
+
+          if (role == 'nurse') {
+            return const NurseHomeScreen();
+          }
+
+          if (role == 'triage_staff') {
+            return const TriageStaffHomeScreen();
+          }
+
+          if (role == 'support_staff') {
+            return const SupportStaffHomeScreen();
           }
 
           return const Scaffold(

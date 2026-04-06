@@ -42,7 +42,7 @@ class Doctor {
     this.rejectionReason,
     this.uploadProofUrl,
     required this.mainSpecialty,
-    required this.subSpecialty,
+    required this.subSpecialty, required String verificationStatus, required corneaImageUrl,
   });
 
   factory Doctor.fromJson(Map<dynamic, dynamic> map) {
@@ -65,7 +65,7 @@ class Doctor {
       rejectionReason: map['rejectionReason']?.toString(),
       uploadProofUrl: map['uploadProofUrl']?.toString(),
       mainSpecialty: (map['mainSpecialty'] ?? map['specialty'] ?? '').toString(),
-      subSpecialty: (map['subSpecialty'] ?? '').toString(),
+      subSpecialty: (map['subSpecialty'] ?? '').toString(), verificationStatus: '', corneaImageUrl: null,
     );
   }
 
@@ -113,4 +113,8 @@ class Doctor {
   get isApproved => null;
 
   get fee => null;
+
+  Map<String, dynamic> toMap() {
+    return toJson();
+  }
 }
