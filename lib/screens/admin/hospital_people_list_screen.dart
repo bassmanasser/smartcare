@@ -143,9 +143,12 @@ class _HospitalPeopleListScreenState extends State<HospitalPeopleListScreen> {
                             runSpacing: 8,
                             children: [
                               _chip('Role: ${d['role'] ?? '-'}'),
-                              _chip('Dept: ${d['departmentName'] ?? d['assignedDepartment'] ?? '-'}'),
-                              _chip('ID: ${d['employeeId'] ?? d['patientId'] ?? '-'}'),
-                              _chip('Status: ${d['approvalStatus'] ?? d['patientStatus'] ?? '-'}'),
+                              _chip(
+                                  'Dept: ${d['departmentName'] ?? d['assignedDepartment'] ?? '-'}'),
+                              _chip(
+                                  'ID: ${d['employeeId'] ?? d['patientId'] ?? '-'}'),
+                              _chip(
+                                  'Status: ${d['approvalStatus'] ?? d['patientStatus'] ?? '-'}'),
                               _chip('Priority: ${d['priorityLevel'] ?? '-'}'),
                             ],
                           ),

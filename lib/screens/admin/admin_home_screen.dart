@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
 import '../../utils/localization.dart';
+import 'admit_patient_screen.dart';
 import 'hospital_people_list_screen.dart';
 import 'hospital_profile_screen.dart';
 
@@ -157,6 +158,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               const SizedBox(height: 16),
               _QuickActionsSection(
                 institutionId: institutionId,
+                institutionName: institutionName,
                 onOpenProfile: () {
                   Navigator.push(
                     context,
@@ -329,10 +331,12 @@ class _HospitalHeaderCard extends StatelessWidget {
 
 class _QuickActionsSection extends StatelessWidget {
   final String institutionId;
+  final String institutionName;
   final VoidCallback onOpenProfile;
 
   const _QuickActionsSection({
     required this.institutionId,
+    required this.institutionName,
     required this.onOpenProfile,
   });
 
@@ -348,6 +352,21 @@ class _QuickActionsSection extends StatelessWidget {
             label: 'Hospital Profile',
             icon: Icons.local_hospital,
             onTap: onOpenProfile,
+          ),
+          _ActionBtn(
+            label: 'Admit Patient',
+            icon: Icons.person_add_alt_1,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AdmitPatientScreen(
+                    institutionId: institutionId,
+                    institutionName: institutionName,
+                  ),
+                ),
+              );
+            },
           ),
           _ActionBtn(
             label: 'All Doctors',
@@ -624,10 +643,9 @@ class _MiniAnalyticsSection extends StatelessWidget {
 
           if (role == 'patient' &&
               (d['arrivalDayKey'] ?? '').toString() == todayKey) {
-            final dept = (d['assignedDepartment'] ??
-                    d['departmentName'] ??
-                    'General')
-                .toString();
+            final dept =
+                (d['assignedDepartment'] ?? d['departmentName'] ?? 'General')
+                    .toString();
             patientDeptCount[dept] = (patientDeptCount[dept] ?? 0) + 1;
 
             final priority = (d['priorityLevel'] ?? '').toString();
@@ -859,7 +877,6 @@ class _ShiftSummarySection extends StatelessWidget {
         int evening = 0;
         int night = 0;
         int onDuty = 0;
-        int offDuty = 0;
 
         for (final doc in docs) {
           final d = doc.data();
@@ -883,8 +900,6 @@ class _ShiftSummarySection extends StatelessWidget {
 
           if (dutyStatus == 'on_duty') {
             onDuty++;
-          } else {
-            offDuty++;
           }
         }
 
