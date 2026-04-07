@@ -1,27 +1,37 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import '../../utils/constants.dart';
 
 class StaffApprovalScreen extends StatelessWidget {
-  const StaffApprovalScreen({super.key});
+  final String? institutionId;
+
+  const StaffApprovalScreen({
+    super.key,
+    this.institutionId,
+  });
 
   Future<void> _updateStatus(
     BuildContext context,
-    String uid,
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
     String status,
   ) async {
     try {
       final db = FirebaseFirestore.instance;
+      final data = doc.data();
+      final uid = (data['uid'] ?? doc.id).toString();
 
-      await db.collection('staff_requests').doc(uid).set({
+      await db.collection('staff_requests').doc(doc.id).set({
         'approvalStatus': status,
         'reviewedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      await db.collection('users').doc(uid).set({
-        'approvalStatus': status,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      if (uid.isNotEmpty) {
+        await db.collection('users').doc(uid).set({
+          'approvalStatus': status,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -29,6 +39,7 @@ class StaffApprovalScreen extends StatelessWidget {
         );
       }
     } catch (e) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error updating request: $e')),
       );
@@ -36,7 +47,7 @@ class StaffApprovalScreen extends StatelessWidget {
   }
 
   Color _statusColor(String status) {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'approved':
         return Colors.green;
       case 'rejected':
@@ -48,6 +59,14 @@ class StaffApprovalScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+        .collection('staff_requests')
+        .orderBy('submittedAt', descending: true);
+
+    if (institutionId != null && institutionId!.isNotEmpty) {
+      query = query.where('institutionId', isEqualTo: institutionId);
+    }
+
     return Scaffold(
       backgroundColor: LIGHT_BG,
       appBar: AppBar(
@@ -56,11 +75,20 @@ class StaffApprovalScreen extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance
-            .collection('staff_requests')
-            .orderBy('submittedAt', descending: true)
-            .snapshots(),
+        stream: query.snapshots(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  'Error loading requests: ${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -90,9 +118,14 @@ class StaffApprovalScreen extends StatelessWidget {
               final department =
                   (data['departmentName'] ?? 'No department').toString();
               final medicalRole =
-                  (data['medicalRole'] ?? data['staffRole'] ?? 'Staff').toString();
+                  (data['medicalRole'] ?? data['staffRole'] ?? 'Staff')
+                      .toString();
               final employeeId = (data['employeeId'] ?? '--').toString();
               final status = (data['approvalStatus'] ?? 'pending').toString();
+              final licenseNumber =
+                  (data['licenseNumber'] ?? '--').toString();
+              final email = (data['email'] ?? '--').toString();
+              final phone = (data['phone'] ?? '--').toString();
 
               return Container(
                 decoration: BoxDecoration(
@@ -146,7 +179,7 @@ class StaffApprovalScreen extends StatelessWidget {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: _statusColor(status).withOpacity(0.1),
+                              color: _statusColor(status).withOpacity(0.10),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: Text(
@@ -165,10 +198,11 @@ class StaffApprovalScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       _infoRow('Employee ID', employeeId),
                       const SizedBox(height: 8),
-                      _infoRow(
-                        'License Number',
-                        (data['licenseNumber'] ?? '--').toString(),
-                      ),
+                      _infoRow('License', licenseNumber),
+                      const SizedBox(height: 8),
+                      _infoRow('Email', email),
+                      const SizedBox(height: 8),
+                      _infoRow('Phone', phone),
                       const SizedBox(height: 14),
                       if (status == 'pending')
                         Row(
@@ -176,10 +210,15 @@ class StaffApprovalScreen extends StatelessWidget {
                             Expanded(
                               child: ElevatedButton.icon(
                                 onPressed: () =>
-                                    _updateStatus(context, doc.id, 'approved'),
+                                    _updateStatus(context, doc, 'approved'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
                                   foregroundColor: Colors.white,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
                                 ),
                                 icon: const Icon(Icons.check_circle),
                                 label: const Text('Approve'),
@@ -189,10 +228,15 @@ class StaffApprovalScreen extends StatelessWidget {
                             Expanded(
                               child: ElevatedButton.icon(
                                 onPressed: () =>
-                                    _updateStatus(context, doc.id, 'rejected'),
+                                    _updateStatus(context, doc, 'rejected'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.red,
                                   foregroundColor: Colors.white,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
                                 ),
                                 icon: const Icon(Icons.cancel),
                                 label: const Text('Reject'),
@@ -215,7 +259,7 @@ class StaffApprovalScreen extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: 110,
+          width: 100,
           child: Text(
             label,
             style: const TextStyle(

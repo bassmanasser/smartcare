@@ -2,13 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../../models/doctor.dart';
 import '../../utils/constants.dart';
-import '../../utils/doctor_specialties.dart';
-import '../../utils/localization.dart';
+import '../auth/pending_approval_screen.dart';
 
 class DoctorSignupScreen extends StatefulWidget {
-  const DoctorSignupScreen({super.key});
+  final String role;
+
+  const DoctorSignupScreen({
+    super.key,
+    this.role = 'doctor',
+  });
 
   @override
   State<DoctorSignupScreen> createState() => _DoctorSignupScreenState();
@@ -17,229 +20,262 @@ class DoctorSignupScreen extends StatefulWidget {
 class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final hospitalIdController = TextEditingController();
-  final nameController = TextEditingController();
-  final employeeIdController = TextEditingController();
-  final workPhoneController = TextEditingController();
-  final licenseController = TextEditingController();
+  final _fullNameController = TextEditingController();
+  final _hospitalIdController = TextEditingController();
+  final _departmentController = TextEditingController();
+  final _employeeIdController = TextEditingController();
+  final _licenseNumberController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  String? selectedMainSpecialty;
-  String? selectedSubSpecialty;
-  bool loading = false;
+  bool _loading = false;
+
+  bool get _showLicense =>
+      widget.role.toLowerCase() == 'doctor' ||
+      widget.role.toLowerCase() == 'nurse';
 
   @override
   void dispose() {
-    hospitalIdController.dispose();
-    nameController.dispose();
-    employeeIdController.dispose();
-    workPhoneController.dispose();
-    licenseController.dispose();
+    _fullNameController.dispose();
+    _hospitalIdController.dispose();
+    _departmentController.dispose();
+    _employeeIdController.dispose();
+    _licenseNumberController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> registerDoctor() async {
-    final tr = AppLocalizations.of(context);
+  String get _roleLabel {
+    switch (widget.role.toLowerCase()) {
+      case 'nurse':
+        return 'Nurse';
+      case 'staff':
+        return 'Staff';
+      default:
+        return 'Doctor';
+    }
+  }
 
+  Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (selectedMainSpecialty == null || selectedSubSpecialty == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Choose specialty")),
-      );
-      return;
-    }
-
-    setState(() => loading = true);
+    setState(() => _loading = true);
 
     try {
+      final db = FirebaseFirestore.instance;
       final auth = FirebaseAuth.instance;
-      final user = auth.currentUser;
-      if (user == null) return;
 
-      final hospitalId = hospitalIdController.text.trim().toUpperCase();
+      final hospitalId = _hospitalIdController.text.trim().toUpperCase();
 
-      final institutionDoc = await FirebaseFirestore.instance
-          .collection('institutions')
-          .doc(hospitalId)
-          .get();
+      final hospitalDoc =
+          await db.collection('institutions').doc(hospitalId).get();
 
-      if (!institutionDoc.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr.translate('institution_not_found'))),
-        );
-        setState(() => loading = false);
-        return;
+      if (!hospitalDoc.exists) {
+        throw Exception('Invalid Hospital ID');
       }
 
-      final institutionData = institutionDoc.data() ?? {};
-      final uid = user.uid;
+      final hospitalData = hospitalDoc.data() ?? {};
+      final hospitalName = (hospitalData['institutionName'] ?? '').toString();
 
-      final doctor = Doctor(
-        uid: uid,
-        name: nameController.text.trim(),
-        email: user.email ?? '',
-        mainSpecialty: selectedMainSpecialty!,
-        subSpecialty: selectedSubSpecialty!,
-        verificationStatus: 'pending',
-        corneaImageUrl: null,
-        institutionId: hospitalId,
-        institutionName: institutionData['institutionName'] ?? '',
-        institutionCode: '',
-        departmentId: '',
-        departmentName: selectedMainSpecialty!,
-        staffRole: 'doctor',
-        medicalRole: 'doctor',
-        employeeId: employeeIdController.text.trim(),
-        licenseNumber: licenseController.text.trim(),
-        workPhone: workPhoneController.text.trim(),
-        approvalStatus: 'pending',
-        availabilityStatus: 'offline',
-       
+      final cred = await auth.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
 
-      await FirebaseFirestore.instance
-          .collection('doctors')
-          .doc(uid)
-          .set(doctor.toMap());
+      final uid = cred.user!.uid;
+      final role = widget.role.toLowerCase();
 
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      await db.collection('users').doc(uid).set({
         'uid': uid,
-        'name': nameController.text.trim(),
-        'email': user.email ?? '',
-        'role': 'doctor',
-        'phone': workPhoneController.text.trim(),
-        'employeeId': employeeIdController.text.trim(),
-        'licenseNumber': licenseController.text.trim(),
+        'name': _fullNameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'role': role,
         'institutionId': hospitalId,
-        'institutionName': institutionData['institutionName'] ?? '',
-        'departmentName': selectedMainSpecialty!,
-        'medicalRole': 'doctor',
-        'mainSpecialty': selectedMainSpecialty!,
-        'subSpecialty': selectedSubSpecialty!,
+        'institutionName': hospitalName,
+        'departmentName': _departmentController.text.trim(),
+        'employeeId': _employeeIdController.text.trim(),
+        'licenseNumber': _licenseNumberController.text.trim(),
         'approvalStatus': 'pending',
-        'profileCompleted': true,
         'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
-      await FirebaseFirestore.instance.collection('staff_requests').doc(uid).set({
+      await db.collection('staff_requests').doc(uid).set({
         'uid': uid,
-        'name': nameController.text.trim(),
-        'email': user.email ?? '',
-        'role': 'doctor',
-        'medicalRole': 'doctor',
-        'departmentName': selectedMainSpecialty!,
-        'employeeId': employeeIdController.text.trim(),
-        'licenseNumber': licenseController.text.trim(),
+        'name': _fullNameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'phone': _phoneController.text.trim(),
         'institutionId': hospitalId,
-        'institutionName': institutionData['institutionName'] ?? '',
+        'institutionName': hospitalName,
+        'departmentName': _departmentController.text.trim(),
+        'employeeId': _employeeIdController.text.trim(),
+        'licenseNumber': _licenseNumberController.text.trim(),
+        'medicalRole': role,
+        'staffRole': role,
         'approvalStatus': 'pending',
         'submittedAt': FieldValue.serverTimestamp(),
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(tr.translate('profile_saved'))),
-        );
-        Navigator.pop(context);
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PendingApprovalScreen(
+            roleLabel: _roleLabel,
+            hospitalName: hospitalName, role: '', status: '', institutionName: '',
+          ),
+        ),
+        (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      String msg = 'Signup failed';
+      if (e.code == 'email-already-in-use') {
+        msg = 'This email is already in use.';
+      } else if (e.code == 'weak-password') {
+        msg = 'Password is too weak.';
+      } else if (e.code == 'invalid-email') {
+        msg = 'Invalid email address.';
       }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg)),
+      );
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$e')),
+      );
     } finally {
-      if (mounted) setState(() => loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final specialties = DoctorSpecialties.specialties;
-    final tr = AppLocalizations.of(context);
-
     return Scaffold(
+      backgroundColor: LIGHT_BG,
       appBar: AppBar(
-        title: Text(tr.translate('doctor')),
+        title: Text('$_roleLabel Sign Up'),
         backgroundColor: PETROL_DARK,
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: hospitalIdController,
-                decoration: InputDecoration(
-                  labelText: tr.translate('hospital_id'),
-                ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: tr.translate('full_name'),
-                ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: employeeIdController,
-                decoration: InputDecoration(
-                  labelText: tr.translate('employee_id'),
-                ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Required' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: workPhoneController,
-                decoration: InputDecoration(
-                  labelText: tr.translate('work_phone'),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(18),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                gradient: const LinearGradient(
+                  colors: [PETROL_DARK, PETROL],
                 ),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: licenseController,
-                decoration: InputDecoration(
-                  labelText: tr.translate('license_number'),
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Join as $_roleLabel',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Enter your Hospital ID to join the institution. Your account will stay pending until the hospital admin approves it.',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: "Main Specialty"),
-                value: selectedMainSpecialty,
-                items: specialties.keys
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedMainSpecialty = value;
-                    selectedSubSpecialty = null;
-                  });
-                },
+            ),
+            const SizedBox(height: 18),
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  _field(_fullNameController, 'Full Name', Icons.person),
+                  _field(_hospitalIdController, 'Hospital ID', Icons.numbers),
+                  _field(_departmentController, 'Department', Icons.apartment),
+                  _field(_employeeIdController, 'Employee ID', Icons.badge),
+                  if (_showLicense)
+                    _field(
+                      _licenseNumberController,
+                      'License Number',
+                      Icons.verified,
+                    ),
+                  _field(_phoneController, 'Phone', Icons.phone),
+                  _field(
+                    _emailController,
+                    'Email',
+                    Icons.email,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  _field(
+                    _passwordController,
+                    'Password',
+                    Icons.lock,
+                    obscure: true,
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _loading ? null : _signup,
+                      icon: const Icon(Icons.how_to_reg),
+                      label: Text(_loading ? 'Creating...' : 'Create Account'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: PETROL_DARK,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 10),
-              if (selectedMainSpecialty != null)
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: "Sub Specialty"),
-                  value: selectedSubSpecialty,
-                  items: specialties[selectedMainSpecialty]!
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() => selectedSubSpecialty = value);
-                  },
-                ),
-              const SizedBox(height: 22),
-              ElevatedButton(
-                onPressed: loading ? null : registerDoctor,
-                child: Text(loading ? "Registering..." : "Register"),
-              ),
-            ],
-          ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _field(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    bool obscure = false,
+    TextInputType? keyboardType,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: TextFormField(
+        controller: controller,
+        obscureText: obscure,
+        keyboardType: keyboardType,
+        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+        decoration: InputDecoration(
+          icon: Icon(icon, color: PETROL_DARK),
+          labelText: label,
+          border: InputBorder.none,
         ),
       ),
     );

@@ -1,220 +1,200 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../utils/constants.dart';
-import '../utils/localization.dart';
 import 'admin/hospital_admin_signup_screen.dart';
 import 'doctor/doctor_signup_screen.dart';
-import 'parent/parent_signup_screen.dart';
-import 'patient/patient_signup_screen.dart';
-import 'staff/support_staff_signup_screen.dart';
+import 'auth/login_screen.dart';
 
-class UserTypeSelectionScreen extends StatefulWidget {
+class UserTypeSelectionScreen extends StatelessWidget {
   const UserTypeSelectionScreen({super.key});
 
   @override
-  State<UserTypeSelectionScreen> createState() =>
-      _UserTypeSelectionScreenState();
-}
-
-class _UserTypeSelectionScreenState extends State<UserTypeSelectionScreen> {
-  bool _loading = false;
-
-  void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red),
-    );
-  }
-
-  Future<void> _setRoleAndGo(String role) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _snack('No logged in user. Please sign up again.');
-      return;
-    }
-
-    setState(() => _loading = true);
-
-    try {
-      final uid = user.uid;
-      final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
-      final existing = await docRef.get();
-
-      if (existing.exists) {
-        final data = existing.data() as Map<String, dynamic>;
-        final existingRole = (data['role'] ?? '').toString().trim();
-
-        if (existingRole.isNotEmpty && existingRole != role) {
-          _snack(AppLocalizations.of(context).translate('role_locked'));
-          if (mounted) setState(() => _loading = false);
-          return;
-        }
-      }
-
-      await docRef.set({
-        'role': role,
-        'profileCompleted': false,
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      if (!mounted) return;
-
-      Widget next;
-
-      if (role == 'patient') {
-        next = const PatientSignUpScreen();
-      } else if (role == 'parent') {
-        next = const ParentSignUpScreen();
-      } else if (role == 'hospital_admin') {
-        next = const HospitalAdminSignupScreen();
-      } else {
-        next = SupportStaffSignupScreen(initialRole: role);
-      }
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => next),
-      );
-    } catch (e) {
-      _snack('Failed to save role: $e');
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final tr = AppLocalizations.of(context);
-
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: LIGHT_BG,
       appBar: AppBar(
-        title: Text(tr.translate('choose_role')),
+        title: const Text('Choose Account Type'),
         backgroundColor: PETROL_DARK,
         foregroundColor: Colors.white,
-        automaticallyImplyLeading: false,
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 22.0),
+      body: SafeArea(
         child: ListView(
+          padding: const EdgeInsets.all(20),
           children: [
-            const SizedBox(height: 28),
-            Text(
-              tr.translate('select_how_to_use'),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 10),
+            const Text(
+              'Welcome to SmartCare',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: PETROL_DARK,
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              tr.translate('institution_workflow'),
-              style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+            const Text(
+              'Select how you want to join the system.',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.black54,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 24),
-
-            _roleButton(
-              text: tr.translate('patient'),
-              subtitle: tr.translate('patient_desc'),
-              icon: Icons.favorite,
-              onTap: _loading ? null : () => _setRoleAndGo('patient'),
-            ),
-            const SizedBox(height: 14),
-
-            _roleButton(
-              text: tr.translate('parent'),
-              subtitle: tr.translate('parent_desc'),
-              icon: Icons.family_restroom,
-              onTap: _loading ? null : () => _setRoleAndGo('parent'),
-            ),
-            const SizedBox(height: 14),
-
-            _roleButton(
-              text: tr.translate('hospital_admin'),
-              subtitle: tr.translate('hospital_admin_desc'),
-              icon: Icons.admin_panel_settings,
-              onTap: _loading ? null : () => _setRoleAndGo('hospital_admin'),
-            ),
-            const SizedBox(height: 14),
-
-            _roleButton(
-              text: tr.translate('doctor'),
-              subtitle: tr.translate('doctor_desc'),
-              icon: Icons.medical_services,
-              onTap: _loading ? null : () => _setRoleAndGo('doctor'),
-            ),
-            const SizedBox(height: 14),
-
-            _roleButton(
-              text: tr.translate('nurse'),
-              subtitle: tr.translate('nurse_desc'),
+            _RoleCard(
               icon: Icons.local_hospital,
-              onTap: _loading ? null : () => _setRoleAndGo('nurse'),
+              title: 'Hospital / Institution Admin',
+              subtitle: 'Create a hospital account and manage doctors, nurses, and staff.',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const HospitalAdminSignupScreen(),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 14),
-
-            _roleButton(
-              text: tr.translate('triage_staff'),
-              subtitle: tr.translate('triage_desc'),
-              icon: Icons.route,
-              onTap: _loading ? null : () => _setRoleAndGo('triage_staff'),
+            _RoleCard(
+              icon: Icons.medical_services,
+              title: 'Doctor',
+              subtitle: 'Join an existing hospital using Hospital ID.',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DoctorSignupScreen(
+                      role: 'doctor',
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 14),
-
-            _roleButton(
-              text: tr.translate('support_staff'),
-              subtitle: tr.translate('staff_desc'),
+            _RoleCard(
+              icon: Icons.health_and_safety,
+              title: 'Nurse',
+              subtitle: 'Register under a hospital and wait for admin approval.',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DoctorSignupScreen(
+                      role: 'nurse',
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 14),
+            _RoleCard(
               icon: Icons.badge,
-              onTap: _loading ? null : () => _setRoleAndGo('support_staff'),
+              title: 'Staff',
+              subtitle: 'Join your hospital team with your Hospital ID.',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DoctorSignupScreen(
+                      role: 'staff',
+                    ),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 18),
-
-            if (_loading) const LinearProgressIndicator(),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              },
+              icon: const Icon(Icons.login),
+              label: const Text('Already have an account? Login'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: PETROL_DARK,
+                side: const BorderSide(color: PETROL_DARK),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _roleButton({
-    required String text,
-    required String subtitle,
-    required IconData icon,
-    required VoidCallback? onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: LIGHT_BG,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: PETROL.withOpacity(0.15)),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: PETROL_DARK,
-              child: Icon(icon, color: Colors.white),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(text, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(color: Colors.grey[700], fontSize: 12),
-                  ),
-                ],
+class _RoleCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _RoleCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x12000000),
+                blurRadius: 10,
+                offset: Offset(0, 5),
               ),
-            ),
-            const Icon(Icons.arrow_forward_ios, size: 16),
-          ],
+            ],
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: LIGHT_BG,
+                child: Icon(icon, color: PETROL_DARK, size: 28),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: PETROL_DARK,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 13.5,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, color: PETROL_DARK),
+            ],
+          ),
         ),
       ),
     );
