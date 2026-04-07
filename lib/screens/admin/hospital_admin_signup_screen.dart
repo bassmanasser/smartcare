@@ -47,7 +47,12 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
     }
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No authenticated user found')),
+      );
+      return;
+    }
 
     setState(() => _loading = true);
 
@@ -55,7 +60,23 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
       final hospitalId =
           HospitalIdService.generateHospitalId(_institutionName.text.trim());
 
-      final institutionData = {
+      // 1) create / update user first
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'uid': user.uid,
+        'name': _name.text.trim(),
+        'email': user.email ?? '',
+        'phone': _phone.text.trim(),
+        'role': 'hospital_admin',
+        'approvalStatus': 'approved',
+        'profileCompleted': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // 2) create institution after user becomes admin
+      await FirebaseFirestore.instance
+          .collection('institutions')
+          .doc(hospitalId)
+          .set({
         'hospitalId': hospitalId,
         'institutionName': _institutionName.text.trim(),
         'institutionAddress': _institutionAddress.text.trim(),
@@ -65,26 +86,17 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
         'adminEmail': user.email ?? '',
         'adminPhone': _phone.text.trim(),
         'createdAt': FieldValue.serverTimestamp(),
-      };
+        'isActive': true,
+      });
 
-      await FirebaseFirestore.instance
-          .collection('institutions')
-          .doc(hospitalId)
-          .set(institutionData);
-
+      // 3) attach institution data to user doc
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'uid': user.uid,
-        'name': _name.text.trim(),
-        'email': user.email ?? '',
-        'phone': _phone.text.trim(),
-        'role': 'hospital_admin',
         'institutionId': hospitalId,
         'institutionName': _institutionName.text.trim(),
         'institutionAddress': _institutionAddress.text.trim(),
         'institutionCity': _institutionCity.text.trim(),
-        'approvalStatus': 'approved',
         'profileCompleted': true,
-        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
       if (!mounted) return;
@@ -171,9 +183,7 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 child: Text(
-                  _loading
-                      ? '...'
-                      : tr.translate('save_continue'),
+                  _loading ? 'Saving...' : tr.translate('save_continue'),
                 ),
               ),
             ],
