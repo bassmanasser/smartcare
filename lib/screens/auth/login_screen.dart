@@ -6,7 +6,7 @@ import '../../utils/constants.dart';
 import '../admin/admin_home_screen.dart';
 import '../doctor/doctor_home_screen.dart';
 import '../nurse/nurse_home_screen.dart';
-import '../staff/support_staff_home_screen.dart';
+import '../staff/staff_home_screen.dart';
 import '../patient/patient_home_screen.dart';
 import 'pending_approval_screen.dart';
 import '../../models/doctor.dart';
@@ -99,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
         case 'staff':
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const SupportStaffHomeScreen()),
+            MaterialPageRoute(builder: (_) => const StaffHomeScreen()),
           );
           break;
 

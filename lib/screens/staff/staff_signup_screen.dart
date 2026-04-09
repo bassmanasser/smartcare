@@ -2,48 +2,25 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../auth/pending_approval_screen.dart';
-
-class DoctorSignupScreen extends StatefulWidget {
-  final String role;
-
-  const DoctorSignupScreen({
-    super.key,
-    this.role = 'doctor',
-  });
+class StaffSignupScreen extends StatefulWidget {
+  const StaffSignupScreen({super.key, required String initialRole});
 
   @override
-  State<DoctorSignupScreen> createState() => _DoctorSignupScreenState();
+  State<StaffSignupScreen> createState() => _StaffSignupScreenState();
 }
 
-class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
+class _StaffSignupScreenState extends State<StaffSignupScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _hospitalIdController = TextEditingController();
   final TextEditingController _departmentController = TextEditingController();
   final TextEditingController _employeeIdController = TextEditingController();
-  final TextEditingController _licenseNumberController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   bool _loading = false;
-
-  bool get _showLicense =>
-      widget.role.toLowerCase() == 'doctor' ||
-      widget.role.toLowerCase() == 'nurse';
-
-  String get _roleLabel {
-    switch (widget.role.toLowerCase()) {
-      case 'nurse':
-        return 'Nurse';
-      case 'staff':
-        return 'Staff';
-      default:
-        return 'Doctor';
-    }
-  }
 
   @override
   void dispose() {
@@ -51,7 +28,6 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
     _hospitalIdController.dispose();
     _departmentController.dispose();
     _employeeIdController.dispose();
-    _licenseNumberController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -80,8 +56,6 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
               'Hospital')
           .toString();
 
-      final role = widget.role.toLowerCase();
-
       final cred = await auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -96,14 +70,13 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
         'fullName': _fullNameController.text.trim(),
         'email': _emailController.text.trim(),
         'phone': _phoneController.text.trim(),
-        'role': role,
-        'medicalRole': _roleLabel,
+        'role': 'staff',
+        'medicalRole': 'Staff',
         'institutionId': hospitalId,
         'institutionName': hospitalName,
         'department': _departmentController.text.trim(),
         'departmentName': _departmentController.text.trim(),
         'employeeId': _employeeIdController.text.trim(),
-        'licenseNumber': _licenseNumberController.text.trim(),
         'approvalStatus': 'pending',
         'createdAt': now,
         'updatedAt': now,
@@ -115,14 +88,13 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
         'fullName': _fullNameController.text.trim(),
         'email': _emailController.text.trim(),
         'phone': _phoneController.text.trim(),
-        'role': role,
-        'medicalRole': _roleLabel,
+        'role': 'staff',
+        'medicalRole': 'Staff',
         'institutionId': hospitalId,
         'institutionName': hospitalName,
         'department': _departmentController.text.trim(),
         'departmentName': _departmentController.text.trim(),
         'employeeId': _employeeIdController.text.trim(),
-        'licenseNumber': _licenseNumberController.text.trim(),
         'status': 'pending',
         'approvalStatus': 'pending',
         'createdAt': now,
@@ -131,19 +103,11 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
 
       if (!mounted) return;
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PendingApprovalScreen(
-            roleLabel: _roleLabel,
-            hospitalName: hospitalName,
-            role: '',
-            status: '',
-            institutionName: '',
-          ),
-        ),
-        (route) => false,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Staff account created successfully')),
       );
+
+      Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       String msg = 'Registration failed';
       if (e.code == 'email-already-in-use') {
@@ -202,13 +166,9 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final subtitle = widget.role.toLowerCase() == 'nurse'
-        ? 'Join your hospital as a nurse using the hospital ID.'
-        : 'Join your hospital as a doctor using the hospital ID.';
-
     return Scaffold(
       appBar: AppBar(
-        title: Text('$_roleLabel Registration'),
+        title: const Text('Staff Registration'),
       ),
       body: SafeArea(
         child: ListView(
@@ -218,11 +178,8 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary.withOpacity(0.95),
-                    Theme.of(context).colorScheme.primaryContainer.withOpacity(0.90),
-                  ],
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0F5C63), Color(0xFF2A8C95)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -248,9 +205,9 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '$_roleLabel Registration',
-                          style: const TextStyle(
+                        const Text(
+                          'Staff Registration',
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 21,
                             fontWeight: FontWeight.w800,
@@ -258,7 +215,7 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          subtitle,
+                          'Join your hospital as staff using the hospital ID.',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.92),
                             fontSize: 13.5,
@@ -279,8 +236,6 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
                   _field(_hospitalIdController, 'Hospital ID', Icons.badge_outlined),
                   _field(_departmentController, 'Department', Icons.apartment_outlined),
                   _field(_employeeIdController, 'Employee ID', Icons.confirmation_number_outlined),
-                  if (_showLicense)
-                    _field(_licenseNumberController, 'License Number', Icons.verified_user_outlined),
                   _field(_phoneController, 'Phone Number', Icons.phone_outlined, keyboardType: TextInputType.phone),
                   _field(_emailController, 'Email Address', Icons.email_outlined, keyboardType: TextInputType.emailAddress),
                   _field(_passwordController, 'Password', Icons.lock_outline_rounded, obscure: true),

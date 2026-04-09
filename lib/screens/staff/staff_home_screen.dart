@@ -3,26 +3,26 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../utils/constants.dart';
-import 'nurse_patients_screen.dart';
-import 'nurse_scan_patient_screen.dart';
+import 'staff_patients_screen.dart';
+import 'staff_scan_patient_screen.dart';
 
-class NurseHomeScreen extends StatefulWidget {
-  const NurseHomeScreen({super.key});
+class StaffHomeScreen extends StatefulWidget {
+  const StaffHomeScreen({super.key});
 
   @override
-  State<NurseHomeScreen> createState() => _NurseHomeScreenState();
+  State<StaffHomeScreen> createState() => _StaffHomeScreenState();
 }
 
-class _NurseHomeScreenState extends State<NurseHomeScreen> {
+class _StaffHomeScreenState extends State<StaffHomeScreen> {
   bool _loading = true;
   int _selectedTab = 0;
 
   Map<String, dynamic> _userData = {};
-  String _nurseName = 'Nurse';
+  String _staffName = 'Staff';
   String _institutionName = 'Hospital';
   String _institutionId = '';
   String _departmentName = 'General';
-  String _medicalRole = 'Nurse';
+  String _medicalRole = 'Staff';
 
   @override
   void initState() {
@@ -45,21 +45,21 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
       if (!mounted) return;
       setState(() {
         _userData = data;
-        _nurseName = (data['name'] ?? data['fullName'] ?? 'Nurse').toString();
+        _staffName = (data['name'] ?? data['fullName'] ?? 'Staff').toString();
         _institutionName =
             (data['institutionName'] ?? 'Hospital').toString();
         _institutionId = (data['institutionId'] ?? '').toString();
         _departmentName =
             (data['departmentName'] ?? data['department'] ?? 'General')
                 .toString();
-        _medicalRole = (data['medicalRole'] ?? 'Nurse').toString();
+        _medicalRole = (data['medicalRole'] ?? 'Staff').toString();
         _loading = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load nurse data: $e')),
+        SnackBar(content: Text('Failed to load staff data: $e')),
       );
     }
   }
@@ -75,7 +75,7 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
     final snap = await FirebaseFirestore.instance
         .collection('care_links')
         .where('linkedUserId', isEqualTo: uid)
-        .where('linkedUserRole', isEqualTo: 'nurse')
+        .where('linkedUserRole', isEqualTo: 'staff')
         .where('status', isEqualTo: 'approved')
         .get();
 
@@ -110,7 +110,7 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
     return snap.docs.length;
   }
 
-  Future<int> _countActiveCases() async {
+  Future<int> _countOpenCases() async {
     if (_institutionId.isEmpty) return 0;
 
     final snap = await FirebaseFirestore.instance
@@ -131,12 +131,13 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
       );
     }
 
+    final staffId =
+        (_userData['uid'] ?? FirebaseAuth.instance.currentUser?.uid ?? '')
+            .toString();
+
     final pages = [
-      _buildHomeTab(),
-      NursePatientsScreen(
-        nurseId: (_userData['uid'] ?? FirebaseAuth.instance.currentUser?.uid ?? '')
-            .toString(),
-      ),
+      _buildHomeTab(staffId),
+      StaffPatientsScreen(staffId: staffId),
       _buildProfileTab(),
       _buildSettingsTab(),
     ];
@@ -180,15 +181,15 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
     );
   }
 
-  Widget _buildHomeTab() {
+  Widget _buildHomeTab(String staffId) {
     return RefreshIndicator(
       onRefresh: _loadUserData,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          _NurseHeaderCard(
-            nurseName: _nurseName,
+          _StaffHeaderCard(
+            staffName: _staffName,
             institutionName: _institutionName,
             departmentName: _departmentName,
             medicalRole: _medicalRole,
@@ -196,7 +197,7 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
           const SizedBox(height: 16),
           const _SectionTitle(
             title: 'Overview',
-            subtitle: 'Professional nurse dashboard summary',
+            subtitle: 'Professional staff dashboard summary',
           ),
           const SizedBox(height: 12),
           FutureBuilder<List<int>>(
@@ -204,7 +205,7 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
               _countAssignedPatients(),
               _countTodayPatients(),
               _countAlerts(),
-              _countActiveCases(),
+              _countOpenCases(),
             ]),
             builder: (context, snapshot) {
               final values = snapshot.data ?? [0, 0, 0, 0];
@@ -235,7 +236,7 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
                     color: Colors.orange,
                   ),
                   _StatCard(
-                    title: 'Active Cases',
+                    title: 'Open Cases',
                     value: values[3].toString(),
                     icon: Icons.local_hospital_rounded,
                     color: Colors.red,
@@ -246,8 +247,8 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
           ),
           const SizedBox(height: 20),
           const _SectionTitle(
-            title: 'Nursing Work',
-            subtitle: 'Main nurse tools without quick actions',
+            title: 'Staff Work',
+            subtitle: 'Main staff tools in a clean professional layout',
           ),
           const SizedBox(height: 12),
           _ActionTile(
@@ -258,12 +259,9 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => NurseScanPatientScreen(
-                    nurseId: (_userData['uid'] ??
-                            FirebaseAuth.instance.currentUser?.uid ??
-                            '')
-                        .toString(),
-                    nurseName: _nurseName,
+                  builder: (_) => StaffScanPatientScreen(
+                    staffId: staffId,
+                    staffName: _staffName,
                   ),
                 ),
               );
@@ -272,7 +270,7 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
           _ActionTile(
             icon: Icons.groups_outlined,
             title: 'My Patients',
-            subtitle: 'Open patient list assigned to this nurse',
+            subtitle: 'Open patient list assigned to this staff member',
             onTap: () {
               setState(() => _selectedTab = 1);
             },
@@ -293,8 +291,8 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _NurseHeaderCard(
-          nurseName: _nurseName,
+        _StaffHeaderCard(
+          staffName: _staffName,
           institutionName: _institutionName,
           departmentName: _departmentName,
           medicalRole: _medicalRole,
@@ -302,7 +300,7 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
         ),
         const SizedBox(height: 16),
         const _SectionTitle(
-          title: 'Nurse Profile',
+          title: 'Staff Profile',
           subtitle: 'Identity, department, and hospital registration details',
         ),
         const SizedBox(height: 12),
@@ -312,7 +310,7 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _ProfileInfoRow(label: 'Full Name', value: _nurseName),
+                _ProfileInfoRow(label: 'Full Name', value: _staffName),
                 _ProfileInfoRow(label: 'Medical Role', value: _medicalRole),
                 _ProfileInfoRow(label: 'Department', value: _departmentName),
                 _ProfileInfoRow(label: 'Hospital', value: _institutionName),
@@ -336,8 +334,8 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _NurseHeaderCard(
-          nurseName: _nurseName,
+        _StaffHeaderCard(
+          staffName: _staffName,
           institutionName: _institutionName,
           departmentName: _departmentName,
           medicalRole: _medicalRole,
@@ -346,25 +344,25 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
         const SizedBox(height: 16),
         const _SectionTitle(
           title: 'Settings',
-          subtitle: 'Nurse account options',
+          subtitle: 'Staff account options',
         ),
         const SizedBox(height: 12),
         _ActionTile(
           icon: Icons.language_rounded,
           title: 'Language',
-          subtitle: 'Nurse pages now use clearer professional English',
+          subtitle: 'Staff pages now use clearer professional English',
           onTap: () {},
         ),
         _ActionTile(
           icon: Icons.refresh_rounded,
           title: 'Refresh Data',
-          subtitle: 'Reload nurse dashboard data',
+          subtitle: 'Reload staff dashboard data',
           onTap: _loadUserData,
         ),
         _ActionTile(
           icon: Icons.logout_rounded,
           title: 'Logout',
-          subtitle: 'Sign out from nurse account',
+          subtitle: 'Sign out from staff account',
           onTap: _logout,
         ),
       ],
@@ -372,15 +370,15 @@ class _NurseHomeScreenState extends State<NurseHomeScreen> {
   }
 }
 
-class _NurseHeaderCard extends StatelessWidget {
-  final String nurseName;
+class _StaffHeaderCard extends StatelessWidget {
+  final String staffName;
   final String institutionName;
   final String departmentName;
   final String medicalRole;
   final bool compact;
 
-  const _NurseHeaderCard({
-    required this.nurseName,
+  const _StaffHeaderCard({
+    required this.staffName,
     required this.institutionName,
     required this.departmentName,
     required this.medicalRole,
@@ -410,7 +408,7 @@ class _NurseHeaderCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
             ),
             child: const Icon(
-              Icons.local_hospital_rounded,
+              Icons.badge_rounded,
               color: Colors.white,
               size: 30,
             ),
@@ -421,7 +419,7 @@ class _NurseHeaderCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  nurseName,
+                  staffName,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: compact ? 20 : 22,

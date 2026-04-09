@@ -18,8 +18,7 @@ import 'screens/doctor/doctor_home_screen.dart';
 import 'screens/nurse/nurse_home_screen.dart';
 import 'screens/parent/parent_home_screen.dart';
 import 'screens/patient/patient_home_screen.dart';
-import 'screens/staff/support_staff_home_screen.dart';
-import 'screens/staff/triage_staff_home_screen.dart';
+import 'screens/staff/staff_home_screen.dart';
 import 'screens/user_type_selection_screen.dart';
 import 'services/auth_service.dart';
 import 'services/ble_monitor_manager.dart';
@@ -192,12 +191,10 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
             return const NurseHomeScreen();
           }
 
-          if (role == 'triage_staff') {
-            return const TriageStaffHomeScreen();
-          }
+
 
           if (role == 'support_staff') {
-            return const SupportStaffHomeScreen();
+            return const StaffHomeScreen();
           }
 
           return const Scaffold(

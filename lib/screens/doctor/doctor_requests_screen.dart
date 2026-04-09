@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:smartcare/models/doctor.dart';
 import '../../models/care_link.dart';
 import '../../services/care_link_service.dart';
 import '../../utils/constants.dart';
 
 class DoctorRequestsScreen extends StatelessWidget {
   final String doctorId;
-  const DoctorRequestsScreen({super.key, required this.doctorId});
+  const DoctorRequestsScreen({super.key, required this.doctorId, required Doctor doctor});
 
   @override
   Widget build(BuildContext context) {

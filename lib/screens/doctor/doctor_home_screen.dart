@@ -9,9 +9,10 @@ import '../../models/risk_assessment.dart';
 import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
 import '../auth/welcome_screen.dart';
-import 'doctor_appointments_screen.dart';
+import 'assigned_cases_screen.dart';
+import 'doctor_patients_screen.dart';
 import 'doctor_scan_patient_screen.dart';
-import 'doctor_stats_screen.dart';
+import 'doctor_requests_screen.dart';
 import 'patient_detail_for_doctor_screen.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
@@ -48,7 +49,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             .where((p) => p.doctorId == widget.doctor.id)
             .toList();
 
-        final queue = _buildQueueData(allPatients, app);
+        final queue = buildDoctorQueueData(allPatients, app);
 
         final emergencyCases =
             queue.where((e) => e.urgency == 'emergency').toList();
@@ -63,8 +64,11 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             urgentCases: urgentCases,
             allPatients: allPatients,
           ),
-          _DispatchQueueTab(queue: queue),
-          _PatientsTab(queue: queue),
+          DoctorPatientsScreen(
+            doctor: widget.doctor,
+            queue: queue,
+          ),
+          _DoctorProfileTab(doctor: widget.doctor),
           _DoctorSettingsTab(
             doctor: widget.doctor,
             onLogout: () => _logout(context),
@@ -74,27 +78,28 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         return Scaffold(
           backgroundColor: const Color(0xffF6F8FB),
           body: tabs[_selectedTab],
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _selectedTab,
-            onTap: (i) => setState(() => _selectedTab = i),
-            selectedItemColor: PETROL,
-            unselectedItemColor: Colors.grey,
-            type: BottomNavigationBarType.fixed,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard_rounded),
-                label: 'Overview',
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _selectedTab,
+            onDestinationSelected: (i) => setState(() => _selectedTab = i),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home_rounded),
+                label: 'Home',
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.local_hospital_rounded),
-                label: 'Queue',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.groups_rounded),
+              NavigationDestination(
+                icon: Icon(Icons.groups_outlined),
+                selectedIcon: Icon(Icons.groups_rounded),
                 label: 'Patients',
               ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.settings_rounded),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline_rounded),
+                selectedIcon: Icon(Icons.person_rounded),
+                label: 'Profile',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.settings_outlined),
+                selectedIcon: Icon(Icons.settings_rounded),
                 label: 'Settings',
               ),
             ],
@@ -108,9 +113,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 class _DoctorOverviewTab extends StatelessWidget {
   final Doctor doctor;
   final AppState app;
-  final List<_DoctorQueueItem> queue;
-  final List<_DoctorQueueItem> emergencyCases;
-  final List<_DoctorQueueItem> urgentCases;
+  final List<DoctorQueueItem> queue;
+  final List<DoctorQueueItem> emergencyCases;
+  final List<DoctorQueueItem> urgentCases;
   final List allPatients;
 
   const _DoctorOverviewTab({
@@ -124,127 +129,200 @@ class _DoctorOverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final doctorName = (doctor.name ?? 'Doctor').toString();
+    final specialty = (doctor.specialty ?? 'General').toString();
+
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: () async {},
-        child: SingleChildScrollView(
+        child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _DoctorHeader(
-                doctor: doctor,
-                queueCount: queue.length,
-                emergencyCount: emergencyCases.length,
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _InstitutionStatusCard(doctor: doctor),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _StatsGrid(
-                  totalPatients: allPatients.length,
-                  emergencyCount: emergencyCases.length,
-                  urgentCount: urgentCases.length,
-                  alertsCount: app.alerts.length,
+          padding: const EdgeInsets.all(16),
+          children: [
+            _DoctorHeaderCard(
+              doctorName: doctorName,
+              specialty: specialty,
+              queueCount: queue.length,
+              emergencyCount: emergencyCases.length,
+            ),
+            const SizedBox(height: 16),
+            _InstitutionStatusCard(doctor: doctor),
+            const SizedBox(height: 16),
+            _DoctorStatsGrid(
+              totalPatients: allPatients.length,
+              emergencyCount: emergencyCases.length,
+              urgentCount: urgentCases.length,
+              alertsCount: app.alerts.length,
+            ),
+            const SizedBox(height: 20),
+            const _SectionTitle(
+              title: 'Clinical Work',
+              subtitle: 'Main doctor tools in a cleaner professional layout',
+            ),
+            const SizedBox(height: 12),
+            _ActionTile(
+              icon: Icons.assignment_outlined,
+              title: 'Assigned Cases',
+              subtitle: 'Review active and priority patient cases',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AssignedCasesScreen(
+                      doctor: doctor,
+                      queue: queue,
+                    ),
+                  ),
+                );
+              },
+            ),
+            _ActionTile(
+              icon: Icons.description_outlined,
+              title: 'Requests & Notes',
+              subtitle: 'Track doctor requests and pending actions',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DoctorRequestsScreen(doctor: doctor, doctorId: '',),
+                  ),
+                );
+              },
+            ),
+            _ActionTile(
+              icon: Icons.qr_code_scanner_rounded,
+              title: 'Scan Patient QR',
+              subtitle: 'Link a patient to your doctor account',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DoctorScanPatientScreen(
+                      doctorId: (doctor.doctorId ?? doctor.id).toString(),
+                      doctorName: (doctor.name ?? 'Doctor').toString(),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            const _SectionTitle(
+              title: 'Critical Queue',
+              subtitle: 'Emergency and urgent cases that need quick attention',
+            ),
+            const SizedBox(height: 12),
+            if (emergencyCases.isEmpty && urgentCases.isEmpty)
+              const _EmptyStateCard(
+                icon: Icons.local_hospital_outlined,
+                title: 'No critical cases',
+                subtitle: 'Emergency and urgent cases will appear here.',
+              )
+            else
+              ...[
+                ...emergencyCases.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _CompactPriorityCard(item: item),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _QuickActionsGrid(
-                  doctor: doctor,
-                  allPatients: allPatients,
+                ...urgentCases.map(
+                  (item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _CompactPriorityCard(item: item),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _PrioritySection(
-                  title: 'Critical & Urgent Queue',
-                  items: [
-                    ...emergencyCases,
-                    ...urgentCases,
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-            ],
-          ),
+              ],
+          ],
         ),
       ),
     );
   }
 }
 
-class _DispatchQueueTab extends StatelessWidget {
-  final List<_DoctorQueueItem> queue;
+class _DoctorProfileTab extends StatelessWidget {
+  final Doctor doctor;
 
-  const _DispatchQueueTab({required this.queue});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xffF6F8FB),
-      appBar: AppBar(
-        title: const Text('Dispatch Queue'),
-        centerTitle: true,
-        backgroundColor: PETROL_DARK,
-        automaticallyImplyLeading: false,
-      ),
-      body: queue.isEmpty
-          ? const Center(
-              child: Text(
-                'No patient cases in queue yet.',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemBuilder: (context, index) {
-                final item = queue[index];
-                return _QueueCaseCard(item: item);
-              },
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemCount: queue.length,
-            ),
-    );
-  }
-}
-
-class _PatientsTab extends StatelessWidget {
-  final List<_DoctorQueueItem> queue;
-
-  const _PatientsTab({required this.queue});
+  const _DoctorProfileTab({
+    required this.doctor,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF6F8FB),
-      appBar: AppBar(
-        title: const Text('My Patients'),
-        centerTitle: true,
-        backgroundColor: PETROL_DARK,
-        automaticallyImplyLeading: false,
-      ),
-      body: queue.isEmpty
-          ? const Center(
-              child: Text('No linked patients yet.'),
-            )
-          : ListView.builder(
+      body: SafeArea(
+        child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc((doctor.id).toString())
+              .snapshots(),
+          builder: (context, snapshot) {
+            final data = snapshot.data?.data() ?? {};
+            final doctorName = (doctor.name ?? 'Doctor').toString();
+            final specialty = (doctor.specialty ?? 'General').toString();
+
+            final institutionName =
+                (data['institutionName'] ?? 'Not assigned yet').toString();
+            final departmentName =
+                (data['departmentName'] ?? data['department'] ?? 'General')
+                    .toString();
+            final medicalRole =
+                (data['medicalRole'] ?? 'Doctor').toString();
+            final approvalStatus =
+                (data['approvalStatus'] ?? 'pending').toString();
+            final employeeId = (data['employeeId'] ?? '--').toString();
+            final licenseNumber = (data['licenseNumber'] ?? '--').toString();
+            final phone = (data['phone'] ?? '--').toString();
+            final email =
+                (data['email'] ?? FirebaseAuth.instance.currentUser?.email ?? '--')
+                    .toString();
+            final institutionId = (data['institutionId'] ?? '--').toString();
+
+            return ListView(
               padding: const EdgeInsets.all(16),
-              itemCount: queue.length,
-              itemBuilder: (context, index) {
-                final item = queue[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _PatientListCard(item: item),
-                );
-              },
-            ),
+              children: [
+                _DoctorHeaderCard(
+                  doctorName: doctorName,
+                  specialty: specialty,
+                  queueCount: 0,
+                  emergencyCount: 0,
+                  compact: true,
+                ),
+                const SizedBox(height: 16),
+                const _SectionTitle(
+                  title: 'Doctor Profile',
+                  subtitle: 'Identity, hospital data, and registration details',
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  elevation: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        _ProfileInfoRow(label: 'Full Name', value: doctorName),
+                        _ProfileInfoRow(label: 'Medical Role', value: medicalRole),
+                        _ProfileInfoRow(label: 'Specialty', value: specialty),
+                        _ProfileInfoRow(label: 'Department', value: departmentName),
+                        _ProfileInfoRow(label: 'Hospital', value: institutionName),
+                        _ProfileInfoRow(label: 'Hospital ID', value: institutionId),
+                        _ProfileInfoRow(label: 'Employee ID', value: employeeId),
+                        _ProfileInfoRow(
+                          label: 'License Number',
+                          value: licenseNumber,
+                        ),
+                        _ProfileInfoRow(label: 'Approval Status', value: approvalStatus),
+                        _ProfileInfoRow(label: 'Phone', value: phone),
+                        _ProfileInfoRow(label: 'Email', value: email, isLast: true),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }
@@ -260,177 +338,159 @@ class _DoctorSettingsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final doctorName = (doctor.name ?? 'Doctor').toString();
+    final specialty = (doctor.specialty ?? 'General').toString();
+
     return Scaffold(
       backgroundColor: const Color(0xffF6F8FB),
-      appBar: AppBar(
-        title: const Text('Doctor Settings'),
-        centerTitle: true,
-        backgroundColor: PETROL_DARK,
-        automaticallyImplyLeading: false,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _DoctorInfoCard(doctor: doctor),
-          const SizedBox(height: 14),
-          _InstitutionInfoCard(doctor: doctor),
-          const SizedBox(height: 14),
-          _SettingTile(
-            icon: Icons.qr_code_scanner_rounded,
-            title: 'Scan Patient QR',
-            subtitle: 'Link a patient by scanning their QR code',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => DoctorScanPatientScreen(
-                    doctorId: (doctor.doctorId ?? doctor.id).toString(),
-                    doctorName: (doctor.name ?? 'Doctor').toString(),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _DoctorHeaderCard(
+              doctorName: doctorName,
+              specialty: specialty,
+              queueCount: 0,
+              emergencyCount: 0,
+              compact: true,
+            ),
+            const SizedBox(height: 16),
+            const _SectionTitle(
+              title: 'Settings',
+              subtitle: 'Doctor account options and system access',
+            ),
+            const SizedBox(height: 12),
+            _SettingTile(
+              icon: Icons.language_rounded,
+              title: 'Language',
+              subtitle: 'Doctor screens now use clearer professional English',
+            ),
+            _SettingTile(
+              icon: Icons.qr_code_scanner_rounded,
+              title: 'Scan Patient QR',
+              subtitle: 'Link a patient by scanning their QR code',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DoctorScanPatientScreen(
+                      doctorId: (doctor.doctorId ?? doctor.id).toString(),
+                      doctorName: (doctor.name ?? 'Doctor').toString(),
+                    ),
                   ),
+                );
+              },
+            ),
+            _SettingTile(
+              icon: Icons.description_outlined,
+              title: 'Requests',
+              subtitle: 'Open doctor requests and follow-ups',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DoctorRequestsScreen(doctor: doctor, doctorId: '',),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
                 ),
-              );
-            },
-          ),
-          _SettingTile(
-            icon: Icons.verified_rounded,
-            title: 'Verification Status',
-            subtitle:
-                (doctor.isApproved == true) ? 'Verified' : 'Pending approval',
-          ),
-          _SettingTile(
-            icon: Icons.medical_services_rounded,
-            title: 'Specialty',
-            subtitle: (doctor.specialty ?? 'General').toString(),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+              ),
+              onPressed: onLogout,
+              icon: const Icon(Icons.logout_rounded),
+              label: const Text(
+                'Logout',
+                style: TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
-            onPressed: onLogout,
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text(
-              'Logout',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _DoctorHeader extends StatelessWidget {
-  final Doctor doctor;
+class _DoctorHeaderCard extends StatelessWidget {
+  final String doctorName;
+  final String specialty;
   final int queueCount;
   final int emergencyCount;
+  final bool compact;
 
-  const _DoctorHeader({
-    required this.doctor,
+  const _DoctorHeaderCard({
+    required this.doctorName,
+    required this.specialty,
     required this.queueCount,
     required this.emergencyCount,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final specialty = (doctor.specialty ?? 'General').toString();
-    final doctorName = (doctor.name ?? 'Doctor').toString();
-
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
-      decoration: const BoxDecoration(
-        color: PETROL_DARK,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+      padding: EdgeInsets.all(compact ? 18 : 20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          colors: [PETROL_DARK, PETROL],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              const CircleAvatar(
-                radius: 32,
-                backgroundColor: Colors.white24,
-                child: Icon(Icons.person_rounded, size: 34, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      doctorName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      specialty,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: emergencyCount > 0
-                      ? Colors.red.withOpacity(0.18)
-                      : Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color:
-                        emergencyCount > 0 ? Colors.redAccent : Colors.white24,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Emergency',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$emergencyCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
+            width: compact ? 58 : 64,
+            height: compact ? 58 : 64,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withOpacity(0.18),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Row(
+            child: const Icon(
+              Icons.medical_services_rounded,
+              color: Colors.white,
+              size: 30,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.qr_code_scanner_rounded, color: Colors.white),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Scan patient QR to link new patient and add to queue.',
+                Text(
+                  doctorName,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: compact ? 20 : 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  specialty,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (!compact) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Assigned cases: $queueCount  •  Emergency: $emergencyCount',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Colors.white70,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -457,187 +517,51 @@ class _InstitutionStatusCard extends StatelessWidget {
         final institutionName =
             (data['institutionName'] ?? 'Not assigned yet').toString();
         final departmentName =
-            (data['departmentName'] ?? 'General').toString();
-        final medicalRole =
-            (data['medicalRole'] ?? 'Medical Staff').toString();
-        final approvalStatus =
-            (data['approvalStatus'] ?? 'pending').toString();
+            (data['departmentName'] ?? data['department'] ?? 'General')
+                .toString();
+        final medicalRole = (data['medicalRole'] ?? 'Medical Staff').toString();
+        final approvalStatus = (data['approvalStatus'] ?? 'pending').toString();
         final employeeId = (data['employeeId'] ?? '--').toString();
-        final availabilityStatus =
-            (data['availabilityStatus'] ?? 'available').toString();
 
-        final statusColor = _approvalColor(approvalStatus);
-
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x11000000),
-                blurRadius: 14,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Institution Status',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                  color: PETROL_DARK,
+        return Card(
+          elevation: 0,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _SectionTitle(
+                  title: 'Institution Status',
+                  subtitle: 'Doctor role and hospital registration summary',
                 ),
-              ),
-              const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _InfoChip(
-                    label: 'Institution',
-                    value: institutionName,
-                    color: Colors.blue,
-                  ),
-                  _InfoChip(
-                    label: 'Department',
-                    value: departmentName,
-                    color: Colors.teal,
-                  ),
-                  _InfoChip(
-                    label: 'Role',
-                    value: medicalRole,
-                    color: Colors.indigo,
-                  ),
-                  _InfoChip(
-                    label: 'Staff ID',
-                    value: employeeId,
-                    color: Colors.deepPurple,
-                  ),
-                  _InfoChip(
-                    label: 'Approval',
-                    value: approvalStatus,
-                    color: statusColor,
-                  ),
-                  _InfoChip(
-                    label: 'Availability',
-                    value: availabilityStatus,
-                    color: Colors.orange,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _InstitutionInfoCard extends StatelessWidget {
-  final Doctor doctor;
-
-  const _InstitutionInfoCard({required this.doctor});
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc((doctor.id).toString())
-          .snapshots(),
-      builder: (context, snapshot) {
-        final data = snapshot.data?.data() ?? {};
-        final institutionName =
-            (data['institutionName'] ?? 'Not assigned yet').toString();
-        final institutionCode =
-            (data['institutionCode'] ?? '--').toString();
-        final departmentName =
-            (data['departmentName'] ?? 'General').toString();
-        final employeeId = (data['employeeId'] ?? '--').toString();
-        final licenseNumber =
-            (data['licenseNumber'] ?? '--').toString();
-
-        return _SectionCard(
-          child: Column(
-            children: [
-              const CircleAvatar(
-                radius: 34,
-                backgroundColor: Color(0xffE8F3F3),
-                child:
-                    Icon(Icons.local_hospital, size: 34, color: PETROL_DARK),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                institutionName,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Department: $departmentName',
-                style: const TextStyle(color: Colors.black54),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xffF6F8FB),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Column(
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    _simpleInfoRow('Institution Code', institutionCode),
-                    const SizedBox(height: 8),
-                    _simpleInfoRow('Employee ID', employeeId),
-                    const SizedBox(height: 8),
-                    _simpleInfoRow('License Number', licenseNumber),
+                    _InfoChip(label: 'Hospital', value: institutionName),
+                    _InfoChip(label: 'Department', value: departmentName),
+                    _InfoChip(label: 'Role', value: medicalRole),
+                    _InfoChip(label: 'Staff ID', value: employeeId),
+                    _InfoChip(label: 'Approval', value: approvalStatus),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
     );
   }
-
-  Widget _simpleInfoRow(String label, String value) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              color: PETROL_DARK,
-            ),
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(color: Colors.black54),
-        ),
-      ],
-    );
-  }
 }
 
-class _StatsGrid extends StatelessWidget {
+class _DoctorStatsGrid extends StatelessWidget {
   final int totalPatients;
   final int emergencyCount;
   final int urgentCount;
   final int alertsCount;
 
-  const _StatsGrid({
+  const _DoctorStatsGrid({
     required this.totalPatients,
     required this.emergencyCount,
     required this.urgentCount,
@@ -696,336 +620,53 @@ class _StatsGrid extends StatelessWidget {
   }
 }
 
-class _QuickActionsGrid extends StatelessWidget {
-  final Doctor doctor;
-  final List allPatients;
-
-  const _QuickActionsGrid({
-    required this.doctor,
-    required this.allPatients,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final actions = [
-      _QuickActionItem(
-        title: 'Scan Patient',
-        icon: Icons.qr_code_scanner_rounded,
-        color: Colors.teal,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DoctorScanPatientScreen(
-                doctorId: (doctor.doctorId ?? doctor.id).toString(),
-                doctorName: (doctor.name ?? 'Doctor').toString(),
-              ),
-            ),
-          );
-        },
-      ),
-      _QuickActionItem(
-        title: 'Statistics',
-        icon: Icons.bar_chart_rounded,
-        color: Colors.indigo,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DoctorStatsScreen(
-                myPatients: allPatients,
-                fee: doctor.fee ?? 0.0,
-                totalPatients: allPatients.length,
-              ),
-            ),
-          );
-        },
-      ),
-      _QuickActionItem(
-        title: 'Appointments',
-        icon: Icons.calendar_month_rounded,
-        color: Colors.blue,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DoctorAppointmentsScreen(myPatients: allPatients),
-            ),
-          );
-        },
-      ),
-      _QuickActionItem(
-        title: 'Patients',
-        icon: Icons.people_alt_rounded,
-        color: Colors.red,
-        onTap: () {},
-      ),
-    ];
-
-    return _SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Quick Actions',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-              color: PETROL_DARK,
-            ),
-          ),
-          const SizedBox(height: 14),
-          GridView.builder(
-            itemCount: actions.length,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.35,
-            ),
-            itemBuilder: (context, index) {
-              final item = actions[index];
-              return GestureDetector(
-                onTap: item.onTap,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: item.color.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(item.icon, color: item.color, size: 28),
-                      const SizedBox(height: 10),
-                      Text(
-                        item.title,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: PETROL_DARK,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PrioritySection extends StatelessWidget {
+class _ActionTile extends StatelessWidget {
+  final IconData icon;
   final String title;
-  final List<_DoctorQueueItem> items;
+  final String subtitle;
+  final VoidCallback onTap;
 
-  const _PrioritySection({
+  const _ActionTile({
+    required this.icon,
     required this.title,
-    required this.items,
+    required this.subtitle,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return _SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-              color: PETROL_DARK,
-            ),
-          ),
-          const SizedBox(height: 14),
-          if (items.isEmpty)
-            const Text('No critical cases right now.')
-          else
-            ...items.take(5).map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _CompactPriorityCard(item: item),
-                  ),
-                ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QueueCaseCard extends StatelessWidget {
-  final _DoctorQueueItem item;
-
-  const _QueueCaseCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    final urgencyColor = _urgencyColor(item.urgency);
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PatientDetailForDoctorScreen(patient: item.patient),
-          ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: urgencyColor.withOpacity(0.28)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x11000000),
-              blurRadius: 12,
-              offset: Offset(0, 5),
-            ),
-          ],
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(14),
+        onTap: onTap,
+        leading: CircleAvatar(
+          backgroundColor: PETROL.withOpacity(0.12),
+          child: Icon(icon, color: PETROL_DARK),
         ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: urgencyColor.withOpacity(0.12),
-                  child: Icon(Icons.person_rounded, color: urgencyColor),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Specialty: ${_pretty(item.specialty)}',
-                        style: const TextStyle(color: Colors.black54),
-                      ),
-                    ],
-                  ),
-                ),
-                _UrgencyBadge(urgency: item.urgency),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _MiniMetric(
-                    label: 'Risk',
-                    value: _pretty(item.riskLevel),
-                  ),
-                ),
-                Expanded(
-                  child: _MiniMetric(
-                    label: 'Action',
-                    value: _pretty(item.action),
-                  ),
-                ),
-                Expanded(
-                  child: _MiniMetric(
-                    label: 'Alerts',
-                    value: '${item.alertCount}',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xffF6F8FB),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                item.explanation,
-                style: const TextStyle(height: 1.35),
-              ),
-            ),
-          ],
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
-      ),
-    );
-  }
-}
-
-class _PatientListCard extends StatelessWidget {
-  final _DoctorQueueItem item;
-
-  const _PatientListCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PatientDetailForDoctorScreen(patient: item.patient),
-          ),
-        );
-      },
-      child: _SectionCard(
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: PETROL.withOpacity(0.12),
-              child: const Icon(Icons.person_rounded, color: PETROL_DARK),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Risk: ${_pretty(item.riskLevel)} • Specialty: ${_pretty(item.specialty)}',
-                    style: const TextStyle(color: Colors.black54),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 18),
-          ],
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(subtitle),
         ),
+        trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
       ),
     );
   }
 }
 
 class _CompactPriorityCard extends StatelessWidget {
-  final _DoctorQueueItem item;
+  final DoctorQueueItem item;
 
   const _CompactPriorityCard({required this.item});
 
   @override
   Widget build(BuildContext context) {
-    final color = _urgencyColor(item.urgency);
+    final color = urgencyColor(item.urgency);
 
     return GestureDetector(
       onTap: () {
@@ -1048,62 +689,13 @@ class _CompactPriorityCard extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                '${item.name} • ${_pretty(item.urgency)} • ${_pretty(item.specialty)}',
+                '${item.name} • ${pretty(item.urgency)} • ${pretty(item.specialty)}',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
             const Icon(Icons.arrow_forward_ios_rounded, size: 16),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _DoctorInfoCard extends StatelessWidget {
-  final Doctor doctor;
-
-  const _DoctorInfoCard({
-    required this.doctor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      child: Column(
-        children: [
-          const CircleAvatar(
-            radius: 34,
-            backgroundColor: Color(0xffE8F3F3),
-            child: Icon(Icons.person_rounded, size: 36, color: PETROL_DARK),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            (doctor.name ?? 'Doctor').toString(),
-            style: const TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            (doctor.specialty ?? 'General').toString(),
-            style: const TextStyle(color: Colors.black54),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xffF6F8FB),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Text(
-              'Use Scan Patient QR to link new patients',
-              style: TextStyle(fontWeight: FontWeight.w700),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1148,64 +740,6 @@ class _SettingTile extends StatelessWidget {
   }
 }
 
-class _MiniMetric extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _MiniMetric({
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey, fontSize: 12),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-            color: PETROL_DARK,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _UrgencyBadge extends StatelessWidget {
-  final String urgency;
-
-  const _UrgencyBadge({required this.urgency});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _urgencyColor(urgency);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.4)),
-      ),
-      child: Text(
-        _pretty(urgency),
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w700,
-          fontSize: 12,
-        ),
-      ),
-    );
-  }
-}
-
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
@@ -1221,31 +755,35 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SectionCard(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(11),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              shape: BoxShape.circle,
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(11),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color),
             ),
-            child: Icon(icon, color: color),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 22,
+            const SizedBox(height: 10),
+            Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 22,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(color: Colors.black54),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(color: Colors.black54),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1254,12 +792,10 @@ class _StatCard extends StatelessWidget {
 class _InfoChip extends StatelessWidget {
   final String label;
   final String value;
-  final Color color;
 
   const _InfoChip({
     required this.label,
     required this.value,
-    required this.color,
   });
 
   @override
@@ -1267,24 +803,24 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: PETROL.withOpacity(0.10),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.28)),
+        border: Border.all(color: PETROL.withOpacity(0.28)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: TextStyle(
-              color: color,
+            style: const TextStyle(
+              color: PETROL,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 3),
           Text(
-            _pretty(value),
+            pretty(value),
             style: const TextStyle(
               color: PETROL_DARK,
               fontWeight: FontWeight.w700,
@@ -1296,47 +832,125 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-class _QuickActionItem {
+class _SectionTitle extends StatelessWidget {
   final String title;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
+  final String subtitle;
 
-  _QuickActionItem({
+  const _SectionTitle({
     required this.title,
-    required this.icon,
-    required this.color,
-    required this.onTap,
+    required this.subtitle,
   });
-}
-
-class _SectionCard extends StatelessWidget {
-  final Widget child;
-
-  const _SectionCard({required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x11000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+            color: PETROL_DARK,
           ),
-        ],
-      ),
-      child: child,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: const TextStyle(color: Colors.black54),
+        ),
+      ],
     );
   }
 }
 
-class _DoctorQueueItem {
+class _ProfileInfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isLast;
+
+  const _ProfileInfoRow({
+    required this.label,
+    required this.value,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                textAlign: TextAlign.end,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        if (!isLast) ...[
+          const SizedBox(height: 14),
+          const Divider(height: 1),
+          const SizedBox(height: 14),
+        ],
+      ],
+    );
+  }
+}
+
+class _EmptyStateCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _EmptyStateCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          children: [
+            Icon(icon, size: 42, color: PETROL_DARK),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.black54),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class DoctorQueueItem {
   final dynamic patient;
   final String name;
   final String riskLevel;
@@ -1347,7 +961,7 @@ class _DoctorQueueItem {
   final int alertCount;
   final int sortValue;
 
-  const _DoctorQueueItem({
+  const DoctorQueueItem({
     required this.patient,
     required this.name,
     required this.riskLevel,
@@ -1360,8 +974,8 @@ class _DoctorQueueItem {
   });
 }
 
-List<_DoctorQueueItem> _buildQueueData(List patients, AppState app) {
-  final items = <_DoctorQueueItem>[];
+List<DoctorQueueItem> buildDoctorQueueData(List patients, AppState app) {
+  final items = <DoctorQueueItem>[];
 
   for (final p in patients) {
     final riskLevel = app.currentAssessment?.riskLevel.key ?? 'normal';
@@ -1372,7 +986,7 @@ List<_DoctorQueueItem> _buildQueueData(List patients, AppState app) {
         'No dispatch recommendation available yet.';
 
     items.add(
-      _DoctorQueueItem(
+      DoctorQueueItem(
         patient: p,
         name: (p.name ?? 'Patient').toString(),
         riskLevel: riskLevel,
@@ -1381,7 +995,7 @@ List<_DoctorQueueItem> _buildQueueData(List patients, AppState app) {
         action: action,
         explanation: explanation,
         alertCount: app.alerts.length,
-        sortValue: _urgencySortValue(urgency),
+        sortValue: urgencySortValue(urgency),
       ),
     );
   }
@@ -1390,7 +1004,7 @@ List<_DoctorQueueItem> _buildQueueData(List patients, AppState app) {
   return items;
 }
 
-int _urgencySortValue(String urgency) {
+int urgencySortValue(String urgency) {
   switch (urgency) {
     case 'emergency':
       return 4;
@@ -1404,7 +1018,7 @@ int _urgencySortValue(String urgency) {
   }
 }
 
-Color _urgencyColor(String urgency) {
+Color urgencyColor(String urgency) {
   switch (urgency) {
     case 'emergency':
       return Colors.red;
@@ -1418,18 +1032,7 @@ Color _urgencyColor(String urgency) {
   }
 }
 
-Color _approvalColor(String status) {
-  switch (status) {
-    case 'approved':
-      return Colors.green;
-    case 'rejected':
-      return Colors.red;
-    default:
-      return Colors.orange;
-  }
-}
-
-String _pretty(String value) {
+String pretty(String value) {
   return value
       .replaceAll('_', ' ')
       .split(' ')

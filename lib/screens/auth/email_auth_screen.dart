@@ -6,7 +6,7 @@ import '../../utils/localization.dart';
 import '../admin/hospital_admin_signup_screen.dart';
 import '../parent/parent_signup_screen.dart';
 import '../patient/patient_signup_screen.dart';
-import '../staff/support_staff_signup_screen.dart';
+import '../staff/staff_signup_screen.dart';
 
 class EmailAuthScreen extends StatefulWidget {
   final String role;
@@ -49,7 +49,7 @@ class _EmailAuthScreenState extends State<EmailAuthScreen> {
     if (widget.role == 'hospital_admin') {
       return const HospitalAdminSignupScreen();
     }
-    return SupportStaffSignupScreen(initialRole: widget.role);
+    return StaffSignupScreen(initialRole: widget.role);
   }
 
   Future<void> _submit() async {

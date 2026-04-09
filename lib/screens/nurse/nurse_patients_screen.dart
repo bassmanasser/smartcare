@@ -1,36 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:smartcare/models/doctor.dart';
-import 'package:smartcare/screens/doctor/doctor_home_screen.dart';
 
-class DoctorPatientsScreen extends StatefulWidget {
-  const DoctorPatientsScreen({super.key, required Doctor doctor, required List<DoctorQueueItem> queue});
+import '../../utils/constants.dart';
+
+class NursePatientsScreen extends StatefulWidget {
+  final String nurseId;
+
+  const NursePatientsScreen({
+    super.key,
+    required this.nurseId,
+  });
 
   @override
-  State<DoctorPatientsScreen> createState() => _DoctorPatientsScreenState();
+  State<NursePatientsScreen> createState() => _NursePatientsScreenState();
 }
 
-class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+class _NursePatientsScreenState extends State<NursePatientsScreen> {
   final TextEditingController _searchController = TextEditingController();
-
   String _searchText = '';
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Stream<QuerySnapshot<Map<String, dynamic>>> _patientsStream() {
-    final uid = _auth.currentUser?.uid ?? '';
-    return FirebaseFirestore.instance
-        .collection('care_links')
-        .where('linkedUserId', isEqualTo: uid)
-        .where('linkedUserRole', isEqualTo: 'doctor')
-        .where('status', isEqualTo: 'approved')
-        .snapshots();
   }
 
   bool _matchesSearch(Map<String, dynamic> patientData) {
@@ -49,7 +41,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
   }
 
   Future<Map<String, dynamic>?> _loadPatient(String patientId) async {
-    final doc = await FirebaseFirestore.instance.collection('users').doc(patientId).get();
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(patientId).get();
     return doc.data();
   }
 
@@ -71,7 +64,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
             children: [
               Text(
                 name,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 16),
               _SheetInfoRow(label: 'Patient ID', value: patientId),
@@ -88,9 +82,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
+      backgroundColor: const Color(0xffF6F8FB),
       body: Column(
         children: [
           Container(
@@ -99,11 +92,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
-              gradient: LinearGradient(
-                colors: [
-                  colorScheme.primary.withOpacity(0.95),
-                  colorScheme.primaryContainer.withOpacity(0.90),
-                ],
+              gradient: const LinearGradient(
+                colors: [PETROL_DARK, PETROL],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -129,7 +119,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'My Patients',
+                        'Assigned Patients',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
@@ -138,7 +128,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Professional patient list for the assigned doctor',
+                        'Professional patient list for the assigned nurse',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.92),
                           fontSize: 13.5,
@@ -158,7 +148,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                 setState(() => _searchText = value);
               },
               decoration: InputDecoration(
-                hintText: 'Search by name, phone, email, patient ID...',
+                hintText: 'Search by patient name, phone, email, patient ID...',
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: _searchText.trim().isEmpty
                     ? null
@@ -178,7 +168,12 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
           const SizedBox(height: 12),
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: _patientsStream(),
+              stream: FirebaseFirestore.instance
+                  .collection('care_links')
+                  .where('linkedUserId', isEqualTo: widget.nurseId)
+                  .where('linkedUserRole', isEqualTo: 'nurse')
+                  .where('status', isEqualTo: 'approved')
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(
@@ -193,13 +188,17 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                 final docs = snapshot.data?.docs ?? [];
 
                 if (docs.isEmpty) {
-                  return const _PatientsEmptyState();
+                  return const Center(
+                    child: Text(
+                      'No linked patients yet.',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  );
                 }
 
-                return ListView.separated(
+                return ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   itemCount: docs.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final linkData = docs[index].data();
                     final patientId = (linkData['patientId'] ?? '').toString();
@@ -207,21 +206,24 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                     return FutureBuilder<Map<String, dynamic>?>(
                       future: _loadPatient(patientId),
                       builder: (context, patientSnapshot) {
-                        if (patientSnapshot.connectionState == ConnectionState.waiting) {
-                          return const Card(
-                            elevation: 0,
-                            child: Padding(
-                              padding: EdgeInsets.all(18),
-                              child: Center(child: CircularProgressIndicator()),
+                        if (patientSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.only(bottom: 12),
+                            child: Card(
+                              elevation: 0,
+                              child: Padding(
+                                padding: EdgeInsets.all(18),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
                             ),
                           );
                         }
 
                         final patientData = patientSnapshot.data;
-                        if (patientData == null) {
-                          return const SizedBox.shrink();
-                        }
-
+                        if (patientData == null) return const SizedBox.shrink();
                         if (!_matchesSearch(patientData)) {
                           return const SizedBox.shrink();
                         }
@@ -235,36 +237,41 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                         final localPatientId =
                             (patientData['patientId'] ?? patientId).toString();
 
-                        return Card(
-                          elevation: 0,
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.all(14),
-                            leading: Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: colorScheme.primary.withOpacity(0.10),
-                                borderRadius: BorderRadius.circular(16),
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Card(
+                            elevation: 0,
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.all(14),
+                              leading: CircleAvatar(
+                                backgroundColor: PETROL.withOpacity(0.12),
+                                child: const Icon(
+                                  Icons.person_rounded,
+                                  color: PETROL_DARK,
+                                ),
                               ),
-                              child: Icon(Icons.person_outline_rounded, color: colorScheme.primary),
-                            ),
-                            title: Text(
-                              name,
-                              style: const TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Text(
-                                [
-                                  'Patient ID: $localPatientId',
-                                  if (phone.isNotEmpty) phone,
-                                  if (email.isNotEmpty) email,
-                                ].join('\n'),
+                              title: Text(
+                                name,
+                                style:
+                                    const TextStyle(fontWeight: FontWeight.w700),
                               ),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(
+                                  [
+                                    'Patient ID: $localPatientId',
+                                    if (phone.isNotEmpty) phone,
+                                    if (email.isNotEmpty) email,
+                                  ].join('\n'),
+                                ),
+                              ),
+                              isThreeLine: true,
+                              trailing: const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 18,
+                              ),
+                              onTap: () => _showPatientDetails(patientData),
                             ),
-                            isThreeLine: true,
-                            trailing: const Icon(Icons.chevron_right_rounded),
-                            onTap: () => _showPatientDetails(patientData),
                           ),
                         );
                       },
@@ -297,7 +304,12 @@ class _SheetInfoRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600))),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
             Expanded(
               child: Text(
                 value,
@@ -313,42 +325,6 @@ class _SheetInfoRow extends StatelessWidget {
           const SizedBox(height: 14),
         ],
       ],
-    );
-  }
-}
-
-class _PatientsEmptyState extends StatelessWidget {
-  const _PatientsEmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Card(
-        elevation: 0,
-        margin: const EdgeInsets.all(24),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.groups_outlined, size: 42),
-              const SizedBox(height: 12),
-              const Text(
-                'No patients found',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Linked patients will appear here.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.72),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
