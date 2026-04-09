@@ -9,16 +9,13 @@ import '../../utils/constants.dart';
 class PatientProfileScreen extends StatelessWidget {
   final Patient patient;
 
-  const PatientProfileScreen({
-    super.key,
-    required this.patient,
-  });
+  const PatientProfileScreen({super.key, required this.patient});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, app, child) {
-        final VitalSample? latest = app.vitals.isNotEmpty ? app.vitals.last : null;
+        final VitalSample? latest = app.getLatestVitals(patient.id);
 
         return Scaffold(
           backgroundColor: const Color(0xffF6F8FB),
@@ -48,7 +45,7 @@ class PatientProfileScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 32,
-                      backgroundColor: PETROL.withOpacity(0.12),
+                      backgroundColor: PETROL.withValues(alpha: 0.12),
                       child: const Icon(
                         Icons.person_rounded,
                         size: 34,
@@ -129,28 +126,32 @@ class PatientProfileScreen extends StatelessWidget {
                   _ProfileReadingCard(
                     icon: Icons.favorite_rounded,
                     title: 'Heart Rate',
-                    value: latest?.hr?.toString() ?? '--',
+                    value: latest?.hr.toString() ?? '--',
                     unit: 'bpm',
                     color: Colors.red,
                   ),
                   _ProfileReadingCard(
                     icon: Icons.air_rounded,
                     title: 'SpO2',
-                    value: latest?.spo2?.toString() ?? '--',
+                    value: latest?.spo2.toString() ?? '--',
                     unit: '%',
                     color: Colors.blue,
                   ),
                   _ProfileReadingCard(
                     icon: Icons.monitor_heart_rounded,
                     title: 'Blood Pressure',
-                    value: latest == null ? '--' : '${latest.sys}/${latest.dia}',
+                    value: latest == null
+                        ? '--'
+                        : '${latest.sys}/${latest.dia}',
                     unit: 'mmHg',
                     color: Colors.purple,
                   ),
                   _ProfileReadingCard(
                     icon: Icons.bloodtype_rounded,
                     title: 'Glucose',
-                    value: latest == null ? '--' : latest.glucose.toInt().toString(),
+                    value: latest == null
+                        ? '--'
+                        : latest.glucose.toInt().toString(),
                     unit: latest == null ? '' : 'mg/dL',
                     color: Colors.teal,
                   ),
@@ -166,7 +167,10 @@ class PatientProfileScreen extends StatelessWidget {
                   _ProfileReadingCard(
                     icon: Icons.notifications_active_rounded,
                     title: 'Alerts',
-                    value: app.alerts.length.toString(),
+                    value: app
+                        .getAlertsForPatient(patient.id)
+                        .length
+                        .toString(),
                     unit: '',
                     color: Colors.redAccent,
                   ),
@@ -214,7 +218,7 @@ class _ProfileReadingCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircleAvatar(
-            backgroundColor: color.withOpacity(0.12),
+            backgroundColor: color.withValues(alpha: 0.12),
             child: Icon(icon, color: color),
           ),
           const SizedBox(height: 10),
@@ -231,10 +235,7 @@ class _ProfileReadingCard extends StatelessWidget {
           FittedBox(
             child: Text(
               unit.isEmpty ? value : '$value $unit',
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 17,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
             ),
           ),
         ],

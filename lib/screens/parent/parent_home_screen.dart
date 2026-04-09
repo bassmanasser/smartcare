@@ -137,8 +137,8 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final app = Provider.of<AppState>(context);
-    final patientsMap = app.patients ?? {};
-    final children = _myChildren(patientsMap, _uid);
+    final patientsMap = app.patients;
+    final children = _myChildren(patientsMap as Map<dynamic, dynamic>, _uid);
     final criticalCount = _criticalCount(children);
 
     return FutureBuilder<Map<String, dynamic>>(

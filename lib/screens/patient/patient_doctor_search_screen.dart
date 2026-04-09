@@ -20,7 +20,7 @@ class _PatientDoctorSearchScreenState extends State<PatientDoctorSearchScreen> {
   Widget build(BuildContext context) {
     final app = Provider.of<AppState>(context);
     // تصفية الدكاترة بناءً على التخصص والبحث
-    final allDoctors = app.doctors?.values.toList() ?? [];
+    final allDoctors = app.doctors.values.toList() ?? [];
     final filteredDoctors = allDoctors.where((doc) {
       bool matchesCat = _selectedCategory == null || doc.specialty.contains(_selectedCategory!);
       bool matchesSearch = doc.name.contains(_searchQuery);
@@ -100,4 +100,8 @@ class _PatientDoctorSearchScreenState extends State<PatientDoctorSearchScreen> {
       ),
     );
   }
+}
+
+extension on List<Map<String, dynamic>> {
+  get values => null;
 }

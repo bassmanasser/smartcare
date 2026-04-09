@@ -1234,3 +1234,7 @@ class _PatientDetailForDoctorScreenState
     );
   }
 }
+
+extension on Future<List<VitalSample>> {
+  get reversed => null;
+}

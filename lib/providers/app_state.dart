@@ -16,7 +16,6 @@ import '../models/mood_record.dart';
 import '../models/risk_assessment.dart';
 import '../models/vital_sample.dart';
 import '../services/ble_esp32_service.dart';
-import '../services/dialog_service.dart';
 import '../services/dispatch_engine.dart';
 import '../services/glucose_api_service.dart';
 import '../services/notification_service.dart';
@@ -40,8 +39,8 @@ class AppState extends ChangeNotifier {
   final RiskEngine _riskEngine = const RiskEngine();
   final DispatchEngine _dispatchEngine = const DispatchEngine();
 
-  StreamSubscription? _bleSub;
-  StreamSubscription? _connSub;
+  StreamSubscription<dynamic>? _bleSub;
+  StreamSubscription<BluetoothConnectionState>? _connSub;
 
   bool isDeviceConnected = false;
   String deviceStatus = "Disconnected";
@@ -55,7 +54,7 @@ class AppState extends ChangeNotifier {
   double get lastPredictedGlucose => _lastPredictedGlucose;
 
   String glucoseStatusMsg = "Waiting for finger...";
-  var doctors;
+  final List<Map<String, dynamic>> doctors = [];
 
   RiskAssessment? _currentAssessment;
   RiskAssessment? get currentAssessment => _currentAssessment;
@@ -100,7 +99,11 @@ class AppState extends ChangeNotifier {
   }
 
   DocumentReference<Map<String, dynamic>> _caseCurrentRef(String patientId) {
-    return _db.collection('users').doc(patientId).collection('case').doc('current');
+    return _db
+        .collection('users')
+        .doc(patientId)
+        .collection('case')
+        .doc('current');
   }
 
   Future<void> _setBleStatus(String patientId, String status) async {
@@ -153,9 +156,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _bleService
-          .scanAndConnect()
-          .timeout(const Duration(seconds: 10));
+      await _bleService.scanAndConnect().timeout(const Duration(seconds: 10));
 
       isDeviceConnected = true;
       deviceStatus = "Connected ✅";
@@ -211,15 +212,17 @@ class AppState extends ChangeNotifier {
       final double tempVal = _safeDouble(data['temp'] ?? data['temperature']);
       final bool fallVal = _safeBool(data['fall'] ?? data['fallFlag']);
       final int currentIr = _safeInt(data['ir'] ?? data['IR']);
-      final int currentPpg =
-          _safeInt(data['ppg'] ?? data['raw_ppg'] ?? data['ppg_ir']);
+      final int currentPpg = _safeInt(
+        data['ppg'] ?? data['raw_ppg'] ?? data['ppg_ir'],
+      );
 
       await _handleLiveGlucoseCollection(currentIr);
       _handlePpgCollection(currentPpg);
 
       final double hardwareGlucose = _safeDouble(data['glucose']);
-      final double finalGlucose =
-          (_lastPredictedGlucose > 0) ? _lastPredictedGlucose : hardwareGlucose;
+      final double finalGlucose = (_lastPredictedGlucose > 0)
+          ? _lastPredictedGlucose
+          : hardwareGlucose;
 
       final sample = VitalSample(
         id: '',
@@ -478,8 +481,6 @@ class AppState extends ChangeNotifier {
       NotificationService.instance.show("EMERGENCY", "Fall Detected!");
     }
 
-    DialogService.showGlucoseAlert(s.glucose);
-
     if (s.glucose > DispatchRules.highGlucoseThreshold) {
       await addAlert(
         AlertItem(
@@ -546,7 +547,8 @@ class AppState extends ChangeNotifier {
           patientId: s.patientId,
           type: 'Abnormal Heart Rate',
           message: 'HR: ${s.hr} bpm',
-          severity: (s.hr >= DispatchRules.criticalHighHrThreshold ||
+          severity:
+              (s.hr >= DispatchRules.criticalHighHrThreshold ||
                   (s.hr > 0 && s.hr <= DispatchRules.criticalLowHrThreshold))
               ? 'critical'
               : 'medium',
@@ -619,10 +621,7 @@ class AppState extends ChangeNotifier {
         patientId: alert.patientId,
         type: 'alert_generated',
         title: alert.type,
-        data: {
-          'message': alert.message,
-          'severity': alert.severity,
-        },
+        data: {'message': alert.message, 'severity': alert.severity},
       );
     } catch (e) {
       debugPrint("❌ Alert Save Error: $e");
@@ -646,10 +645,9 @@ class AppState extends ChangeNotifier {
     if (patientId.isEmpty) return;
 
     try {
-      final q = await _vitalsRef(patientId)
-          .orderBy('timestamp', descending: true)
-          .limit(50)
-          .get();
+      final q = await _vitalsRef(
+        patientId,
+      ).orderBy('timestamp', descending: true).limit(50).get();
 
       _vitals.clear();
       for (final doc in q.docs) {
@@ -670,10 +668,9 @@ class AppState extends ChangeNotifier {
     if (patientId.isEmpty) return;
 
     try {
-      final q = await _alertsRef(patientId)
-          .orderBy('timestamp', descending: true)
-          .limit(20)
-          .get();
+      final q = await _alertsRef(
+        patientId,
+      ).orderBy('timestamp', descending: true).limit(20).get();
 
       _alerts.clear();
       for (final doc in q.docs) {
@@ -693,8 +690,8 @@ class AppState extends ChangeNotifier {
       final data = doc.data();
       if (data == null) return;
 
-      _caseStatus =
-          (data['caseStatus'] ?? DispatchRules.caseStatusStable).toString();
+      _caseStatus = (data['caseStatus'] ?? DispatchRules.caseStatusStable)
+          .toString();
 
       _currentAssessment = RiskAssessment(
         id: '',
@@ -744,39 +741,303 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  get moodRecords => null;
-  get patients => null;
+  final List<MoodRecord> _moodRecords = [];
+  final List<DoctorNote> _doctorNotes = [];
+  final List<Medication> _medications = [];
+  final List<Map<String, dynamic>> _patients = [];
 
-  Future<void> registerPatient(dynamic p, {required String institutionCode}) async {
-    await _db.collection('users').doc(p.id).set(p.toJson());
+  List<MoodRecord> get moodRecords => List.unmodifiable(_moodRecords);
+  List<Map<String, dynamic>> get patients => List.unmodifiable(_patients);
+
+  Future<void> registerPatient(
+    dynamic p, {
+    required String institutionCode,
+  }) async {
+    final Map<String, dynamic> data = Map<String, dynamic>.from(
+      (p.toJson() as Map),
+    );
+
+    data['id'] = p.id;
+    data['role'] = data['role'] ?? 'patient';
+
+    if (institutionCode.trim().isNotEmpty) {
+      data['institutionCode'] = institutionCode.trim();
+    }
+
+    await _db.collection('users').doc(p.id).set(data, SetOptions(merge: true));
   }
 
   Future<void> registerDoctor(dynamic d) async {
-    await _db.collection('users').doc(d.id).set(d.toJson());
+    final Map<String, dynamic> data = Map<String, dynamic>.from(
+      (d.toJson() as Map),
+    );
+
+    final String doctorId = (data['uid'] ?? data['id'] ?? '').toString();
+    if (doctorId.isEmpty) return;
+
+    data['uid'] = doctorId;
+    data['id'] = doctorId;
+    data['role'] = data['role'] ?? data['staffRole'] ?? 'doctor';
+
+    await _db
+        .collection('users')
+        .doc(doctorId)
+        .set(data, SetOptions(merge: true));
   }
 
-  Future<void> addMood(MoodRecord rec) async {}
+  Future<void> addMood(MoodRecord rec) async {
+    try {
+      final payload = rec.toJson();
+      payload['createdAt'] = FieldValue.serverTimestamp();
 
-  getVitalsForPatient(id) {}
+      final ref = await _db
+          .collection('users')
+          .doc(rec.patientId)
+          .collection('moods')
+          .add(payload);
 
-  void addDoctorNote(DoctorNote newNote) {}
+      final saved = MoodRecord(
+        id: ref.id,
+        patientId: rec.patientId,
+        mood: rec.mood,
+        note: rec.note,
+        date: rec.date,
+      );
 
-  getNotesForPatient(String id) {}
+      _moodRecords.removeWhere((m) => m.id == ref.id);
+      _moodRecords.insert(0, saved);
 
-  Future<void> addMedication(Medication result, Medication patientId) async {}
+      await _addTimelineEvent(
+        patientId: rec.patientId,
+        type: 'mood_added',
+        title: 'Mood record added',
+        data: {'mood': rec.mood, 'note': rec.note},
+      );
 
-  getMedicationsForPatient(String patientId) {}
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ addMood error: $e');
+    }
+  }
 
-  getAlertsForPatient(String id) {}
+  Future<List<VitalSample>> getVitalsForPatient(String id) async {
+    try {
+      final snap = await _db
+          .collection('users')
+          .doc(id)
+          .collection('vitals')
+          .orderBy('timestamp', descending: true)
+          .limit(100)
+          .get();
 
-  getMoodsForPatient(String id) {}
+      final result = snap.docs
+          .map((doc) => VitalSample.fromJson(doc.data(), doc.id))
+          .toList();
+
+      _vitals
+        ..removeWhere((v) => v.patientId == id)
+        ..addAll(result.reversed);
+
+      notifyListeners();
+      return result;
+    } catch (e) {
+      debugPrint('❌ getVitalsForPatient error: $e');
+      return _vitals.where((v) => v.patientId == id).toList().reversed.toList();
+    }
+  }
+
+  Future<void> addDoctorNote(DoctorNote newNote) async {
+    try {
+      final payload = newNote.toJson();
+      payload['createdAt'] = FieldValue.serverTimestamp();
+
+      final ref = await _db
+          .collection('users')
+          .doc(newNote.patientId)
+          .collection('doctor_notes')
+          .add(payload);
+
+      final saved = DoctorNote(
+        id: ref.id,
+        patientId: newNote.patientId,
+        doctorId: newNote.doctorId,
+        text: newNote.text,
+        date: newNote.date,
+      );
+
+      _doctorNotes.removeWhere((n) => n.id == ref.id);
+      _doctorNotes.insert(0, saved);
+
+      await _addTimelineEvent(
+        patientId: newNote.patientId,
+        type: 'doctor_note',
+        title: 'Doctor note added',
+        data: {'doctorId': newNote.doctorId, 'text': newNote.text},
+      );
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ addDoctorNote error: $e');
+    }
+  }
+
+  List<DoctorNote> getNotesForPatient(String id) {
+    final local = _doctorNotes.where((n) => n.patientId == id).toList();
+    local.sort((a, b) => b.date.compareTo(a.date));
+    return local;
+  }
+
+  Future<void> addMedication(Medication result, Medication patientId) async {
+    try {
+      final medication = result;
+      final targetPatientId = medication.patientId.isNotEmpty
+          ? medication.patientId
+          : patientId.patientId;
+
+      if (targetPatientId.isEmpty) return;
+
+      final payload = medication.toJson();
+      payload['patientId'] = targetPatientId;
+      payload['createdAt'] = FieldValue.serverTimestamp();
+
+      final ref = await _db
+          .collection('users')
+          .doc(targetPatientId)
+          .collection('medications')
+          .add(payload);
+
+      final saved = Medication(
+        id: ref.id,
+        patientId: targetPatientId,
+        name: medication.name,
+        dosage: medication.dosage,
+        frequency: medication.frequency,
+        active: medication.active,
+        reminderTime: medication.reminderTime,
+        reminderEnabled: medication.reminderEnabled,
+      );
+
+      _medications.removeWhere((m) => m.id == ref.id);
+      _medications.insert(0, saved);
+
+      await _addTimelineEvent(
+        patientId: targetPatientId,
+        type: 'medication_added',
+        title: 'Medication added',
+        data: {
+          'name': medication.name,
+          'dosage': medication.dosage,
+          'frequency': medication.frequency,
+        },
+      );
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ addMedication error: $e');
+    }
+  }
+
+  List<Medication> getMedicationsForPatient(String patientId) {
+    return _medications.where((m) => m.patientId == patientId).toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
+  }
+
+  List<AlertItem> getAlertsForPatient(String id) {
+    final local = _alerts.where((a) => a.patientId == id).toList();
+    local.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return local;
+  }
+
+  List<MoodRecord> getMoodsForPatient(String id) {
+    final local = _moodRecords.where((m) => m.patientId == id).toList();
+    local.sort((a, b) => b.date.compareTo(a.date));
+    return local;
+  }
 
   VitalSample? getLatestVitals(String id) {
-    if (_vitals.isEmpty) return null;
-    return _vitals.last;
+    final patientVitals = _vitals.where((v) => v.patientId == id).toList();
+    if (patientVitals.isEmpty) return null;
+
+    patientVitals.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return patientVitals.first;
   }
 
-  Future<void> fetchDoctorNotes(String id) async {}
+  Future<void> fetchDoctorNotes(String id) async {
+    try {
+      final snap = await _db
+          .collection('users')
+          .doc(id)
+          .collection('doctor_notes')
+          .orderBy('date', descending: true)
+          .get();
+
+      _doctorNotes.removeWhere((n) => n.patientId == id);
+      _doctorNotes.addAll(
+        snap.docs.map((doc) => DoctorNote.fromJson(doc.data(), doc.id)),
+      );
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ fetchDoctorNotes error: $e');
+    }
+  }
+
+  Future<void> fetchMoods(String patientId) async {
+    try {
+      final snap = await _db
+          .collection('users')
+          .doc(patientId)
+          .collection('moods')
+          .orderBy('date', descending: true)
+          .get();
+
+      _moodRecords.removeWhere((m) => m.patientId == patientId);
+      _moodRecords.addAll(
+        snap.docs.map((doc) => MoodRecord.fromJson(doc.data(), doc.id)),
+      );
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ fetchMoods error: $e');
+    }
+  }
+
+  Future<void> fetchMedications(String patientId) async {
+    try {
+      final snap = await _db
+          .collection('users')
+          .doc(patientId)
+          .collection('medications')
+          .get();
+
+      _medications.removeWhere((m) => m.patientId == patientId);
+      _medications.addAll(
+        snap.docs.map((doc) => Medication.fromJson(doc.data(), doc.id)),
+      );
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ fetchMedications error: $e');
+    }
+  }
+
+  Future<void> fetchPatientsByInstitution(String institutionCode) async {
+    try {
+      final snap = await _db
+          .collection('users')
+          .where('role', isEqualTo: 'patient')
+          .where('institutionCode', isEqualTo: institutionCode)
+          .get();
+
+      _patients
+        ..clear()
+        ..addAll(snap.docs.map((doc) => {'id': doc.id, ...doc.data()}));
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ fetchPatientsByInstitution error: $e');
+    }
+  }
 
   Future<void> setLocale(Locale locale) async {
     _currentLocale = locale;

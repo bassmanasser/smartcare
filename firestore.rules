@@ -1,0 +1,225 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function currentUid() {
+      return request.auth.uid;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(currentUid()));
+    }
+
+    function userExists() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/users/$(currentUid()));
+    }
+
+    function userRole() {
+      return userExists() ? userDoc().data.role : null;
+    }
+
+    function institutionCode() {
+      return userExists() ? userDoc().data.institutionCode : null;
+    }
+
+    function isHospitalAdmin() {
+      return userRole() == 'hospital_admin';
+    }
+
+    function isDoctor() {
+      return userRole() == 'doctor';
+    }
+
+    function isNurse() {
+      return userRole() == 'nurse';
+    }
+
+    function isStaff() {
+      return userRole() == 'staff' || userRole() == 'support_staff';
+    }
+
+    function isParent() {
+      return userRole() == 'parent';
+    }
+
+    function isPatient() {
+      return userRole() == 'patient';
+    }
+
+    function sameInstitution(resourceData) {
+      return signedIn() &&
+        institutionCode() != null &&
+        resourceData.institutionCode == institutionCode();
+    }
+
+    function isAssignedParent(patientData) {
+      return signedIn() &&
+        isParent() &&
+        patientData.parentId == currentUid();
+    }
+
+    function isAssignedDoctor(patientData) {
+      return signedIn() &&
+        isDoctor() &&
+        patientData.doctorId == currentUid();
+    }
+
+    function canReadPatientDoc(patientId) {
+      let patientPath = /databases/$(database)/documents/users/$(patientId);
+      return signedIn() && (
+        currentUid() == patientId ||
+        isHospitalAdmin() ||
+        (isDoctor() && exists(patientPath) &&
+          get(patientPath).data.institutionCode == institutionCode()) ||
+        (isNurse() && exists(patientPath) &&
+          get(patientPath).data.institutionCode == institutionCode()) ||
+        (isStaff() && exists(patientPath) &&
+          get(patientPath).data.institutionCode == institutionCode()) ||
+        (isParent() && exists(patientPath) &&
+          get(patientPath).data.parentId == currentUid())
+      );
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && (
+        currentUid() == userId ||
+        isHospitalAdmin() ||
+        (
+          (isDoctor() || isNurse() || isStaff()) &&
+          resource.data.institutionCode != null &&
+          resource.data.institutionCode == institutionCode()
+        )
+      );
+
+      allow create: if signedIn();
+
+      allow update: if signedIn() && (
+        currentUid() == userId ||
+        isHospitalAdmin() ||
+        (
+          (isDoctor() || isNurse() || isStaff()) &&
+          resource.data.institutionCode != null &&
+          resource.data.institutionCode == institutionCode()
+        )
+      );
+
+      allow delete: if signedIn() && (
+        currentUid() == userId ||
+        isHospitalAdmin()
+      );
+
+      match /vitals/{docId} {
+        allow read: if canReadPatientDoc(userId);
+        allow create: if signedIn() && (
+          currentUid() == userId ||
+          isHospitalAdmin() ||
+          isDoctor() ||
+          isNurse() ||
+          isStaff()
+        );
+        allow update, delete: if signedIn() && (
+          currentUid() == userId ||
+          isHospitalAdmin() ||
+          isDoctor() ||
+          isNurse()
+        );
+      }
+
+      match /alerts/{docId} {
+        allow read: if canReadPatientDoc(userId);
+        allow create, update, delete: if signedIn() && (
+          currentUid() == userId ||
+          isHospitalAdmin() ||
+          isDoctor() ||
+          isNurse() ||
+          isStaff()
+        );
+      }
+
+      match /moods/{docId} {
+        allow read: if canReadPatientDoc(userId);
+        allow create, update, delete: if signedIn() && (
+          currentUid() == userId ||
+          isHospitalAdmin() ||
+          isDoctor() ||
+          isNurse() ||
+          isParent()
+        );
+      }
+
+      match /doctor_notes/{docId} {
+        allow read: if canReadPatientDoc(userId);
+        allow create, update, delete: if signedIn() && (
+          isHospitalAdmin() ||
+          isDoctor() ||
+          isNurse()
+        );
+      }
+
+      match /medications/{docId} {
+        allow read: if canReadPatientDoc(userId);
+        allow create, update, delete: if signedIn() && (
+          isHospitalAdmin() ||
+          isDoctor() ||
+          isNurse() ||
+          isParent()
+        );
+      }
+
+      match /reports/{docId} {
+        allow read: if canReadPatientDoc(userId);
+        allow create, update, delete: if signedIn() && (
+          currentUid() == userId ||
+          isHospitalAdmin() ||
+          isDoctor() ||
+          isNurse()
+        );
+      }
+
+      match /assessments/{docId} {
+        allow read: if canReadPatientDoc(userId);
+        allow create, update, delete: if signedIn() && (
+          isHospitalAdmin() ||
+          isDoctor() ||
+          isNurse() ||
+          isStaff()
+        );
+      }
+
+      match /dispatches/{docId} {
+        allow read: if canReadPatientDoc(userId);
+        allow create, update, delete: if signedIn() && (
+          isHospitalAdmin() ||
+          isDoctor() ||
+          isNurse() ||
+          isStaff()
+        );
+      }
+
+      match /timeline/{docId} {
+        allow read: if canReadPatientDoc(userId);
+        allow create, update, delete: if signedIn() && (
+          isHospitalAdmin() ||
+          isDoctor() ||
+          isNurse() ||
+          isStaff()
+        );
+      }
+
+      match /case/{docId} {
+        allow read: if canReadPatientDoc(userId);
+        allow create, update, delete: if signedIn() && (
+          isHospitalAdmin() ||
+          isDoctor() ||
+          isNurse() ||
+          isStaff()
+        );
+      }
+    }
+  }
+}

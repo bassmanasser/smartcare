@@ -24,10 +24,10 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
   }
 
   Future<void> _logout() async {
+    final navigator = Navigator.of(context);
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
+    navigator.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const WelcomeScreen()),
       (route) => false,
     );
@@ -40,23 +40,30 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
   }
 
   void _openEditParentProfileSheet(Map<String, dynamic> currentData) {
-    final nameCtrl =
-        TextEditingController(text: (currentData['name'] ?? '').toString());
-    final phoneCtrl =
-        TextEditingController(text: (currentData['phone'] ?? '').toString());
-    final relationCtrl =
-        TextEditingController(text: (currentData['relation'] ?? '').toString());
-    final addressCtrl =
-        TextEditingController(text: (currentData['address'] ?? '').toString());
+    final nameCtrl = TextEditingController(
+      text: (currentData['name'] ?? '').toString(),
+    );
+    final phoneCtrl = TextEditingController(
+      text: (currentData['phone'] ?? '').toString(),
+    );
+    final relationCtrl = TextEditingController(
+      text: (currentData['relation'] ?? '').toString(),
+    );
+    final addressCtrl = TextEditingController(
+      text: (currentData['address'] ?? '').toString(),
+    );
     final emergencyCtrl = TextEditingController(
       text: (currentData['emergencyPhone'] ?? '').toString(),
     );
-    final nationalIdCtrl =
-        TextEditingController(text: (currentData['nationalId'] ?? '').toString());
-    final genderCtrl =
-        TextEditingController(text: (currentData['gender'] ?? '').toString());
-    final dobCtrl =
-        TextEditingController(text: (currentData['dateOfBirth'] ?? '').toString());
+    final nationalIdCtrl = TextEditingController(
+      text: (currentData['nationalId'] ?? '').toString(),
+    );
+    final genderCtrl = TextEditingController(
+      text: (currentData['gender'] ?? '').toString(),
+    );
+    final dobCtrl = TextEditingController(
+      text: (currentData['dateOfBirth'] ?? '').toString(),
+    );
 
     bool notificationsEnabled = currentData['notificationsEnabled'] == true;
     bool criticalAlertsOnly = currentData['criticalAlertsOnly'] == true;
@@ -68,15 +75,15 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
-      builder: (_) {
+      builder: (sheetContext) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (modalContext, setModalState) {
             return Padding(
               padding: EdgeInsets.only(
                 left: 16,
                 right: 16,
                 top: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                bottom: MediaQuery.of(modalContext).viewInsets.bottom + 16,
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -94,16 +101,14 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                           ),
                         ),
                         IconButton(
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () => Navigator.pop(sheetContext),
                           icon: const Icon(Icons.close),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-
                     _field('Name', nameCtrl, icon: Icons.person),
                     const SizedBox(height: 10),
-
                     _field(
                       'Phone',
                       phoneCtrl,
@@ -111,21 +116,14 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                       keyboard: TextInputType.phone,
                     ),
                     const SizedBox(height: 10),
-
                     _field(
                       'Relation',
                       relationCtrl,
                       icon: Icons.family_restroom,
                     ),
                     const SizedBox(height: 10),
-
-                    _field(
-                      'Address',
-                      addressCtrl,
-                      icon: Icons.location_on,
-                    ),
+                    _field('Address', addressCtrl, icon: Icons.location_on),
                     const SizedBox(height: 10),
-
                     _field(
                       'Emergency Phone',
                       emergencyCtrl,
@@ -133,7 +131,6 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                       keyboard: TextInputType.phone,
                     ),
                     const SizedBox(height: 10),
-
                     _field(
                       'National ID',
                       nationalIdCtrl,
@@ -141,41 +138,31 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                       keyboard: TextInputType.number,
                     ),
                     const SizedBox(height: 10),
-
-                    _field(
-                      'Gender',
-                      genderCtrl,
-                      icon: Icons.wc,
-                    ),
+                    _field('Gender', genderCtrl, icon: Icons.wc),
                     const SizedBox(height: 10),
-
                     _field(
                       'Date of Birth',
                       dobCtrl,
                       icon: Icons.calendar_today,
                     ),
                     const SizedBox(height: 10),
-
                     SwitchListTile(
                       value: notificationsEnabled,
                       onChanged: (v) {
                         setModalState(() => notificationsEnabled = v);
                       },
                       title: const Text('Enable Notifications'),
-                      activeColor: PETROL_DARK,
+                      activeThumbColor: PETROL_DARK,
                     ),
-
                     SwitchListTile(
                       value: criticalAlertsOnly,
                       onChanged: (v) {
                         setModalState(() => criticalAlertsOnly = v);
                       },
                       title: const Text('Critical Alerts Only'),
-                      activeColor: PETROL_DARK,
+                      activeThumbColor: PETROL_DARK,
                     ),
-
                     const SizedBox(height: 16),
-
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -187,30 +174,33 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                           ),
                         ),
                         onPressed: () async {
+                          final messenger = ScaffoldMessenger.of(context);
+
                           try {
                             await FirebaseFirestore.instance
                                 .collection('users')
                                 .doc(_uid)
                                 .set({
-                              'uid': _uid,
-                              'role': 'parent',
-                              'name': nameCtrl.text.trim(),
-                              'phone': phoneCtrl.text.trim(),
-                              'relation': relationCtrl.text.trim(),
-                              'address': addressCtrl.text.trim(),
-                              'emergencyPhone': emergencyCtrl.text.trim(),
-                              'nationalId': nationalIdCtrl.text.trim(),
-                              'gender': genderCtrl.text.trim(),
-                              'dateOfBirth': dobCtrl.text.trim(),
-                              'notificationsEnabled': notificationsEnabled,
-                              'criticalAlertsOnly': criticalAlertsOnly,
-                              'profileCompleted': true,
-                              'updatedAt': FieldValue.serverTimestamp(),
-                            }, SetOptions(merge: true));
+                                  'uid': _uid,
+                                  'role': 'parent',
+                                  'name': nameCtrl.text.trim(),
+                                  'phone': phoneCtrl.text.trim(),
+                                  'relation': relationCtrl.text.trim(),
+                                  'address': addressCtrl.text.trim(),
+                                  'emergencyPhone': emergencyCtrl.text.trim(),
+                                  'nationalId': nationalIdCtrl.text.trim(),
+                                  'gender': genderCtrl.text.trim(),
+                                  'dateOfBirth': dobCtrl.text.trim(),
+                                  'notificationsEnabled': notificationsEnabled,
+                                  'criticalAlertsOnly': criticalAlertsOnly,
+                                  'profileCompleted': true,
+                                  'updatedAt': FieldValue.serverTimestamp(),
+                                }, SetOptions(merge: true));
 
                             if (!mounted) return;
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
+
+                            Navigator.pop(sheetContext);
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Parent profile updated ✅'),
                               ),
@@ -218,7 +208,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                             setState(() {});
                           } catch (e) {
                             if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               SnackBar(content: Text('Error: $e')),
                             );
                           }
@@ -252,9 +242,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: icon == null ? null : Icon(icon),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
@@ -268,7 +256,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: PETROL.withOpacity(0.12),
+            backgroundColor: PETROL.withValues(alpha: 0.12),
             child: Icon(icon, size: 18, color: PETROL_DARK),
           ),
           const SizedBox(width: 10),
@@ -300,7 +288,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: PETROL.withOpacity(0.12),
+            backgroundColor: PETROL.withValues(alpha: 0.12),
             child: Icon(icon, size: 18, color: PETROL_DARK),
           ),
           const SizedBox(width: 10),
@@ -314,7 +302,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
             ),
           ),
           Text(
-            value ? "Enabled" : "Disabled",
+            value ? 'Enabled' : 'Disabled',
             style: TextStyle(
               fontWeight: FontWeight.w700,
               color: value ? Colors.green : Colors.redAccent,
@@ -355,8 +343,9 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
           final dateOfBirth = (data['dateOfBirth'] ?? '').toString();
           final notificationsEnabled = data['notificationsEnabled'] == true;
           final criticalAlertsOnly = data['criticalAlertsOnly'] == true;
-          final linkedPatients =
-              List<String>.from(data['linkedPatients'] ?? const []);
+          final linkedPatients = List<String>.from(
+            data['linkedPatients'] ?? const [],
+          );
 
           return RefreshIndicator(
             color: PETROL_DARK,
@@ -388,7 +377,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        name.isEmpty ? "Parent Profile" : name,
+                        name.isEmpty ? 'Parent Profile' : name,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -397,7 +386,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        relation.isEmpty ? "Family Account" : relation,
+                        relation.isEmpty ? 'Family Account' : relation,
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 13,
@@ -407,7 +396,6 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -418,7 +406,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        "Profile Information",
+                        'Profile Information',
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 16,
@@ -426,23 +414,30 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      _infoTile("Name", name, Icons.person),
-                      _infoTile("Phone", phone, Icons.phone),
+                      _infoTile('Name', name, Icons.person),
+                      _infoTile('Phone', phone, Icons.phone),
                       _infoTile(
-                          "Relation", relation, Icons.family_restroom_rounded),
-                      _infoTile("Address", address, Icons.location_on),
-                      _infoTile("Emergency Phone", emergencyPhone,
-                          Icons.emergency_rounded),
+                        'Relation',
+                        relation,
+                        Icons.family_restroom_rounded,
+                      ),
+                      _infoTile('Address', address, Icons.location_on),
                       _infoTile(
-                          "National ID", nationalId, Icons.badge_rounded),
-                      _infoTile("Gender", gender, Icons.wc),
-                      _infoTile("Date of Birth", dateOfBirth,
-                          Icons.calendar_today_rounded),
+                        'Emergency Phone',
+                        emergencyPhone,
+                        Icons.emergency_rounded,
+                      ),
+                      _infoTile('National ID', nationalId, Icons.badge_rounded),
+                      _infoTile('Gender', gender, Icons.wc),
+                      _infoTile(
+                        'Date of Birth',
+                        dateOfBirth,
+                        Icons.calendar_today_rounded,
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 12),
-
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -453,7 +448,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        "Preferences",
+                        'Preferences',
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 16,
@@ -461,17 +456,25 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      _boolTile("Notifications", notificationsEnabled,
-                          Icons.notifications_active_rounded),
-                      _boolTile("Critical Alerts Only", criticalAlertsOnly,
-                          Icons.warning_amber_rounded),
-                      _infoTile("Linked Patients", "${linkedPatients.length}",
-                          Icons.people_alt_rounded),
+                      _boolTile(
+                        'Notifications',
+                        notificationsEnabled,
+                        Icons.notifications_active_rounded,
+                      ),
+                      _boolTile(
+                        'Critical Alerts Only',
+                        criticalAlertsOnly,
+                        Icons.warning_amber_rounded,
+                      ),
+                      _infoTile(
+                        'Linked Patients',
+                        '${linkedPatients.length}',
+                        Icons.people_alt_rounded,
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 12),
-
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -485,13 +488,12 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                     onPressed: () => _openEditParentProfileSheet(data),
                     icon: const Icon(Icons.edit, color: Colors.white),
                     label: const Text(
-                      "Edit Profile",
+                      'Edit Profile',
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
                 ),
                 const SizedBox(height: 10),
-
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -505,7 +507,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                     onPressed: _logout,
                     icon: const Icon(Icons.logout, color: Colors.white),
                     label: const Text(
-                      "Logout",
+                      'Logout',
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),

@@ -25,13 +25,11 @@ import 'utils/localization.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   FlutterForegroundTask.initCommunicationPort();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await BleMonitorManager.init();
 
@@ -132,10 +130,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       locale: appState.currentLocale,
-      supportedLocales: const [
-        Locale('en'),
-        Locale('ar'),
-      ],
+      supportedLocales: const [Locale('en'), Locale('ar')],
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -189,17 +184,14 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
   @override
   void initState() {
     super.initState();
-    _userFuture =
-        FirebaseFirestore.instance.collection('users').doc(widget.uid).get();
+    _userFuture = FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.uid)
+        .get();
   }
 
   bool _isStaffRole(String role) {
-    return [
-      'doctor',
-      'nurse',
-      'support_staff',
-      'staff',
-    ].contains(role);
+    return ['doctor', 'nurse', 'support_staff', 'staff'].contains(role);
   }
 
   @override
@@ -226,21 +218,24 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
         try {
           final userData = userSnapshot.data!.data() ?? {};
           final role = (userData['role'] ?? 'patient').toString();
-          final approvalStatus =
-              (userData['approvalStatus'] ?? 'approved').toString();
+          final approvalStatus = (userData['approvalStatus'] ?? 'approved')
+              .toString();
 
           if (_isStaffRole(role) && approvalStatus != 'approved') {
             return PendingApprovalScreen(
               role: role,
               status: approvalStatus,
-              institutionName:
-                  (userData['institutionName'] ?? '').toString(),
+              institutionName: (userData['institutionName'] ?? '').toString(),
             );
           }
 
           if (role == 'patient') {
             final p = Patient.fromJson({...userData, 'id': widget.uid});
             return PatientHomeScreen(patient: p);
+          }
+
+          if (role == 'parent') {
+            return ParentHomeScreen(parent: userData);
           }
 
           if (role == 'hospital_admin') {
@@ -260,9 +255,7 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
             return const StaffHomeScreen();
           }
 
-          return const Scaffold(
-            body: Center(child: Text('Unknown user role')),
-          );
+          return const Scaffold(body: Center(child: Text('Unknown user role')));
         } catch (e) {
           return Scaffold(
             body: Center(child: Text('Error parsing user data: $e')),

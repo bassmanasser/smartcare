@@ -5,23 +5,21 @@ import 'package:provider/provider.dart';
 
 import '../../models/dispatch_decision.dart';
 import '../../models/doctor.dart';
+import '../../models/patient.dart';
 import '../../models/risk_assessment.dart';
 import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
 import '../auth/welcome_screen.dart';
 import 'assigned_cases_screen.dart';
 import 'doctor_patients_screen.dart';
-import 'doctor_scan_patient_screen.dart';
 import 'doctor_requests_screen.dart';
+import 'doctor_scan_patient_screen.dart';
 import 'patient_detail_for_doctor_screen.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   final Doctor doctor;
 
-  const DoctorHomeScreen({
-    super.key,
-    required this.doctor,
-  });
+  const DoctorHomeScreen({super.key, required this.doctor});
 
   @override
   State<DoctorHomeScreen> createState() => _DoctorHomeScreenState();
@@ -36,23 +34,34 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-      (r) => false,
+      (route) => false,
     );
+  }
+
+  String get _doctorName => widget.doctor.name.toString();
+  String get _doctorSpecialty => widget.doctor.specialty.toString().isEmpty
+      ? 'General'
+      : widget.doctor.specialty.toString();
+
+  String get _doctorScanId {
+    final value = widget.doctor.doctorId.toString();
+    if (value.isNotEmpty) return value;
+    return widget.doctor.id.toString();
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, app, child) {
-        final patientsMap = app.patients ?? {};
-        final allPatients = patientsMap.values
+        final List<Patient> allPatients = app.patients
+            .map((item) => Patient.fromJson(item))
             .where((p) => p.doctorId == widget.doctor.id)
             .toList();
 
         final queue = buildDoctorQueueData(allPatients, app);
-
-        final emergencyCases =
-            queue.where((e) => e.urgency == 'emergency').toList();
+        final emergencyCases = queue
+            .where((e) => e.urgency == 'emergency')
+            .toList();
         final urgentCases = queue.where((e) => e.urgency == 'urgent').toList();
 
         final tabs = [
@@ -63,14 +72,13 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             emergencyCases: emergencyCases,
             urgentCases: urgentCases,
             allPatients: allPatients,
+            doctorScanId: _doctorScanId,
           ),
-          DoctorPatientsScreen(
-            doctor: widget.doctor,
-            queue: queue,
-          ),
+          DoctorPatientsScreen(doctor: widget.doctor, queue: queue),
           _DoctorProfileTab(doctor: widget.doctor),
           _DoctorSettingsTab(
             doctor: widget.doctor,
+            doctorScanId: _doctorScanId,
             onLogout: () => _logout(context),
           ),
         ];
@@ -116,7 +124,8 @@ class _DoctorOverviewTab extends StatelessWidget {
   final List<DoctorQueueItem> queue;
   final List<DoctorQueueItem> emergencyCases;
   final List<DoctorQueueItem> urgentCases;
-  final List allPatients;
+  final List<Patient> allPatients;
+  final String doctorScanId;
 
   const _DoctorOverviewTab({
     required this.doctor,
@@ -125,16 +134,21 @@ class _DoctorOverviewTab extends StatelessWidget {
     required this.emergencyCases,
     required this.urgentCases,
     required this.allPatients,
+    required this.doctorScanId,
   });
 
   @override
   Widget build(BuildContext context) {
-    final doctorName = (doctor.name ?? 'Doctor').toString();
-    final specialty = (doctor.specialty ?? 'General').toString();
+    final doctorName = doctor.name.toString();
+    final specialty = doctor.specialty.toString().isEmpty
+        ? 'General'
+        : doctor.specialty.toString();
 
     return SafeArea(
       child: RefreshIndicator(
-        onRefresh: () async {},
+        onRefresh: () async {
+          await Future.delayed(const Duration(milliseconds: 250));
+        },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
@@ -168,10 +182,8 @@ class _DoctorOverviewTab extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => AssignedCasesScreen(
-                      doctor: doctor,
-                      queue: queue,
-                    ),
+                    builder: (_) =>
+                        AssignedCasesScreen(doctor: doctor, queue: queue),
                   ),
                 );
               },
@@ -184,7 +196,10 @@ class _DoctorOverviewTab extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => DoctorRequestsScreen(doctor: doctor, doctorId: '',),
+                    builder: (_) => DoctorRequestsScreen(
+                      doctor: doctor,
+                      doctorId: doctor.id,
+                    ),
                   ),
                 );
               },
@@ -198,8 +213,8 @@ class _DoctorOverviewTab extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => DoctorScanPatientScreen(
-                      doctorId: (doctor.doctorId ?? doctor.id).toString(),
-                      doctorName: (doctor.name ?? 'Doctor').toString(),
+                      doctorId: doctorScanId,
+                      doctorName: doctorName,
                     ),
                   ),
                 );
@@ -217,21 +232,20 @@ class _DoctorOverviewTab extends StatelessWidget {
                 title: 'No critical cases',
                 subtitle: 'Emergency and urgent cases will appear here.',
               )
-            else
-              ...[
-                ...emergencyCases.map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _CompactPriorityCard(item: item),
-                  ),
+            else ...[
+              ...emergencyCases.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _CompactPriorityCard(item: item),
                 ),
-                ...urgentCases.map(
-                  (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _CompactPriorityCard(item: item),
-                  ),
+              ),
+              ...urgentCases.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _CompactPriorityCard(item: item),
                 ),
-              ],
+              ),
+            ],
           ],
         ),
       ),
@@ -242,9 +256,7 @@ class _DoctorOverviewTab extends StatelessWidget {
 class _DoctorProfileTab extends StatelessWidget {
   final Doctor doctor;
 
-  const _DoctorProfileTab({
-    required this.doctor,
-  });
+  const _DoctorProfileTab({required this.doctor});
 
   @override
   Widget build(BuildContext context) {
@@ -254,27 +266,30 @@ class _DoctorProfileTab extends StatelessWidget {
         child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
           stream: FirebaseFirestore.instance
               .collection('users')
-              .doc((doctor.id).toString())
+              .doc(doctor.id.toString())
               .snapshots(),
           builder: (context, snapshot) {
             final data = snapshot.data?.data() ?? {};
-            final doctorName = (doctor.name ?? 'Doctor').toString();
-            final specialty = (doctor.specialty ?? 'General').toString();
+            final doctorName = doctor.name.toString();
+            final specialty = doctor.specialty.toString().isEmpty
+                ? 'General'
+                : doctor.specialty.toString();
 
             final institutionName =
                 (data['institutionName'] ?? 'Not assigned yet').toString();
             final departmentName =
                 (data['departmentName'] ?? data['department'] ?? 'General')
                     .toString();
-            final medicalRole =
-                (data['medicalRole'] ?? 'Doctor').toString();
-            final approvalStatus =
-                (data['approvalStatus'] ?? 'pending').toString();
+            final medicalRole = (data['medicalRole'] ?? 'Doctor').toString();
+            final approvalStatus = (data['approvalStatus'] ?? 'pending')
+                .toString();
             final employeeId = (data['employeeId'] ?? '--').toString();
             final licenseNumber = (data['licenseNumber'] ?? '--').toString();
             final phone = (data['phone'] ?? '--').toString();
             final email =
-                (data['email'] ?? FirebaseAuth.instance.currentUser?.email ?? '--')
+                (data['email'] ??
+                        FirebaseAuth.instance.currentUser?.email ??
+                        '--')
                     .toString();
             final institutionId = (data['institutionId'] ?? '--').toString();
 
@@ -301,19 +316,41 @@ class _DoctorProfileTab extends StatelessWidget {
                     child: Column(
                       children: [
                         _ProfileInfoRow(label: 'Full Name', value: doctorName),
-                        _ProfileInfoRow(label: 'Medical Role', value: medicalRole),
+                        _ProfileInfoRow(
+                          label: 'Medical Role',
+                          value: medicalRole,
+                        ),
                         _ProfileInfoRow(label: 'Specialty', value: specialty),
-                        _ProfileInfoRow(label: 'Department', value: departmentName),
-                        _ProfileInfoRow(label: 'Hospital', value: institutionName),
-                        _ProfileInfoRow(label: 'Hospital ID', value: institutionId),
-                        _ProfileInfoRow(label: 'Employee ID', value: employeeId),
+                        _ProfileInfoRow(
+                          label: 'Department',
+                          value: departmentName,
+                        ),
+                        _ProfileInfoRow(
+                          label: 'Hospital',
+                          value: institutionName,
+                        ),
+                        _ProfileInfoRow(
+                          label: 'Hospital ID',
+                          value: institutionId,
+                        ),
+                        _ProfileInfoRow(
+                          label: 'Employee ID',
+                          value: employeeId,
+                        ),
                         _ProfileInfoRow(
                           label: 'License Number',
                           value: licenseNumber,
                         ),
-                        _ProfileInfoRow(label: 'Approval Status', value: approvalStatus),
+                        _ProfileInfoRow(
+                          label: 'Approval Status',
+                          value: approvalStatus,
+                        ),
                         _ProfileInfoRow(label: 'Phone', value: phone),
-                        _ProfileInfoRow(label: 'Email', value: email, isLast: true),
+                        _ProfileInfoRow(
+                          label: 'Email',
+                          value: email,
+                          isLast: true,
+                        ),
                       ],
                     ),
                   ),
@@ -329,17 +366,21 @@ class _DoctorProfileTab extends StatelessWidget {
 
 class _DoctorSettingsTab extends StatelessWidget {
   final Doctor doctor;
+  final String doctorScanId;
   final VoidCallback onLogout;
 
   const _DoctorSettingsTab({
     required this.doctor,
+    required this.doctorScanId,
     required this.onLogout,
   });
 
   @override
   Widget build(BuildContext context) {
-    final doctorName = (doctor.name ?? 'Doctor').toString();
-    final specialty = (doctor.specialty ?? 'General').toString();
+    final doctorName = doctor.name.toString();
+    final specialty = doctor.specialty.toString().isEmpty
+        ? 'General'
+        : doctor.specialty.toString();
 
     return Scaffold(
       backgroundColor: const Color(0xffF6F8FB),
@@ -360,7 +401,7 @@ class _DoctorSettingsTab extends StatelessWidget {
               subtitle: 'Doctor account options and system access',
             ),
             const SizedBox(height: 12),
-            _SettingTile(
+            const _SettingTile(
               icon: Icons.language_rounded,
               title: 'Language',
               subtitle: 'Doctor screens now use clearer professional English',
@@ -374,8 +415,8 @@ class _DoctorSettingsTab extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => DoctorScanPatientScreen(
-                      doctorId: (doctor.doctorId ?? doctor.id).toString(),
-                      doctorName: (doctor.name ?? 'Doctor').toString(),
+                      doctorId: doctorScanId,
+                      doctorName: doctorName,
                     ),
                   ),
                 );
@@ -389,7 +430,10 @@ class _DoctorSettingsTab extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => DoctorRequestsScreen(doctor: doctor, doctorId: '',),
+                    builder: (_) => DoctorRequestsScreen(
+                      doctor: doctor,
+                      doctorId: doctor.id,
+                    ),
                   ),
                 );
               },
@@ -451,7 +495,7 @@ class _DoctorHeaderCard extends StatelessWidget {
             width: compact ? 58 : 64,
             height: compact ? 58 : 64,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: Colors.white.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(18),
             ),
             child: const Icon(
@@ -510,12 +554,12 @@ class _InstitutionStatusCard extends StatelessWidget {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('users')
-          .doc((doctor.id).toString())
+          .doc(doctor.id.toString())
           .snapshots(),
       builder: (context, snapshot) {
         final data = snapshot.data?.data() ?? {};
-        final institutionName =
-            (data['institutionName'] ?? 'Not assigned yet').toString();
+        final institutionName = (data['institutionName'] ?? 'Not assigned yet')
+            .toString();
         final departmentName =
             (data['departmentName'] ?? data['department'] ?? 'General')
                 .toString();
@@ -642,13 +686,10 @@ class _ActionTile extends StatelessWidget {
         contentPadding: const EdgeInsets.all(14),
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor: PETROL.withOpacity(0.12),
+          backgroundColor: PETROL.withValues(alpha: 0.12),
           child: Icon(icon, color: PETROL_DARK),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 6),
           child: Text(subtitle),
@@ -680,7 +721,7 @@ class _CompactPriorityCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Row(
@@ -725,16 +766,14 @@ class _SettingTile extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor: PETROL.withOpacity(0.12),
+          backgroundColor: PETROL.withValues(alpha: 0.12),
           child: Icon(icon, color: PETROL_DARK),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(subtitle),
-        trailing:
-            onTap != null ? const Icon(Icons.arrow_forward_ios_rounded, size: 18) : null,
+        trailing: onTap != null
+            ? const Icon(Icons.arrow_forward_ios_rounded, size: 18)
+            : null,
       ),
     );
   }
@@ -764,7 +803,7 @@ class _StatCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(11),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color),
@@ -772,16 +811,10 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 22,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
             ),
             const SizedBox(height: 4),
-            Text(
-              title,
-              style: const TextStyle(color: Colors.black54),
-            ),
+            Text(title, style: const TextStyle(color: Colors.black54)),
           ],
         ),
       ),
@@ -793,19 +826,16 @@ class _InfoChip extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoChip({
-    required this.label,
-    required this.value,
-  });
+  const _InfoChip({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
-        color: PETROL.withOpacity(0.10),
+        color: PETROL.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: PETROL.withOpacity(0.28)),
+        border: Border.all(color: PETROL.withValues(alpha: 0.28)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -836,10 +866,7 @@ class _SectionTitle extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _SectionTitle({
-    required this.title,
-    required this.subtitle,
-  });
+  const _SectionTitle({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -855,10 +882,7 @@ class _SectionTitle extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: const TextStyle(color: Colors.black54),
-        ),
+        Text(subtitle, style: const TextStyle(color: Colors.black54)),
       ],
     );
   }
@@ -932,10 +956,7 @@ class _EmptyStateCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 6),
             Text(
@@ -951,7 +972,7 @@ class _EmptyStateCard extends StatelessWidget {
 }
 
 class DoctorQueueItem {
-  final dynamic patient;
+  final Patient patient;
   final String name;
   final String riskLevel;
   final String urgency;
@@ -974,7 +995,10 @@ class DoctorQueueItem {
   });
 }
 
-List<DoctorQueueItem> buildDoctorQueueData(List patients, AppState app) {
+List<DoctorQueueItem> buildDoctorQueueData(
+  List<Patient> patients,
+  AppState app,
+) {
   final items = <DoctorQueueItem>[];
 
   for (final p in patients) {
@@ -982,13 +1006,14 @@ List<DoctorQueueItem> buildDoctorQueueData(List patients, AppState app) {
     final urgency = app.currentDispatch?.urgency.key ?? 'routine';
     final specialty = app.currentDispatch?.specialty ?? 'general';
     final action = app.currentDispatch?.action.key ?? 'self_care';
-    final explanation = app.currentDispatch?.explanation ??
+    final explanation =
+        app.currentDispatch?.explanation ??
         'No dispatch recommendation available yet.';
 
     items.add(
       DoctorQueueItem(
         patient: p,
-        name: (p.name ?? 'Patient').toString(),
+        name: p.name,
         riskLevel: riskLevel,
         urgency: urgency,
         specialty: specialty,
