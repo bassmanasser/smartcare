@@ -25,11 +25,10 @@ class PatientSettingsScreen extends StatelessWidget {
     return Consumer<AppState>(
       builder: (context, app, child) {
         return Scaffold(
-          backgroundColor: const Color(0xffF6F8FB),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
             title: Text(lang.translate('settings')),
             centerTitle: true,
-            backgroundColor: PETROL_DARK,
             automaticallyImplyLeading: false,
           ),
           body: ListView(
@@ -59,7 +58,7 @@ class PatientSettingsScreen extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: const [
                     BoxShadow(color: Color(0x11000000), blurRadius: 10),
@@ -165,7 +164,9 @@ class PatientSettingsScreen extends StatelessWidget {
                 icon: Icons.language_rounded,
                 iconColor: Colors.teal,
                 title: lang.translate('language'),
-                subtitle: 'Arabic / English',
+                subtitle: app.currentLocale.languageCode == 'ar'
+                    ? 'العربية'
+                    : 'English',
                 onTap: () {
                   showDialog(
                     context: context,
@@ -174,16 +175,20 @@ class PatientSettingsScreen extends StatelessWidget {
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          ListTile(
+                          RadioListTile<String>(
+                            value: 'en',
+                            groupValue: app.currentLocale.languageCode,
                             title: const Text('English'),
-                            onTap: () async {
+                            onChanged: (value) async {
                               Navigator.pop(context);
                               await app.setLocale(const Locale('en'));
                             },
                           ),
-                          ListTile(
+                          RadioListTile<String>(
+                            value: 'ar',
+                            groupValue: app.currentLocale.languageCode,
                             title: const Text('العربية'),
-                            onTap: () async {
+                            onChanged: (value) async {
                               Navigator.pop(context);
                               await app.setLocale(const Locale('ar'));
                             },
@@ -198,8 +203,10 @@ class PatientSettingsScreen extends StatelessWidget {
                 icon: Icons.dark_mode_rounded,
                 iconColor: Colors.deepPurple,
                 title: 'Dark Mode',
-                subtitle: 'Enable dark theme for the patient app',
-                value: app.isDarkMode ?? false,
+                subtitle: app.isDarkMode
+                    ? 'Dark theme is enabled'
+                    : 'Light theme is enabled',
+                value: app.isDarkMode,
                 onChanged: (value) async {
                   await app.toggleDarkMode(value);
                 },
@@ -304,7 +311,7 @@ class _SettingsTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
           BoxShadow(color: Color(0x11000000), blurRadius: 10),
@@ -353,7 +360,7 @@ class _SwitchSettingsTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
           BoxShadow(color: Color(0x11000000), blurRadius: 10),

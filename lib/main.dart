@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'models/doctor.dart';
-import 'models/parent.dart';
 import 'models/patient.dart';
 import 'providers/app_state.dart';
 import 'screens/admin/admin_home_screen.dart';
@@ -50,6 +49,59 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  ThemeData _lightTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      primarySwatch: Colors.teal,
+      scaffoldBackgroundColor: const Color(0xFFF7F9FB),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.teal,
+        brightness: Brightness.light,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF0F5C63),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      cardColor: Colors.white,
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        indicatorColor: Colors.teal.withOpacity(0.12),
+        labelTextStyle: WidgetStateProperty.all(
+          const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+
+  ThemeData _darkTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.teal,
+        brightness: Brightness.dark,
+      ),
+      scaffoldBackgroundColor: const Color(0xFF0F1115),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF111827),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      cardColor: const Color(0xFF1A1F29),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color(0xFF111827),
+        indicatorColor: Colors.teal.withOpacity(0.22),
+        labelTextStyle: WidgetStateProperty.all(
+          const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -69,11 +121,9 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-        primarySwatch: Colors.teal,
-        scaffoldBackgroundColor: const Color(0xFFF7F9FB),
-        useMaterial3: true,
-      ),
+      theme: _lightTheme(),
+      darkTheme: _darkTheme(),
+      themeMode: appState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: const AuthWrapper(),
     );
   }
@@ -128,6 +178,7 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
       'nurse',
       'triage_staff',
       'support_staff',
+      'staff',
     ].contains(role);
   }
 
@@ -172,12 +223,6 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
             return PatientHomeScreen(patient: p);
           }
 
-          if (role == 'parent') {
-            var Parent;
-            final p = Parent.fromJson({...userData, 'id': widget.uid});
-            return ParentHomeScreen(parent: p);
-          }
-
           if (role == 'hospital_admin') {
             return const AdminHomeScreen();
           }
@@ -191,9 +236,7 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
             return const NurseHomeScreen();
           }
 
-
-
-          if (role == 'support_staff') {
+          if (role == 'support_staff' || role == 'staff') {
             return const StaffHomeScreen();
           }
 

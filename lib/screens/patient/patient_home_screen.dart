@@ -5,10 +5,8 @@ import 'package:provider/provider.dart';
 
 import '../../models/patient.dart';
 import '../../models/risk_assessment.dart';
-import '../../models/vital_sample.dart';
 import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
-import '../../utils/glucose_advisor.dart';
 import '../../utils/localization.dart';
 
 import 'ai_bot_screen.dart';
@@ -56,8 +54,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
     final tabs = [
       _PatientDispatchHomeTab(patient: widget.patient),
-      _PatientServicesTab(patient: widget.patient),
       PatientProfileScreen(patient: widget.patient),
+      _PatientServicesTab(patient: widget.patient),
       PatientSettingsScreen(
         patientId: widget.patient.id,
         patientName: widget.patient.name,
@@ -87,13 +85,13 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               icon: const Icon(Icons.home_rounded),
               label: lang.translate('home'),
             ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.dashboard_customize_rounded),
-              label: lang.translate('services'),
-            ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.person_rounded),
               label: 'Profile',
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.dashboard_customize_rounded),
+              label: lang.translate('services'),
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.settings_rounded),
@@ -115,22 +113,7 @@ class _PatientDispatchHomeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, app, child) {
-        final vitals = app.vitals;
-        final VitalSample? latest = vitals.isNotEmpty ? vitals.last : null;
-
         final assessment = app.currentAssessment;
-
-        final bool isMeasuringGlucose =
-            latest != null && (latest.glucose == 0 || latest.glucose == 0.0);
-
-        final glucoseText = latest == null
-            ? '--'
-            : isMeasuringGlucose
-                ? app.glucoseStatusMsg
-                : latest.glucose.toInt().toString();
-
-        final glucoseUnit = isMeasuringGlucose ? '' : 'mg/dL';
-        final advice = GlucoseAdvisor.getAdvice(latest?.glucose ?? 0.0);
 
         return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
           stream: FirebaseFirestore.instance
@@ -197,110 +180,6 @@ class _PatientDispatchHomeTab extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: _PatientShortcutsCard(patient: livePatient),
                         ),
-                        const SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'Live Vital Signs',
-                            style:
-                                Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      color: PETROL_DARK,
-                                    ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _VitalCard(
-                                      icon: Icons.favorite_rounded,
-                                      title: 'HR',
-                                      value: '${latest?.hr ?? '--'}',
-                                      unit: 'bpm',
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: _VitalCard(
-                                      icon: Icons.air_rounded,
-                                      title: 'SpO2',
-                                      value: '${latest?.spo2 ?? '--'}',
-                                      unit: '%',
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _VitalCard(
-                                      icon: Icons.monitor_heart_rounded,
-                                      title: 'BP',
-                                      value:
-                                          '${latest?.sys ?? '--'}/${latest?.dia ?? '--'}',
-                                      unit: 'mmHg',
-                                      color: Colors.purple,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: _VitalCard(
-                                      icon: Icons.bloodtype_rounded,
-                                      title: 'Glucose',
-                                      value: glucoseText,
-                                      unit: glucoseUnit,
-                                      color: Colors.teal,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              _VitalCard(
-                                icon: Icons.thermostat_rounded,
-                                title: 'Temperature',
-                                value: latest == null
-                                    ? '--'
-                                    : latest.temperature.toStringAsFixed(1),
-                                unit: '°C',
-                                color: Colors.orange,
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (!isMeasuringGlucose &&
-                            latest != null &&
-                            latest.glucose > 0) ...[
-                          const SizedBox(height: 12),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: _AdviceCard(advice: advice as String),
-                          ),
-                        ],
-                        const SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _ReasonBreakdownCard(
-                            assessment: assessment,
-                            latest: latest,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _MiniTimelineCard(
-                            latest: latest,
-                            assessment: assessment,
-                            alertsCount: app.alerts.length,
-                          ),
-                        ),
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -342,7 +221,7 @@ class _PatientServicesTab extends StatelessWidget {
       _Svc(
         lang.translate('reports'),
         Icons.picture_as_pdf_rounded,
-        Colors.red.shade700,
+        Colors.red,
         (_) => ReportScreen(patientId: patient.id, patientName: patient.name),
       ),
       _Svc(
@@ -908,213 +787,6 @@ class _QuickFlagsRow extends StatelessWidget {
   }
 }
 
-class _ReasonBreakdownCard extends StatelessWidget {
-  final RiskAssessment? assessment;
-  final VitalSample? latest;
-
-  const _ReasonBreakdownCard({
-    required this.assessment,
-    required this.latest,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final reasons = assessment?.reasons ?? const <String>[];
-
-    return _SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Why this recommendation?',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-              color: PETROL_DARK,
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (reasons.isEmpty)
-            const Text(
-              'No abnormal reason detected yet. The system is still monitoring incoming data.',
-              style: TextStyle(height: 1.4),
-            )
-          else
-            ...reasons.map(
-              (reason) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 3),
-                      child: Icon(
-                        Icons.check_circle_rounded,
-                        color: PETROL,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        reason,
-                        style: const TextStyle(height: 1.35),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          if (latest != null) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _MiniReadingChip(label: 'HR', value: '${latest!.hr} bpm'),
-                _MiniReadingChip(label: 'SpO2', value: '${latest!.spo2}%'),
-                _MiniReadingChip(
-                  label: 'BP',
-                  value: '${latest!.sys}/${latest!.dia}',
-                ),
-                _MiniReadingChip(
-                  label: 'Temp',
-                  value: '${latest!.temperature.toStringAsFixed(1)}°C',
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniTimelineCard extends StatelessWidget {
-  final VitalSample? latest;
-  final RiskAssessment? assessment;
-  final int alertsCount;
-
-  const _MiniTimelineCard({
-    required this.latest,
-    required this.assessment,
-    required this.alertsCount,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Care Timeline Snapshot',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-              color: PETROL_DARK,
-            ),
-          ),
-          const SizedBox(height: 14),
-          _TimelineRow(
-            title: 'Latest reading received',
-            subtitle: latest == null
-                ? 'No live reading yet'
-                : 'Heart rate ${latest!.hr} bpm, SpO2 ${latest!.spo2}%, Temp ${latest!.temperature.toStringAsFixed(1)}°C',
-            icon: Icons.monitor_heart_rounded,
-          ),
-          _TimelineRow(
-            title: 'Risk assessment generated',
-            subtitle: assessment == null
-                ? 'Pending'
-                : '${_riskLabel(assessment!.riskLevel)} — Score ${assessment!.score}',
-            icon: Icons.analytics_rounded,
-          ),
-          _TimelineRow(
-            title: 'Alerts in system',
-            subtitle: '$alertsCount active/recent alerts',
-            icon: Icons.warning_amber_rounded,
-            isLast: true,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AdviceCard extends StatelessWidget {
-  final String advice;
-
-  const _AdviceCard({required this.advice});
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.lightbulb_rounded, color: Colors.amber),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              advice,
-              style: const TextStyle(height: 1.4),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VitalCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-  final String unit;
-  final Color color;
-
-  const _VitalCard({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.unit,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionCard(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color),
-          ),
-          const SizedBox(height: 8),
-          Text(title),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              '$value $unit',
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SectionCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -1227,105 +899,6 @@ class _ConnectionBadge extends StatelessWidget {
           fontWeight: FontWeight.w700,
           fontSize: 12,
         ),
-      ),
-    );
-  }
-}
-
-class _MiniReadingChip extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _MiniReadingChip({
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xffF6F8FB),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Text(
-        '$label: $value',
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          color: PETROL_DARK,
-        ),
-      ),
-    );
-  }
-}
-
-class _TimelineRow extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final bool isLast;
-
-  const _TimelineRow({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    this.isLast = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: PETROL.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: PETROL_DARK, size: 20),
-              ),
-              if (!isLast)
-                Container(
-                  width: 2,
-                  height: 28,
-                  color: Colors.black12,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                ),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: Colors.black54,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

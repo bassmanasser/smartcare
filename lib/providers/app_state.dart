@@ -26,6 +26,9 @@ class AppState extends ChangeNotifier {
   Locale _currentLocale = const Locale('en');
   Locale get currentLocale => _currentLocale;
 
+  bool _isDarkMode = false;
+  bool get isDarkMode => _isDarkMode;
+
   final List<VitalSample> _vitals = [];
   List<VitalSample> get vitals => List.unmodifiable(_vitals);
 
@@ -734,14 +737,15 @@ class AppState extends ChangeNotifier {
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     final lang = prefs.getString('lang') ?? 'en';
+    final dark = prefs.getBool('dark_mode') ?? false;
+
     _currentLocale = Locale(lang);
+    _isDarkMode = dark;
     notifyListeners();
   }
 
   get moodRecords => null;
   get patients => null;
-
-  bool? get isDarkMode => null;
 
   Future<void> registerPatient(dynamic p, {required String institutionCode}) async {
     await _db.collection('users').doc(p.id).set(p.toJson());
@@ -774,7 +778,17 @@ class AppState extends ChangeNotifier {
 
   Future<void> fetchDoctorNotes(String id) async {}
 
-  Future<void> setLocale(Locale locale) async {}
+  Future<void> setLocale(Locale locale) async {
+    _currentLocale = locale;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('lang', locale.languageCode);
+    notifyListeners();
+  }
 
-  Future<void> toggleDarkMode(bool value) async {}
+  Future<void> toggleDarkMode(bool value) async {
+    _isDarkMode = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('dark_mode', value);
+    notifyListeners();
+  }
 }
