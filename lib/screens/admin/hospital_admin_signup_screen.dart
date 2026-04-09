@@ -13,44 +13,78 @@ class HospitalAdminSignupScreen extends StatefulWidget {
       _HospitalAdminSignupScreenState();
 }
 
-class _HospitalAdminSignupScreenState
-    extends State<HospitalAdminSignupScreen> {
+class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _hospitalNameController = TextEditingController();
-  final _hospitalAddressController = TextEditingController();
-  final _hospitalCityController = TextEditingController();
-  final _adminNameController = TextEditingController();
+  final _ownerNameController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _loading = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
     _hospitalNameController.dispose();
-    _hospitalAddressController.dispose();
-    _hospitalCityController.dispose();
-    _adminNameController.dispose();
+    _ownerNameController.dispose();
+    _cityController.dispose();
+    _addressController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  String _generateHospitalId(String hospitalName) {
-    final clean = hospitalName
+  String _generateInstitutionId(String hospitalName) {
+    final cleaned = hospitalName
         .trim()
         .toUpperCase()
         .replaceAll(RegExp(r'[^A-Z0-9]'), '');
-    final prefix = clean.length >= 4 ? clean.substring(0, 4) : clean;
-    final millis = DateTime.now().millisecondsSinceEpoch.toString();
-    final suffix = millis.substring(millis.length - 6);
-    return '${prefix}H$suffix';
+
+    final short = cleaned.isEmpty
+        ? 'HOSP'
+        : (cleaned.length >= 4 ? cleaned.substring(0, 4) : cleaned);
+
+    final now = DateTime.now();
+    final year = now.year.toString().substring(2);
+    final month = now.month.toString().padLeft(2, '0');
+    final day = now.day.toString().padLeft(2, '0');
+    final millis = (now.millisecond + now.second).toString().padLeft(3, '0');
+
+    return 'HOSP-$short-$year$month$day-$millis';
   }
 
-  Future<void> _signup() async {
+  InputDecoration _decoration({
+    required String label,
+    required IconData icon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(18),
+        borderSide: const BorderSide(color: PETROL_DARK, width: 1.3),
+      ),
+    );
+  }
+
+  Future<void> _signupHospital() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
@@ -69,42 +103,45 @@ class _HospitalAdminSignupScreenState
       );
 
       final uid = cred.user!.uid;
-      final institutionId = _generateHospitalId(hospitalName);
+      final institutionId = _generateInstitutionId(hospitalName);
+      final now = FieldValue.serverTimestamp();
 
-      await db.collection('institutions').doc(institutionId).set({
+      final institutionPayload = {
         'institutionId': institutionId,
         'institutionName': hospitalName,
-        'institutionAddress': _hospitalAddressController.text.trim(),
-        'institutionCity': _hospitalCityController.text.trim(),
-        'adminUid': uid,
-        'adminName': _adminNameController.text.trim(),
-        'adminPhone': _phoneController.text.trim(),
-        'adminEmail': email,
-        'accountType': 'hospital_admin',
-        'isActive': true,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+        'institutionCity': _cityController.text.trim(),
+        'address': _addressController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'email': email,
+        'ownerUid': uid,
+        'ownerName': _ownerNameController.text.trim(),
+        'role': 'hospital',
+        'createdAt': now,
+        'updatedAt': now,
+      };
+
+      await db.collection('institutions').doc(institutionId).set(institutionPayload);
 
       await db.collection('users').doc(uid).set({
         'uid': uid,
-        'name': _adminNameController.text.trim(),
+        'name': _ownerNameController.text.trim(),
         'email': email,
         'phone': _phoneController.text.trim(),
-        'role': 'hospital_admin',
+        'role': 'hospital',
         'institutionId': institutionId,
         'institutionName': hospitalName,
-        'institutionAddress': _hospitalAddressController.text.trim(),
-        'institutionCity': _hospitalCityController.text.trim(),
-        'approvalStatus': 'approved',
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
+        'institutionCity': _cityController.text.trim(),
+        'address': _addressController.text.trim(),
+        'createdAt': now,
+        'updatedAt': now,
       });
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Hospital created successfully. ID: $institutionId')),
+        SnackBar(
+          content: Text('Hospital registered successfully. ID: $institutionId'),
+        ),
       );
 
       Navigator.pushAndRemoveUntil(
@@ -113,13 +150,13 @@ class _HospitalAdminSignupScreenState
         (route) => false,
       );
     } on FirebaseAuthException catch (e) {
-      String msg = 'Signup failed';
+      String msg = e.message ?? 'Authentication error';
       if (e.code == 'email-already-in-use') {
-        msg = 'This email is already in use.';
+        msg = 'This email is already in use';
       } else if (e.code == 'weak-password') {
-        msg = 'Password is too weak.';
+        msg = 'Password is too weak';
       } else if (e.code == 'invalid-email') {
-        msg = 'Invalid email address.';
+        msg = 'Invalid email address';
       }
 
       if (!mounted) return;
@@ -127,12 +164,15 @@ class _HospitalAdminSignupScreenState
         SnackBar(content: Text(msg)),
       );
     } catch (e) {
+      debugPrint('hospital signup error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(content: Text('Signup failed: $e')),
       );
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -141,139 +181,166 @@ class _HospitalAdminSignupScreenState
     return Scaffold(
       backgroundColor: LIGHT_BG,
       appBar: AppBar(
-        title: const Text('Hospital Admin Sign Up'),
-        backgroundColor: PETROL_DARK,
-        foregroundColor: Colors.white,
+        backgroundColor: LIGHT_BG,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        title: const Text(
+          'Hospital Registration',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        centerTitle: true,
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(18),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: const LinearGradient(
-                  colors: [PETROL_DARK, PETROL],
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: const LinearGradient(
+                    colors: [PETROL_DARK, PETROL],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Create Hospital Account',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'A unique Hospital ID will be generated automatically for doctors, nurses, and staff.',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  _field(
-                    _hospitalNameController,
-                    'Hospital Name',
-                    Icons.local_hospital,
-                  ),
-                  _field(
-                    _hospitalAddressController,
-                    'Hospital Address',
-                    Icons.location_on,
-                    maxLines: 2,
-                  ),
-                  _field(
-                    _hospitalCityController,
-                    'City',
-                    Icons.location_city,
-                  ),
-                  _field(
-                    _adminNameController,
-                    'Admin Full Name',
-                    Icons.person,
-                  ),
-                  _field(
-                    _phoneController,
-                    'Phone',
-                    Icons.phone,
-                  ),
-                  _field(
-                    _emailController,
-                    'Email',
-                    Icons.email,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  _field(
-                    _passwordController,
-                    'Password',
-                    Icons.lock,
-                    obscure: true,
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _loading ? null : _signup,
-                      icon: const Icon(Icons.app_registration),
-                      label: Text(_loading ? 'Creating...' : 'Create Hospital Account'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: PETROL_DARK,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Create Main Hospital Account',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(height: 8),
+                    Text(
+                      'A unique Hospital ID will be generated automatically after registration.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _field(
-    TextEditingController controller,
-    String label,
-    IconData icon, {
-    bool obscure = false,
-    int maxLines = 1,
-    TextInputType? keyboardType,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscure,
-        maxLines: maxLines,
-        keyboardType: keyboardType,
-        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-        decoration: InputDecoration(
-          icon: Icon(icon, color: PETROL_DARK),
-          labelText: label,
-          border: InputBorder.none,
+              const SizedBox(height: 18),
+              TextFormField(
+                controller: _hospitalNameController,
+                decoration: _decoration(
+                  label: 'Hospital Name',
+                  icon: Icons.business_rounded,
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _ownerNameController,
+                decoration: _decoration(
+                  label: 'Account Owner Name',
+                  icon: Icons.person_rounded,
+                ),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _cityController,
+                decoration: _decoration(
+                  label: 'City',
+                  icon: Icons.location_city_rounded,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _addressController,
+                decoration: _decoration(
+                  label: 'Address',
+                  icon: Icons.place_rounded,
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phoneController,
+                decoration: _decoration(
+                  label: 'Phone',
+                  icon: Icons.phone_rounded,
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _emailController,
+                decoration: _decoration(
+                  label: 'Hospital Email',
+                  icon: Icons.email_rounded,
+                ),
+                keyboardType: TextInputType.emailAddress,
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                decoration: _decoration(
+                  label: 'Password',
+                  icon: Icons.lock_rounded,
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_rounded
+                          : Icons.visibility_off_rounded,
+                    ),
+                  ),
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return 'Required';
+                  if (v.trim().length < 6) return 'At least 6 characters';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                height: 54,
+                child: ElevatedButton.icon(
+                  onPressed: _loading ? null : _signupHospital,
+                  icon: _loading
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.app_registration_rounded),
+                  label: Text(_loading ? 'Creating...' : 'Create Hospital Account'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: PETROL_DARK,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

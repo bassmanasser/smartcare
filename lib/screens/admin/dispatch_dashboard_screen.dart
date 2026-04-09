@@ -132,7 +132,7 @@ class DispatchDashboardScreen extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const StaffApprovalScreen()),
+                MaterialPageRoute(builder: (_) => const StaffApprovalScreen(institutionId: '',)),
               );
             },
           ),
