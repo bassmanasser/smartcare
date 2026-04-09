@@ -1,9 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../../utils/constants.dart';
 
 class DepartmentManagementScreen extends StatefulWidget {
-  const DepartmentManagementScreen({super.key});
+  final String institutionId;
+
+  const DepartmentManagementScreen({
+    super.key,
+    required this.institutionId,
+  });
 
   @override
   State<DepartmentManagementScreen> createState() =>
@@ -12,202 +16,116 @@ class DepartmentManagementScreen extends StatefulWidget {
 
 class _DepartmentManagementScreenState
     extends State<DepartmentManagementScreen> {
-  final _institutionIdController = TextEditingController();
-  final _departmentNameController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  bool _adding = false;
+
+  CollectionReference<Map<String, dynamic>> get _departmentsRef =>
+      FirebaseFirestore.instance.collection('institutions').doc(widget.institutionId).collection('departments');
+
+  Future<void> _addDepartment() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+
+    setState(() => _adding = true);
+    try {
+      await _departmentsRef.add({
+        'name': name,
+        'createdAt': FieldValue.serverTimestamp(),
+        'isActive': true,
+      });
+      _nameController.clear();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to add department: $e')));
+    } finally {
+      if (mounted) setState(() => _adding = false);
+    }
+  }
+
+  Future<void> _toggleActive(String id, bool current) async {
+    await _departmentsRef.doc(id).update({'isActive': !current});
+  }
+
+  Future<void> _deleteDepartment(String id) async {
+    await _departmentsRef.doc(id).delete();
+  }
 
   @override
   void dispose() {
-    _institutionIdController.dispose();
-    _departmentNameController.dispose();
+    _nameController.dispose();
     super.dispose();
-  }
-
-  String _normalize(String value) {
-    return value
-        .trim()
-        .toLowerCase()
-        .replaceAll('&', 'and')
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'_+'), '_')
-        .replaceAll(RegExp(r'^_|_$'), '');
-  }
-
-  Future<void> _addDepartment() async {
-    final institutionId = _normalize(_institutionIdController.text);
-    final departmentName = _departmentNameController.text.trim();
-    final departmentId = _normalize(departmentName);
-
-    if (institutionId.isEmpty || departmentName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter institution id and department name')),
-      );
-      return;
-    }
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('departments')
-          .doc('${institutionId}_$departmentId')
-          .set({
-        'id': departmentId,
-        'institutionId': institutionId,
-        'name': departmentName,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      await FirebaseFirestore.instance
-          .collection('institutions')
-          .doc(institutionId)
-          .set({
-        'departments': FieldValue.arrayUnion([departmentName]),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      _departmentNameController.clear();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Department added successfully')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding department: $e')),
-      );
-    }
-  }
-
-  Future<void> _deleteDepartment(String docId, String institutionId, String name) async {
-    try {
-      await FirebaseFirestore.instance.collection('departments').doc(docId).delete();
-
-      await FirebaseFirestore.instance
-          .collection('institutions')
-          .doc(institutionId)
-          .set({
-        'departments': FieldValue.arrayRemove([name]),
-      }, SetOptions(merge: true));
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Department removed')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Delete failed: $e')),
-      );
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final typedInstitution = _normalize(_institutionIdController.text);
-
     return Scaffold(
-      backgroundColor: LIGHT_BG,
-      appBar: AppBar(
-        title: const Text('Department Management'),
-        backgroundColor: PETROL_DARK,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text('Departments')),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _institutionIdController,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _nameController,
                     decoration: const InputDecoration(
-                      labelText: 'Institution ID',
+                      hintText: 'Add department',
                       border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.local_hospital),
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _departmentNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Department Name',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.apartment),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _addDepartment,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: PETROL_DARK,
-                        foregroundColor: Colors.white,
-                      ),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Department'),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 10),
+                FilledButton(
+                  onPressed: _adding ? null : _addDepartment,
+                  child: const Text('Add'),
+                ),
+              ],
             ),
           ),
           Expanded(
-            child: typedInstitution.isEmpty
-                ? const Center(
-                    child: Text('Enter Institution ID to view departments'),
-                  )
-                : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                    stream: FirebaseFirestore.instance
-                        .collection('departments')
-                        .where('institutionId', isEqualTo: typedInstitution)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      final docs = snapshot.data?.docs ?? [];
-
-                      if (docs.isEmpty) {
-                        return const Center(
-                          child: Text('No departments found'),
-                        );
-                      }
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: docs.length,
-                        itemBuilder: (context, index) {
-                          final doc = docs[index];
-                          final data = doc.data();
-
-                          return Card(
-                            child: ListTile(
-                              leading: const CircleAvatar(
-                                backgroundColor: PETROL,
-                                child: Icon(Icons.apartment, color: Colors.white),
-                              ),
-                              title: Text((data['name'] ?? '--').toString()),
-                              subtitle: Text(
-                                'Institution: ${(data['institutionId'] ?? '--').toString()}',
-                              ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => _deleteDepartment(
-                                  doc.id,
-                                  (data['institutionId'] ?? '').toString(),
-                                  (data['name'] ?? '').toString(),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: _departmentsRef.orderBy('createdAt', descending: true).snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final docs = snapshot.data?.docs ?? [];
+                if (docs.isEmpty) {
+                  return const Center(child: Text('No departments added yet'));
+                }
+                return ListView.separated(
+                  itemCount: docs.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final doc = docs[index];
+                    final data = doc.data();
+                    final isActive = (data['isActive'] ?? true) == true;
+                    return ListTile(
+                      leading: CircleAvatar(
+                        child: Text('${index + 1}'),
+                      ),
+                      title: Text((data['name'] ?? '-').toString()),
+                      subtitle: Text(isActive ? 'Active' : 'Inactive'),
+                      trailing: Wrap(
+                        spacing: 6,
+                        children: [
+                          IconButton(
+                            onPressed: () => _toggleActive(doc.id, isActive),
+                            icon: Icon(isActive ? Icons.visibility_off : Icons.visibility),
+                          ),
+                          IconButton(
+                            onPressed: () => _deleteDepartment(doc.id),
+                            icon: const Icon(Icons.delete_outline),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
