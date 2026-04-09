@@ -50,54 +50,75 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   ThemeData _lightTheme() {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF0F5C63),
+      brightness: Brightness.light,
+    );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      primarySwatch: Colors.teal,
+      colorScheme: scheme,
       scaffoldBackgroundColor: const Color(0xFFF7F9FB),
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.teal,
-        brightness: Brightness.light,
-      ),
+      cardColor: Colors.white,
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF0F5C63),
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
-      cardColor: Colors.white,
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        selectedItemColor: Color(0xFF0F5C63),
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+      ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
-        indicatorColor: Colors.teal.withOpacity(0.12),
+        indicatorColor: const Color(0xFF0F5C63).withOpacity(0.12),
         labelTextStyle: WidgetStateProperty.all(
           const TextStyle(fontWeight: FontWeight.w600),
         ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }
 
   ThemeData _darkTheme() {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF0F5C63),
+      brightness: Brightness.dark,
+    );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.teal,
-        brightness: Brightness.dark,
-      ),
+      colorScheme: scheme,
       scaffoldBackgroundColor: const Color(0xFF0F1115),
+      cardColor: const Color(0xFF171C22),
       appBarTheme: const AppBarTheme(
         backgroundColor: Color(0xFF111827),
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
-      cardColor: const Color(0xFF1A1F29),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        selectedItemColor: Colors.tealAccent,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+      ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: const Color(0xFF111827),
-        indicatorColor: Colors.teal.withOpacity(0.22),
+        indicatorColor: Colors.tealAccent.withOpacity(0.14),
         labelTextStyle: WidgetStateProperty.all(
           const TextStyle(fontWeight: FontWeight.w600),
         ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: const Color(0xFF171C22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }

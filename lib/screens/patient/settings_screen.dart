@@ -38,8 +38,8 @@ class PatientSettingsScreen extends StatelessWidget {
               _SettingsTile(
                 icon: Icons.qr_code_rounded,
                 iconColor: Colors.teal,
-                title: 'My QR Code',
-                subtitle: 'Show your QR code for doctor scan',
+                title: lang.translate('my_qr_code'),
+                subtitle: lang.translate('show_qr_for_doctor_scan'),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -202,10 +202,10 @@ class PatientSettingsScreen extends StatelessWidget {
               _SwitchSettingsTile(
                 icon: Icons.dark_mode_rounded,
                 iconColor: Colors.deepPurple,
-                title: 'Dark Mode',
+                title: lang.translate('dark_mode'),
                 subtitle: app.isDarkMode
-                    ? 'Dark theme is enabled'
-                    : 'Light theme is enabled',
+                    ? lang.translate('dark_mode_enabled')
+                    : lang.translate('light_mode_enabled'),
                 value: app.isDarkMode,
                 onChanged: (value) async {
                   await app.toggleDarkMode(value);
@@ -215,7 +215,7 @@ class PatientSettingsScreen extends StatelessWidget {
                 icon: Icons.info_outline_rounded,
                 iconColor: Colors.orange,
                 title: lang.translate('about'),
-                subtitle: 'SmartCare patient settings',
+                subtitle: lang.translate('smartcare_patient_settings'),
                 onTap: () {
                   showAboutDialog(
                     context: context,
