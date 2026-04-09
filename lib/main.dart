@@ -197,7 +197,6 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
     return [
       'doctor',
       'nurse',
-      'triage_staff',
       'support_staff',
       'staff',
     ].contains(role);
