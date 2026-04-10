@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/app_state.dart';
-import '../../utils/constants.dart';
 import '../../utils/localization.dart';
-import '../auth/email_auth_screen.dart';
+import 'email_auth_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -12,17 +11,15 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tr = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final appState = Provider.of<AppState>(context, listen: false);
 
     return Scaffold(
-      backgroundColor: LIGHT_BG,
       appBar: AppBar(
-        backgroundColor: PETROL_DARK,
-        foregroundColor: Colors.white,
         title: const Text('SmartCare'),
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
-              final appState = Provider.of<AppState>(context, listen: false);
               if (value == 'ar') appState.changeLanguage('ar');
               if (value == 'en') appState.changeLanguage('en');
             },
@@ -39,184 +36,113 @@ class WelcomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: PETROL_DARK,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tr.translate('welcome'),
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'SmartCare',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 28,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  tr.translate('select_how_to_use'),
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-
-          _RoleCard(
-            title: tr.translate('hospital_admin'),
-            subtitle: tr.translate('hospital_admin_desc'),
-            icon: Icons.admin_panel_settings,
-            onTap: () => _openAuth(context, 'hospital_admin'),
-          ),
-          const SizedBox(height: 14),
-
-          _RoleCard(
-            title: tr.translate('doctor'),
-            subtitle: tr.translate('doctor_desc'),
-            icon: Icons.medical_services,
-            onTap: () => _openAuth(context, 'doctor'),
-          ),
-          const SizedBox(height: 14),
-
-          _RoleCard(
-            title: tr.translate('nurse'),
-            subtitle: tr.translate('nurse_desc'),
-            icon: Icons.local_hospital,
-            onTap: () => _openAuth(context, 'nurse'),
-          ),
-          const SizedBox(height: 14),
-
-          _RoleCard(
-            title: tr.translate('triage_staff'),
-            subtitle: tr.translate('triage_desc'),
-            icon: Icons.route,
-            onTap: () => _openAuth(context, 'triage_staff'),
-          ),
-          const SizedBox(height: 14),
-
-          _RoleCard(
-            title: tr.translate('support_staff'),
-            subtitle: tr.translate('staff_desc'),
-            icon: Icons.badge,
-            onTap: () => _openAuth(context, 'support_staff'),
-          ),
-          const SizedBox(height: 14),
-
-          _RoleCard(
-            title: tr.translate('patient'),
-            subtitle: tr.translate('patient_desc'),
-            icon: Icons.favorite,
-            onTap: () => _openAuth(context, 'patient'),
-          ),
-          const SizedBox(height: 14),
-
-          _RoleCard(
-            title: tr.translate('parent'),
-            subtitle: tr.translate('parent_desc'),
-            icon: Icons.family_restroom,
-            onTap: () => _openAuth(context, 'parent'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _openAuth(BuildContext context, String role) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => EmailAuthScreen(
-          role: role,
-          startAsLogin: true,
-        ),
-      ),
-    );
-  }
-}
-
-class _RoleCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _RoleCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: PETROL.withOpacity(0.14)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ],
-        ),
-        child: Row(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
           children: [
-            CircleAvatar(
-              radius: 26,
-              backgroundColor: PETROL_DARK,
-              child: Icon(icon, color: Colors.white),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primaryContainer,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Icon(
+                    Icons.health_and_safety_rounded,
+                    color: Colors.white,
+                    size: 44,
+                  ),
+                  SizedBox(height: 18),
                   Text(
-                    title,
-                    style: const TextStyle(
-                      color: PETROL_DARK,
-                      fontWeight: FontWeight.bold,
+                    'Welcome',
+                    style: TextStyle(
+                      color: Colors.white70,
                       fontSize: 16,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 8),
                   Text(
-                    subtitle,
+                    'SmartCare',
                     style: TextStyle(
-                      color: Colors.grey[700],
-                      fontSize: 12.5,
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+            const SizedBox(height: 28),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 4),
+                    Icon(
+                      Icons.login_rounded,
+                      size: 42,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Start here',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'First choose whether you want to login or create a new account.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.72),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const EmailAuthScreen(
+                              startAsLogin: true,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.lock_open_rounded),
+                      label: Text(tr.translate('login')),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const EmailAuthScreen(
+                              startAsLogin: false,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.person_add_alt_1_rounded),
+                      label: Text(tr.translate('create_account')),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

@@ -6,220 +6,362 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function currentUid() {
+    function uid() {
       return request.auth.uid;
     }
 
-    function userDoc() {
-      return get(/databases/$(database)/documents/users/$(currentUid()));
+    function myUserDocPath() {
+      return /databases/$(database)/documents/users/$(uid());
     }
 
-    function userExists() {
-      return signedIn() &&
-        exists(/databases/$(database)/documents/users/$(currentUid()));
+    function myUserDocExists() {
+      return signedIn() && exists(myUserDocPath());
     }
 
-    function userRole() {
-      return userExists() ? userDoc().data.role : null;
+    function myUserDoc() {
+      return get(myUserDocPath());
     }
 
-    function institutionCode() {
-      return userExists() ? userDoc().data.institutionCode : null;
+    function myRole() {
+      return myUserDocExists() ? myUserDoc().data.role : null;
     }
 
-    function isHospitalAdmin() {
-      return userRole() == 'hospital_admin';
+    function myInstitutionId() {
+      return myUserDocExists() ? myUserDoc().data.institutionId : null;
     }
 
-    function isDoctor() {
-      return userRole() == 'doctor';
+    function myApprovalStatus() {
+      return myUserDocExists() ? myUserDoc().data.approvalStatus : null;
     }
 
-    function isNurse() {
-      return userRole() == 'nurse';
-    }
-
-    function isStaff() {
-      return userRole() == 'staff' || userRole() == 'support_staff';
-    }
-
-    function isParent() {
-      return userRole() == 'parent';
+    function isAdmin() {
+      return signedIn() && myRole() == 'hospital_admin';
     }
 
     function isPatient() {
-      return userRole() == 'patient';
+      return signedIn() && myRole() == 'patient';
     }
 
-    function sameInstitution(resourceData) {
-      return signedIn() &&
-        institutionCode() != null &&
-        resourceData.institutionCode == institutionCode();
+    function isParent() {
+      return signedIn() && myRole() == 'parent';
     }
 
-    function isAssignedParent(patientData) {
-      return signedIn() &&
-        isParent() &&
-        patientData.parentId == currentUid();
+    function isDoctor() {
+      return signedIn() && myRole() == 'doctor';
     }
 
-    function isAssignedDoctor(patientData) {
-      return signedIn() &&
-        isDoctor() &&
-        patientData.doctorId == currentUid();
+    function isNurse() {
+      return signedIn() && myRole() == 'nurse';
     }
 
-    function canReadPatientDoc(patientId) {
-      let patientPath = /databases/$(database)/documents/users/$(patientId);
+    function isStaff() {
       return signedIn() && (
-        currentUid() == patientId ||
-        isHospitalAdmin() ||
-        (isDoctor() && exists(patientPath) &&
-          get(patientPath).data.institutionCode == institutionCode()) ||
-        (isNurse() && exists(patientPath) &&
-          get(patientPath).data.institutionCode == institutionCode()) ||
-        (isStaff() && exists(patientPath) &&
-          get(patientPath).data.institutionCode == institutionCode()) ||
-        (isParent() && exists(patientPath) &&
-          get(patientPath).data.parentId == currentUid())
+        myRole() == 'staff' ||
+        myRole() == 'support_staff'
       );
+    }
+
+    function isMedicalStaff() {
+      return signedIn() && (
+        isDoctor() ||
+        isNurse() ||
+        isStaff()
+      );
+    }
+
+    function isApprovedStaff() {
+      return isMedicalStaff() && myApprovalStatus() == 'approved';
+    }
+
+    function sameInstitution(institutionId) {
+      return signedIn() &&
+        myInstitutionId() != null &&
+        institutionId != null &&
+        myInstitutionId() == institutionId;
+    }
+
+    function parentLinkedToPatient(patientId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/care_links/$(uid() + "_" + patientId));
+    }
+
+    function patientBelongsToMyInstitution(patientId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/users/$(patientId)) &&
+        get(/databases/$(database)/documents/users/$(patientId)).data.institutionId == myInstitutionId();
+    }
+
+    function canReadPatientData(patientId) {
+      return signedIn() && (
+        uid() == patientId ||
+        parentLinkedToPatient(patientId) ||
+        (isAdmin() && patientBelongsToMyInstitution(patientId)) ||
+        (isApprovedStaff() && patientBelongsToMyInstitution(patientId))
+      );
+    }
+
+    function canWritePatientClinicalData(patientId) {
+      return signedIn() && (
+        uid() == patientId ||
+        (isAdmin() && patientBelongsToMyInstitution(patientId)) ||
+        (isApprovedStaff() && patientBelongsToMyInstitution(patientId))
+      );
+    }
+
+    match /institutions/{hospitalId} {
+      // مهم: فتح القراءة للمستخدم المسجل دخول فقط عشان التحقق من Hospital ID أثناء التسجيل
+      allow read: if signedIn();
+
+      // مهم: إزالة شرط isAdmin في أول إنشاء للمستشفى
+      allow create: if signedIn()
+        && request.resource.data.adminUid == uid()
+        && request.resource.data.hospitalId == hospitalId;
+
+      allow update: if signedIn() && (
+        resource.data.adminUid == uid() ||
+        (
+          isAdmin() &&
+          sameInstitution(hospitalId) &&
+          resource.data.adminUid == uid()
+        )
+      );
+
+      allow delete: if false;
     }
 
     match /users/{userId} {
       allow read: if signedIn() && (
-        currentUid() == userId ||
-        isHospitalAdmin() ||
+        uid() == userId ||
+        parentLinkedToPatient(userId) ||
         (
-          (isDoctor() || isNurse() || isStaff()) &&
-          resource.data.institutionCode != null &&
-          resource.data.institutionCode == institutionCode()
+          isAdmin() &&
+          resource.data.institutionId != null &&
+          sameInstitution(resource.data.institutionId)
+        ) ||
+        (
+          isApprovedStaff() &&
+          resource.data.institutionId != null &&
+          sameInstitution(resource.data.institutionId)
         )
       );
 
-      allow create: if signedIn();
+      allow create: if signedIn() && uid() == userId;
 
       allow update: if signedIn() && (
-        currentUid() == userId ||
-        isHospitalAdmin() ||
         (
-          (isDoctor() || isNurse() || isStaff()) &&
-          resource.data.institutionCode != null &&
-          resource.data.institutionCode == institutionCode()
+          uid() == userId &&
+          (
+            !exists(/databases/$(database)/documents/users/$(userId)) ||
+            request.resource.data.uid == resource.data.uid
+          )
+        ) ||
+        (
+          isAdmin() &&
+          resource.data.institutionId != null &&
+          sameInstitution(resource.data.institutionId) &&
+          (
+            resource.data.role == 'doctor' ||
+            resource.data.role == 'nurse' ||
+            resource.data.role == 'staff' ||
+            resource.data.role == 'support_staff'
+          ) &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.institutionId == resource.data.institutionId
+        )
+      );
+
+      allow delete: if signedIn() && uid() == userId;
+    }
+
+    match /staff_requests/{requestId} {
+      allow create: if signedIn()
+        && requestId == uid()
+        && request.resource.data.uid == uid();
+
+      allow read: if signedIn() && (
+        resource.data.uid == uid() ||
+        (
+          isAdmin() &&
+          resource.data.institutionId != null &&
+          sameInstitution(resource.data.institutionId)
+        )
+      );
+
+      allow update: if signedIn() && (
+        (
+          resource.data.uid == uid()
+        ) ||
+        (
+          isAdmin() &&
+          sameInstitution(resource.data.institutionId)
         )
       );
 
       allow delete: if signedIn() && (
-        currentUid() == userId ||
-        isHospitalAdmin()
+        resource.data.uid == uid() ||
+        (isAdmin() && sameInstitution(resource.data.institutionId))
+      );
+    }
+
+    match /care_links/{linkId} {
+      allow create: if signedIn() && (
+        request.resource.data.patientId == uid() ||
+        request.resource.data.linkedUserId == uid() ||
+        (
+          isAdmin() &&
+          request.resource.data.institutionId != null &&
+          sameInstitution(request.resource.data.institutionId)
+        )
       );
 
-      match /vitals/{docId} {
-        allow read: if canReadPatientDoc(userId);
-        allow create: if signedIn() && (
-          currentUid() == userId ||
-          isHospitalAdmin() ||
-          isDoctor() ||
-          isNurse() ||
-          isStaff()
-        );
-        allow update, delete: if signedIn() && (
-          currentUid() == userId ||
-          isHospitalAdmin() ||
-          isDoctor() ||
-          isNurse()
-        );
-      }
+      allow read: if signedIn() && (
+        resource.data.patientId == uid() ||
+        resource.data.linkedUserId == uid() ||
+        (
+          isAdmin() &&
+          resource.data.institutionId != null &&
+          sameInstitution(resource.data.institutionId)
+        )
+      );
 
-      match /alerts/{docId} {
-        allow read: if canReadPatientDoc(userId);
-        allow create, update, delete: if signedIn() && (
-          currentUid() == userId ||
-          isHospitalAdmin() ||
-          isDoctor() ||
-          isNurse() ||
-          isStaff()
-        );
-      }
+      allow update: if signedIn() && (
+        resource.data.patientId == uid() ||
+        resource.data.linkedUserId == uid() ||
+        (
+          isAdmin() &&
+          resource.data.institutionId != null &&
+          sameInstitution(resource.data.institutionId)
+        )
+      );
 
-      match /moods/{docId} {
-        allow read: if canReadPatientDoc(userId);
-        allow create, update, delete: if signedIn() && (
-          currentUid() == userId ||
-          isHospitalAdmin() ||
-          isDoctor() ||
-          isNurse() ||
-          isParent()
-        );
-      }
+      allow delete: if signedIn() && (
+        resource.data.patientId == uid() ||
+        resource.data.linkedUserId == uid() ||
+        (
+          isAdmin() &&
+          resource.data.institutionId != null &&
+          sameInstitution(resource.data.institutionId)
+        )
+      );
+    }
 
-      match /doctor_notes/{docId} {
-        allow read: if canReadPatientDoc(userId);
-        allow create, update, delete: if signedIn() && (
-          isHospitalAdmin() ||
-          isDoctor() ||
-          isNurse()
-        );
-      }
+    match /users/{userId}/vitals/{vitalId} {
+      allow read: if canReadPatientData(userId);
+      allow create, update: if canWritePatientClinicalData(userId);
+      allow delete: if uid() == userId || isAdmin();
+    }
 
-      match /medications/{docId} {
-        allow read: if canReadPatientDoc(userId);
-        allow create, update, delete: if signedIn() && (
-          isHospitalAdmin() ||
-          isDoctor() ||
-          isNurse() ||
-          isParent()
-        );
-      }
+    match /users/{userId}/alerts/{alertId} {
+      allow read: if canReadPatientData(userId);
+      allow create, update: if canWritePatientClinicalData(userId);
+      allow delete: if uid() == userId || isAdmin();
+    }
 
-      match /reports/{docId} {
-        allow read: if canReadPatientDoc(userId);
-        allow create, update, delete: if signedIn() && (
-          currentUid() == userId ||
-          isHospitalAdmin() ||
-          isDoctor() ||
-          isNurse()
-        );
-      }
+    match /users/{userId}/medications/{medId} {
+      allow read: if canReadPatientData(userId);
+      allow create, update: if signedIn() && (
+        uid() == userId ||
+        (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+        (isNurse() && patientBelongsToMyInstitution(userId)) ||
+        (isAdmin() && patientBelongsToMyInstitution(userId))
+      );
+      allow delete: if signedIn() && (
+        (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+        (isAdmin() && patientBelongsToMyInstitution(userId))
+      );
+    }
 
-      match /assessments/{docId} {
-        allow read: if canReadPatientDoc(userId);
-        allow create, update, delete: if signedIn() && (
-          isHospitalAdmin() ||
-          isDoctor() ||
-          isNurse() ||
-          isStaff()
-        );
-      }
+    match /users/{userId}/meds/{medId} {
+      allow read: if canReadPatientData(userId);
+      allow create, update: if signedIn() && (
+        uid() == userId ||
+        (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+        (isNurse() && patientBelongsToMyInstitution(userId)) ||
+        (isAdmin() && patientBelongsToMyInstitution(userId))
+      );
+      allow delete: if signedIn() && (
+        (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+        (isAdmin() && patientBelongsToMyInstitution(userId))
+      );
+    }
 
-      match /dispatches/{docId} {
-        allow read: if canReadPatientDoc(userId);
-        allow create, update, delete: if signedIn() && (
-          isHospitalAdmin() ||
-          isDoctor() ||
-          isNurse() ||
-          isStaff()
-        );
-      }
+    match /users/{userId}/moods/{moodId} {
+      allow read: if canReadPatientData(userId);
+      allow create, update: if uid() == userId;
+      allow delete: if uid() == userId || isAdmin();
+    }
 
-      match /timeline/{docId} {
-        allow read: if canReadPatientDoc(userId);
-        allow create, update, delete: if signedIn() && (
-          isHospitalAdmin() ||
-          isDoctor() ||
-          isNurse() ||
-          isStaff()
-        );
-      }
+    // مسارات بديلة لو Wellness Tracker بيكتب باسم مختلف
+    match /users/{userId}/mood_logs/{docId} {
+      allow read: if canReadPatientData(userId);
+      allow create, update: if uid() == userId;
+      allow delete: if uid() == userId || isAdmin();
+    }
 
-      match /case/{docId} {
-        allow read: if canReadPatientDoc(userId);
-        allow create, update, delete: if signedIn() && (
-          isHospitalAdmin() ||
-          isDoctor() ||
-          isNurse() ||
-          isStaff()
-        );
-      }
+    match /users/{userId}/wellness_logs/{docId} {
+      allow read: if canReadPatientData(userId);
+      allow create, update: if uid() == userId;
+      allow delete: if uid() == userId || isAdmin();
+    }
+
+    match /users/{userId}/wellness_tracker/{docId} {
+      allow read: if canReadPatientData(userId);
+      allow create, update: if uid() == userId;
+      allow delete: if uid() == userId || isAdmin();
+    }
+
+    match /users/{userId}/reports/{reportId} {
+      allow read: if canReadPatientData(userId);
+      allow create, update: if signedIn() && (
+        uid() == userId ||
+        (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+        (isNurse() && patientBelongsToMyInstitution(userId)) ||
+        (isAdmin() && patientBelongsToMyInstitution(userId))
+      );
+      allow delete: if signedIn() && (
+        (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+        (isAdmin() && patientBelongsToMyInstitution(userId))
+      );
+    }
+
+    match /users/{userId}/doctor_notes/{noteId} {
+      allow read: if canReadPatientData(userId);
+      allow create, update: if signedIn() && (
+        (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+        (isAdmin() && patientBelongsToMyInstitution(userId))
+      );
+      allow delete: if signedIn() && (
+        (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+        (isAdmin() && patientBelongsToMyInstitution(userId))
+      );
+    }
+
+    match /users/{userId}/assessments/{docId} {
+      allow read: if canReadPatientData(userId);
+      allow create: if canWritePatientClinicalData(userId);
+      allow update, delete: if false;
+    }
+
+    match /users/{userId}/dispatches/{docId} {
+      allow read: if canReadPatientData(userId);
+      allow create: if canWritePatientClinicalData(userId);
+      allow update, delete: if false;
+    }
+
+    match /users/{userId}/timeline/{docId} {
+      allow read: if canReadPatientData(userId);
+      allow create: if canWritePatientClinicalData(userId);
+      allow update, delete: if false;
+    }
+
+    match /users/{userId}/case/{docId} {
+      allow read: if canReadPatientData(userId);
+      allow create, update: if canWritePatientClinicalData(userId);
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

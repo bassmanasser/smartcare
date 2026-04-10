@@ -17,7 +17,7 @@ class DoctorSignupScreen extends StatefulWidget {
 }
 
 class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
-  final _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _hospitalIdController = TextEditingController();
@@ -25,23 +25,35 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
   final TextEditingController _employeeIdController = TextEditingController();
   final TextEditingController _licenseNumberController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
 
   bool _loading = false;
 
-  bool get _showLicense =>
-      widget.role.toLowerCase() == 'doctor' ||
-      widget.role.toLowerCase() == 'nurse';
+  bool get _showLicense {
+    final role = widget.role.toLowerCase();
+    return role == 'doctor' || role == 'nurse';
+  }
 
   String get _roleLabel {
     switch (widget.role.toLowerCase()) {
       case 'nurse':
         return 'Nurse';
       case 'staff':
+      case 'support_staff':
         return 'Staff';
       default:
         return 'Doctor';
+    }
+  }
+
+  String get _normalizedRole {
+    switch (widget.role.toLowerCase()) {
+      case 'staff':
+      case 'support_staff':
+        return 'staff';
+      case 'nurse':
+        return 'nurse';
+      default:
+        return 'doctor';
     }
   }
 
@@ -53,21 +65,26 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
     _employeeIdController.dispose();
     _licenseNumberController.dispose();
     _phoneController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No authenticated user found.')),
+      );
+      return;
+    }
+
     setState(() => _loading = true);
 
     try {
       final db = FirebaseFirestore.instance;
-      final auth = FirebaseAuth.instance;
-
       final hospitalId = _hospitalIdController.text.trim().toUpperCase();
+
       final hospitalDoc = await db.collection('institutions').doc(hospitalId).get();
 
       if (!hospitalDoc.exists) {
@@ -75,26 +92,18 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
       }
 
       final hospitalData = hospitalDoc.data() ?? {};
-      final hospitalName = (hospitalData['name'] ??
-              hospitalData['institutionName'] ??
-              'Hospital')
-          .toString();
+      final hospitalName =
+          (hospitalData['name'] ?? hospitalData['institutionName'] ?? 'Hospital')
+              .toString();
 
-      final role = widget.role.toLowerCase();
-
-      final cred = await auth.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-
-      final uid = cred.user!.uid;
+      final role = _normalizedRole;
       final now = FieldValue.serverTimestamp();
 
-      await db.collection('users').doc(uid).set({
-        'uid': uid,
+      final userPayload = {
+        'uid': user.uid,
         'name': _fullNameController.text.trim(),
         'fullName': _fullNameController.text.trim(),
-        'email': _emailController.text.trim(),
+        'email': user.email ?? '',
         'phone': _phoneController.text.trim(),
         'role': role,
         'medicalRole': _roleLabel,
@@ -103,31 +112,25 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
         'department': _departmentController.text.trim(),
         'departmentName': _departmentController.text.trim(),
         'employeeId': _employeeIdController.text.trim(),
-        'licenseNumber': _licenseNumberController.text.trim(),
+        'licenseNumber': _showLicense ? _licenseNumberController.text.trim() : '',
         'approvalStatus': 'pending',
+        'profileCompleted': true,
         'createdAt': now,
         'updatedAt': now,
-      });
+      };
 
-      await db.collection('staff_requests').doc(uid).set({
-        'uid': uid,
-        'name': _fullNameController.text.trim(),
-        'fullName': _fullNameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'role': role,
-        'medicalRole': _roleLabel,
-        'institutionId': hospitalId,
-        'institutionName': hospitalName,
-        'department': _departmentController.text.trim(),
-        'departmentName': _departmentController.text.trim(),
-        'employeeId': _employeeIdController.text.trim(),
-        'licenseNumber': _licenseNumberController.text.trim(),
-        'status': 'pending',
-        'approvalStatus': 'pending',
-        'createdAt': now,
-        'updatedAt': now,
-      });
+      await db.collection('users').doc(user.uid).set(
+            userPayload,
+            SetOptions(merge: true),
+          );
+
+      await db.collection('staff_requests').doc(user.uid).set(
+            {
+              ...userPayload,
+              'status': 'pending',
+            },
+            SetOptions(merge: true),
+          );
 
       if (!mounted) return;
 
@@ -137,26 +140,17 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
           builder: (_) => PendingApprovalScreen(
             roleLabel: _roleLabel,
             hospitalName: hospitalName,
-            role: '',
-            status: '',
-            institutionName: '',
+            role: role,
+            status: 'pending',
+            institutionName: hospitalName,
           ),
         ),
-        (route) => false,
+        (_) => false,
       );
-    } on FirebaseAuthException catch (e) {
-      String msg = 'Registration failed';
-      if (e.code == 'email-already-in-use') {
-        msg = 'This email is already in use.';
-      } else if (e.code == 'weak-password') {
-        msg = 'Password is too weak.';
-      } else if (e.code == 'invalid-email') {
-        msg = 'Invalid email address.';
-      }
-
+    } on FirebaseException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
+        SnackBar(content: Text(e.message ?? 'Registration failed')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -175,9 +169,6 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
     );
   }
 
@@ -185,16 +176,16 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
     TextEditingController controller,
     String label,
     IconData icon, {
-    bool obscure = false,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
-        obscureText: obscure,
         keyboardType: keyboardType,
-        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+        validator: validator ??
+            (v) => v == null || v.trim().isEmpty ? 'Required' : null,
         decoration: _decoration(label: label, icon: icon),
       ),
     );
@@ -202,10 +193,6 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final subtitle = widget.role.toLowerCase() == 'nurse'
-        ? 'Join your hospital as a nurse using the hospital ID.'
-        : 'Join your hospital as a doctor using the hospital ID.';
-
     return Scaffold(
       appBar: AppBar(
         title: Text('$_roleLabel Registration'),
@@ -214,90 +201,53 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary.withOpacity(0.95),
-                    Theme.of(context).colorScheme.primaryContainer.withOpacity(0.90),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 62,
-                    height: 62,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: const Icon(
-                      Icons.how_to_reg_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$_roleLabel Registration',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 21,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.92),
-                            fontSize: 13.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
             Form(
               key: _formKey,
               child: Column(
                 children: [
-                  _field(_fullNameController, 'Full Name', Icons.person_outline_rounded),
-                  _field(_hospitalIdController, 'Hospital ID', Icons.badge_outlined),
-                  _field(_departmentController, 'Department', Icons.apartment_outlined),
-                  _field(_employeeIdController, 'Employee ID', Icons.confirmation_number_outlined),
+                  _field(
+                    _fullNameController,
+                    'Full Name',
+                    Icons.person_outline_rounded,
+                  ),
+                  _field(
+                    _hospitalIdController,
+                    'Hospital ID',
+                    Icons.badge_outlined,
+                  ),
+                  _field(
+                    _departmentController,
+                    'Department',
+                    Icons.apartment_outlined,
+                  ),
+                  _field(
+                    _employeeIdController,
+                    'Employee ID',
+                    Icons.confirmation_number_outlined,
+                  ),
                   if (_showLicense)
-                    _field(_licenseNumberController, 'License Number', Icons.verified_user_outlined),
-                  _field(_phoneController, 'Phone Number', Icons.phone_outlined, keyboardType: TextInputType.phone),
-                  _field(_emailController, 'Email Address', Icons.email_outlined, keyboardType: TextInputType.emailAddress),
-                  _field(_passwordController, 'Password', Icons.lock_outline_rounded, obscure: true),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _loading ? null : _signup,
-                      icon: _loading
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.check_circle_outline_rounded),
-                      label: Text(_loading ? 'Creating...' : 'Create Account'),
+                    _field(
+                      _licenseNumberController,
+                      'License Number',
+                      Icons.verified_user_outlined,
                     ),
+                  _field(
+                    _phoneController,
+                    'Phone Number',
+                    Icons.phone_outlined,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
+                    onPressed: _loading ? null : _signup,
+                    icon: _loading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.check_circle_outline_rounded),
+                    label: Text(_loading ? 'Saving...' : 'Submit Registration'),
                   ),
                 ],
               ),

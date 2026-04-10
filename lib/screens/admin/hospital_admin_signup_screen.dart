@@ -14,7 +14,7 @@ class HospitalAdminSignupScreen extends StatefulWidget {
 }
 
 class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
-  final _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final TextEditingController _adminNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -60,12 +60,13 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
       final phone = _phoneController.text.trim();
       final description = _descriptionController.text.trim();
 
-      final hospitalId =
-          HospitalIdService.generateHospitalId(institutionName);
-
+      final hospitalId = HospitalIdService.generateHospitalId(institutionName);
       final now = FieldValue.serverTimestamp();
 
-      await FirebaseFirestore.instance.collection('institutions').doc(hospitalId).set({
+      await FirebaseFirestore.instance
+          .collection('institutions')
+          .doc(hospitalId)
+          .set({
         'hospitalId': hospitalId,
         'institutionId': hospitalId,
         'name': institutionName,
@@ -110,10 +111,11 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to complete hospital setup: $e')),
       );
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -124,16 +126,11 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
     return InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentEmail = FirebaseAuth.instance.currentUser?.email ?? '';
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Hospital Setup'),
@@ -143,104 +140,13 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary.withOpacity(0.95),
-                    Theme.of(context).colorScheme.primaryContainer.withOpacity(0.90),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 62,
-                    height: 62,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: const Icon(
-                      Icons.local_hospital_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Complete Hospital Registration',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 21,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Your login is already created. Just complete the hospital information here.',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.92),
-                            fontSize: 13.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-            Card(
-              elevation: 0,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.verified_user_outlined),
-                      title: const Text(
-                        'Account email',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      subtitle: Text(
-                        currentEmail.isEmpty ? 'No email available' : currentEmail,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Email and password are not entered here because the account has already been authenticated before this step.',
-                      style: TextStyle(
-                        color: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.color
-                            ?.withOpacity(0.72),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
             TextFormField(
               controller: _adminNameController,
               decoration: _decoration(
                 label: 'Admin Full Name',
                 icon: Icons.person_outline_rounded,
               ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
+              validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -250,8 +156,7 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
                 label: 'Phone Number',
                 icon: Icons.phone_outlined,
               ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
+              validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -260,8 +165,7 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
                 label: 'Hospital Name',
                 icon: Icons.business_outlined,
               ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
+              validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -270,8 +174,7 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
                 label: 'City',
                 icon: Icons.location_city_outlined,
               ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
+              validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -281,8 +184,7 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
                 label: 'Address',
                 icon: Icons.location_on_outlined,
               ),
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
+              validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -294,19 +196,16 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _loading ? null : _save,
-                icon: _loading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.check_circle_outline_rounded),
-                label: Text(_loading ? 'Saving...' : 'Complete Setup'),
-              ),
+            FilledButton.icon(
+              onPressed: _loading ? null : _save,
+              icon: _loading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check_circle_outline_rounded),
+              label: Text(_loading ? 'Saving...' : 'Complete Setup'),
             ),
           ],
         ),

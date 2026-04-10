@@ -28,9 +28,9 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   FlutterForegroundTask.initCommunicationPort();
-
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await BleMonitorManager.init();
 
   runApp(
@@ -44,12 +44,22 @@ Future<void> main() async {
   );
 }
 
+class AppColors {
+  static const Color primary = Color(0xFF0F5C63);
+  static const Color primaryDark = Color(0xFF0A4348);
+  static const Color secondary = Color(0xFF2F8F9D);
+  static const Color accent = Color(0xFFFFB703);
+  static const Color lightBackground = Color(0xFFF5F8FB);
+  static const Color darkBackground = Color(0xFF0F1115);
+  static const Color cardDark = Color(0xFF171C22);
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   ThemeData _lightTheme() {
     final scheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF0F5C63),
+      seedColor: AppColors.primary,
       brightness: Brightness.light,
     );
 
@@ -57,36 +67,90 @@ class MyApp extends StatelessWidget {
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: scheme,
-      scaffoldBackgroundColor: const Color(0xFFF7F9FB),
-      cardColor: Colors.white,
+      scaffoldBackgroundColor: AppColors.lightBackground,
+      fontFamily: 'Roboto',
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF0F5C63),
+        centerTitle: true,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        selectedItemColor: Color(0xFF0F5C63),
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 54),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 54),
+          side: const BorderSide(color: AppColors.primary),
+          foregroundColor: AppColors.primary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
-        indicatorColor: const Color(0xFF0F5C63).withOpacity(0.12),
+        indicatorColor: AppColors.primary.withOpacity(0.12),
         labelTextStyle: WidgetStateProperty.all(
           const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
-      dialogTheme: DialogThemeData(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
       ),
     );
   }
 
   ThemeData _darkTheme() {
     final scheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF0F5C63),
+      seedColor: AppColors.primary,
       brightness: Brightness.dark,
     );
 
@@ -94,18 +158,65 @@ class MyApp extends StatelessWidget {
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: scheme,
-      scaffoldBackgroundColor: const Color(0xFF0F1115),
-      cardColor: const Color(0xFF171C22),
+      scaffoldBackgroundColor: AppColors.darkBackground,
+      cardColor: AppColors.cardDark,
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF111827),
+        centerTitle: true,
+        backgroundColor: AppColors.primaryDark,
         foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        selectedItemColor: Colors.tealAccent,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: AppColors.cardDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.secondary,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 54),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 54),
+          side: BorderSide(color: Colors.white.withOpacity(0.25)),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF1C222B),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: AppColors.secondary, width: 1.6),
+        ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: const Color(0xFF111827),
@@ -114,9 +225,16 @@ class MyApp extends StatelessWidget {
           const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
-      dialogTheme: DialogThemeData(
-        backgroundColor: const Color(0xFF171C22),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        selectedItemColor: Colors.tealAccent,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
     );
   }
@@ -130,7 +248,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       locale: appState.currentLocale,
-      supportedLocales: const [Locale('en'), Locale('ar')],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('ar'),
+      ],
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -172,7 +293,10 @@ class AuthWrapper extends StatelessWidget {
 class UserDataFetcher extends StatefulWidget {
   final String uid;
 
-  const UserDataFetcher({super.key, required this.uid});
+  const UserDataFetcher({
+    super.key,
+    required this.uid,
+  });
 
   @override
   State<UserDataFetcher> createState() => _UserDataFetcherState();
@@ -218,11 +342,13 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
         try {
           final userData = userSnapshot.data!.data() ?? {};
           final role = (userData['role'] ?? 'patient').toString();
-          final approvalStatus = (userData['approvalStatus'] ?? 'approved')
-              .toString();
+          final approvalStatus =
+              (userData['approvalStatus'] ?? 'approved').toString();
 
           if (_isStaffRole(role) && approvalStatus != 'approved') {
             return PendingApprovalScreen(
+              roleLabel: (userData['medicalRole'] ?? role).toString(),
+              hospitalName: (userData['institutionName'] ?? '').toString(),
               role: role,
               status: approvalStatus,
               institutionName: (userData['institutionName'] ?? '').toString(),
@@ -230,8 +356,11 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
           }
 
           if (role == 'patient') {
-            final p = Patient.fromJson({...userData, 'id': widget.uid});
-            return PatientHomeScreen(patient: p);
+            final patient = Patient.fromJson({
+              ...userData,
+              'id': widget.uid,
+            });
+            return PatientHomeScreen(patient: patient);
           }
 
           if (role == 'parent') {
@@ -243,8 +372,11 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
           }
 
           if (role == 'doctor') {
-            final d = Doctor.fromJson({...userData, 'id': widget.uid});
-            return DoctorHomeScreen(doctor: d);
+            final doctor = Doctor.fromJson({
+              ...userData,
+              'id': widget.uid,
+            });
+            return DoctorHomeScreen(doctor: doctor);
           }
 
           if (role == 'nurse') {
@@ -255,10 +387,14 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
             return const StaffHomeScreen();
           }
 
-          return const Scaffold(body: Center(child: Text('Unknown user role')));
+          return const Scaffold(
+            body: Center(child: Text('Unknown user role')),
+          );
         } catch (e) {
           return Scaffold(
-            body: Center(child: Text('Error parsing user data: $e')),
+            body: Center(
+              child: Text('Error parsing user data: $e'),
+            ),
           );
         }
       },
