@@ -10,10 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
   flutter_localizations:
     sdk: flutter
-
   cupertino_icons: ^1.0.8
   provider: ^6.1.5+1
   shared_preferences: ^2.5.3
@@ -51,6 +49,18 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+# إعدادات أيقونة التطبيق (خارج مستوى flutter)
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_logo.png"
+  adaptive_icon_background: "#FFFFFF"
 
 flutter:
   uses-material-design: true
+
+  # تعريف مجلد الصور عشان يظهر في الكود
+  assets:
+    - assets/images/app_logo.png

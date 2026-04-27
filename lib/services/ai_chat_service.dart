@@ -1,8 +1,10 @@
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import '../config/api_config.dart';
 
 class AiChatService {
-  static const String _apiKey = '';
-
   static Future<String> sendMessage({
     required String patientId,
     required String patientName,
@@ -10,34 +12,60 @@ class AiChatService {
     required String languageCode,
     Map<String, dynamic>? latestVitals,
   }) async {
-    try {
-      final model = GenerativeModel(
-        model: 'gemini-1.5-flash',
-        apiKey: _apiKey,
+    final vitalsSummary = _buildVitalsSummary(latestVitals, languageCode);
+
+    final response = await http.post(
+      Uri.parse(ApiConfig.aiChatEndpoint),
+      headers: const {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'patientId': patientId,
+        'patientName': patientName,
+        'message': message,
+        'languageCode': languageCode,
+        'vitalsSummary': vitalsSummary,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'AI chat failed: ${response.statusCode} ${response.body}',
       );
-
-      // تحويل العلامات الحيوية لنص عشان الـ AI يفهمها
-      String vitalsInfo = latestVitals != null 
-          ? "القراءات الحالية للمريض: ضغط الدم ${latestVitals['sys']}/${latestVitals['dia']}, نبض القلب ${latestVitals['hr']}, الأكسجين ${latestVitals['spo2']}%, السكر ${latestVitals['glucose']}."
-          : "لا توجد قراءات حيوية متاحة حالياً.";
-
-      final prompt = """
-      أنت مساعد طبي ذكي في تطبيق SmartCare. 
-      اسم المريض: $patientName.
-      $vitalsInfo
-      اللغة المطلوبة للرد: $languageCode.
-      
-      أجب على استفسار المريض بناءً على حالته الصحية الموضحة أعلاه. 
-      إذا كانت القراءات خطيرة، اطلب منه التوجه للطوارئ فوراً.
-      سؤال المريض: $message
-      """;
-
-      final content = [Content.text(prompt)];
-      final response = await model.generateContent(content);
-      
-      return response.text ?? "عذراً، لم أستطع تحليل الطلب.";
-    } catch (e) {
-      throw Exception("Error: $e");
     }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final reply = (data['reply'] ?? '').toString().trim();
+
+    if (reply.isEmpty) {
+      throw Exception('Empty AI response');
+    }
+
+    return reply;
+  }
+
+  static String _buildVitalsSummary(
+    Map<String, dynamic>? latestVitals,
+    String languageCode,
+  ) {
+    if (latestVitals == null || latestVitals.isEmpty) {
+      return languageCode == 'ar'
+          ? 'لا توجد قراءات حيوية حديثة متاحة.'
+          : 'No recent vital readings are available.';
+    }
+
+    final hr = latestVitals['hr'];
+    final spo2 = latestVitals['spo2'];
+    final sys = latestVitals['sys'];
+    final dia = latestVitals['dia'];
+    final glucose = latestVitals['glucose'];
+    final temperature = latestVitals['temperature'];
+    final fallFlag = latestVitals['fallFlag'];
+
+    if (languageCode == 'ar') {
+      return 'النبض: $hr، الأكسجين: $spo2%، الضغط: $sys/$dia، السكر: $glucose، الحرارة: $temperature، سقوط: $fallFlag';
+    }
+
+    return 'Heart rate: $hr, SpO2: $spo2%, blood pressure: $sys/$dia, glucose: $glucose, temperature: $temperature, fall detected: $fallFlag';
   }
 }

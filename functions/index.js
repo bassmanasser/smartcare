@@ -1,6 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const OpenAI = require('openai'); // هنحتاجه للـ AI bot برضه
+const OpenAI = require('openai');
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -8,136 +8,181 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// =============== SMART ALERTS ON NEW VITAL ===============
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || functions.config().openai?.key,
+});
+
+function normalizeNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+async function getPatientInstitutionId(patientId) {
+  if (!patientId) return '';
+  const patientSnap = await db.collection('users').doc(patientId).get();
+  if (!patientSnap.exists) return '';
+  return (patientSnap.data()?.institutionId || '').toString();
+}
+
+async function createAlert({
+  patientId,
+  institutionId,
+  type,
+  message,
+  severity,
+  timestamp,
+  sourceVitalId,
+}) {
+  const payload = {
+    patientId,
+    institutionId,
+    type,
+    message,
+    severity,
+    timestamp: admin.firestore.Timestamp.fromDate(timestamp),
+    sourceVitalId: sourceVitalId || '',
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  const batch = db.batch();
+
+  const patientAlertRef = db
+    .collection('users')
+    .doc(patientId)
+    .collection('alerts')
+    .doc();
+
+  batch.set(patientAlertRef, {
+    ...payload,
+    id: patientAlertRef.id,
+  });
+
+  const globalAlertRef = db.collection('alerts').doc();
+  batch.set(globalAlertRef, {
+    ...payload,
+    id: globalAlertRef.id,
+  });
+
+  await batch.commit();
+}
 
 exports.onVitalCreated = functions.firestore
-  .document('vitals/{vitalId}')
+  .document('users/{userId}/vitals/{vitalId}')
   .onCreate(async (snap, context) => {
-    const v = snap.data();
-    const patientId = v.patientId;
-    const hr = Number(v.hr || 0);
-    const spo2 = Number(v.spo2 || 0);
-    const tempC = v.temp_c != null ? Number(v.temp_c) : null;
-    const glucose = v.glucose_mgdl != null ? Number(v.glucose_mgdl) : null;
+    const vital = snap.data() || {};
+    const patientId = context.params.userId;
+    const vitalId = context.params.vitalId;
+    const institutionId = await getPatientInstitutionId(patientId);
 
+    const hr = normalizeNumber(vital.hr);
+    const spo2 = normalizeNumber(vital.spo2);
+    const tempC = vital.temperature != null
+      ? normalizeNumber(vital.temperature)
+      : normalizeNumber(vital.temp_c);
+    const glucose = vital.glucose != null
+      ? normalizeNumber(vital.glucose)
+      : normalizeNumber(vital.glucose_mgdl);
+    const fallFlag = vital.fallFlag === true || vital.fall_flag === true;
+
+    const now = new Date();
     const alerts = [];
-    const now = Date.now();
 
-    // HR  (normal adult ~60–100 bpm) :contentReference[oaicite:0]{index=0}
     if (hr > 110) {
       alerts.push({
-        patientId,
         type: 'tachycardia',
         message: `High heart rate detected (${hr} bpm).`,
         severity: 'high',
-        t: now,
       });
-    } else if (hr < 50 && hr > 0) {
+    } else if (hr > 0 && hr < 50) {
       alerts.push({
-        patientId,
         type: 'bradycardia',
         message: `Low heart rate detected (${hr} bpm).`,
         severity: 'medium',
-        t: now,
       });
     }
 
-    // SpO2  (normal 95–100%, <90% low) :contentReference[oaicite:1]{index=1}
     if (spo2 > 0) {
       if (spo2 < 90) {
         alerts.push({
-          patientId,
           type: 'severe_hypoxemia',
           message: `Critical low oxygen level (${spo2}%).`,
-          severity: 'high',
-          t: now,
+          severity: 'critical',
         });
       } else if (spo2 < 94) {
         alerts.push({
-          patientId,
           type: 'low_spo2',
           message: `Low oxygen level (${spo2}%).`,
           severity: 'medium',
-          t: now,
         });
       }
     }
 
-    // Temperature  (fever ≥38 °C) :contentReference[oaicite:2]{index=2}
-    if (tempC != null) {
+    if (tempC > 0) {
       if (tempC >= 39.0) {
         alerts.push({
-          patientId,
           type: 'high_fever',
           message: `High fever detected (${tempC.toFixed(1)} °C).`,
           severity: 'high',
-          t: now,
         });
       } else if (tempC >= 38.0) {
         alerts.push({
-          patientId,
           type: 'fever',
           message: `Fever detected (${tempC.toFixed(1)} °C).`,
           severity: 'medium',
-          t: now,
         });
       }
     }
 
-    // Glucose (values تقريبية educational مش تشخيص) :contentReference[oaicite:3]{index=3}
-    if (glucose != null) {
+    if (glucose > 0) {
       if (glucose < 70) {
         alerts.push({
-          patientId,
           type: 'hypoglycemia',
           message: `Low blood glucose (${glucose} mg/dL).`,
           severity: 'high',
-          t: now,
         });
       } else if (glucose > 250) {
         alerts.push({
-          patientId,
           type: 'severe_hyperglycemia',
           message: `Very high blood glucose (${glucose} mg/dL).`,
-          severity: 'high',
-          t: now,
+          severity: 'critical',
         });
       } else if (glucose > 180) {
         alerts.push({
-          patientId,
           type: 'hyperglycemia',
           message: `High blood glucose (${glucose} mg/dL).`,
           severity: 'medium',
-          t: now,
         });
       }
     }
 
-    if (!alerts.length) return null;
-
-    const batch = db.batch();
-    alerts.forEach((a) => {
-      const ref = db.collection('alerts').doc();
-      batch.set(ref, {
-        ...a,
-        id: ref.id,
+    if (fallFlag) {
+      alerts.push({
+        type: 'fall_detected',
+        message: 'Fall detected. Emergency follow-up may be needed.',
+        severity: 'critical',
       });
-    });
+    }
 
-    await batch.commit();
+    if (!alerts.length) {
+      return null;
+    }
+
+    for (const alert of alerts) {
+      await createAlert({
+        patientId,
+        institutionId,
+        type: alert.type,
+        message: alert.message,
+        severity: alert.severity,
+        timestamp: now,
+        sourceVitalId: vitalId,
+      });
+    }
+
     return null;
   });
-  // =============== AI CHAT BOT (HTTP ENDPOINT) ===============
-
-// لازم تحطي OPENAI_API_KEY في environment:
-// firebase functions:config:set openai.key="YOUR_API_KEY"
-// وبعدين في الكود نقرأها:
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || functions.config().openai.key,
-});
 
 exports.aiChat = functions.https.onRequest(async (req, res) => {
-  // CORS بسيط
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.set('Access-Control-Allow-Headers', 'Content-Type');
@@ -153,57 +198,58 @@ exports.aiChat = functions.https.onRequest(async (req, res) => {
   }
 
   try {
+    if (!openai.apiKey) {
+      res.status(500).json({ error: 'Missing OPENAI_API_KEY' });
+      return;
+    }
+
     const body = req.body || {};
-    const userMessage = (body.message || '').toString();
-    const patientId = (body.patientId || '').toString();
-    const vitalsSummary = (body.vitalsSummary || '').toString();
+    const userMessage = (body.message || '').toString().trim();
+    const patientId = (body.patientId || '').toString().trim();
+    const patientName = (body.patientName || '').toString().trim();
+    const languageCode = (body.languageCode || 'en').toString().trim();
+    const vitalsSummary = (body.vitalsSummary || '').toString().trim();
 
     if (!userMessage) {
       res.status(400).json({ error: 'message is required' });
       return;
     }
 
-    // system prompt آمن: معلومات عامة فقط، مفيش تشخيص أو وصف دواء
     const systemPrompt = `
-You are SmartCare, a helpful health information assistant for a telemedicine app.
+You are SmartCare, a helpful health-information assistant inside a medical monitoring app.
 
-- You only provide **general educational information** about symptoms, lifestyle, and how to talk to a doctor.
-- You **must not** give a diagnosis, decide treatments, or change medications.
-- For any serious symptoms, red-flag vitals, or emergencies, always say clearly:
-  "This could be serious. Please contact your doctor or local emergency services immediately."
-- The user may have chronic conditions (e.g. diabetes, heart disease). Encourage regular follow-up with their clinician.
-- If you are unsure, say you are not sure and suggest speaking with their healthcare provider.
+Rules:
+- Provide only general educational guidance.
+- Do not diagnose.
+- Do not prescribe or change medications.
+- If the user mentions severe symptoms or dangerous readings, clearly tell them to contact their doctor or emergency services immediately.
+- Keep answers short, calm, and practical.
+- Reply in ${languageCode === 'ar' ? 'Arabic' : 'English'}.
 
-Here is a short summary of their recent vitals (may be empty):
-${vitalsSummary}
-    `.trim();
+Patient name: ${patientName || 'Unknown'}
+Patient id: ${patientId || 'Unknown'}
+
+Recent vitals summary:
+${vitalsSummary || 'No recent vitals available.'}
+`.trim();
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini', // غيّري الموديل لو حابة
+      model: 'gpt-4o-mini',
+      temperature: 0.4,
+      max_tokens: 400,
       messages: [
         { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content: userMessage,
-        },
+        { role: 'user', content: userMessage },
       ],
-      max_tokens: 400,
-      temperature: 0.4,
     });
 
     const reply =
       completion.choices?.[0]?.message?.content?.toString() ||
       "I'm sorry, I couldn't generate a response.";
 
-    res.json({
-      reply,
-      patientId,
-    });
+    res.status(200).json({ reply });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      error: 'AI error',
-    });
+    console.error('aiChat error:', err);
+    res.status(500).json({ error: 'AI error' });
   }
 });
-
