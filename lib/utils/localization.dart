@@ -174,6 +174,7 @@ class AppLocalizations {
       'my_qr_code': 'My QR Code',
       'show_qr_for_doctor_scan': 'Show your QR code for doctor scan',
       'device_status': 'Device Status',
+      'device_connected': 'Device connected',
       'connected_monitoring_active': 'Connected - monitoring is active',
       'disconnected': 'Disconnected',
       'connecting_device': 'Connecting to device...',
@@ -200,6 +201,7 @@ class AppLocalizations {
 
       // Patient home / profile / workflow
       'patient_profile': 'Patient Profile',
+      'latest_readings': 'Latest Readings',
       'institution_workflow_title': 'Institution Workflow',
       'current_health_status': 'Current Health Status',
       'queue_priority': 'Queue Priority',
@@ -474,6 +476,7 @@ class AppLocalizations {
       'my_qr_code': 'رمز QR الخاص بي',
       'show_qr_for_doctor_scan': 'اعرض رمز QR ليقوم الطبيب بمسحه',
       'device_status': 'حالة الجهاز',
+      'device_connected': 'الجهاز متصل',
       'connected_monitoring_active': 'متصل - المراقبة فعالة',
       'disconnected': 'غير متصل',
       'connecting_device': 'جارٍ الاتصال بالجهاز...',
@@ -500,6 +503,7 @@ class AppLocalizations {
 
       // Patient home / profile / workflow
       'patient_profile': 'الملف الشخصي للمريض',
+      'latest_readings': 'آخر القراءات',
       'institution_workflow_title': 'مسار الحالة داخل المؤسسة',
       'current_health_status': 'الحالة الصحية الحالية',
       'queue_priority': 'أولوية الدور',

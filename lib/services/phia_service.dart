@@ -10,7 +10,13 @@ class PHIAService {
     ),
   );
 
-  static Future<Map<String, dynamic>> ask(String question) async {
+  static Future<Map<String, dynamic>> ask(
+    String question, {
+    String? patientId,
+    String? patientName,
+    String? languageCode,
+    String? vitalsSummary,
+  }) async {
     try {
       final user = await waitForSignedInUser();
       if (user == null) {
@@ -18,7 +24,13 @@ class PHIAService {
       }
 
       await user.getIdToken(true);
-      final result = await _fn.call({'question': question});
+      final result = await _fn.call({
+        'question': question,
+        if (patientId != null) 'patientId': patientId,
+        if (patientName != null) 'patientName': patientName,
+        if (languageCode != null) 'languageCode': languageCode,
+        if (vitalsSummary != null) 'vitalsSummary': vitalsSummary,
+      });
       return {
         'answer': result.data['answer'] as String? ?? 'No answer.',
         'alerts': List<String>.from(result.data['alerts'] ?? []),

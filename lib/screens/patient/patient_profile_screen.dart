@@ -5,6 +5,7 @@ import '../../models/patient.dart';
 import '../../models/vital_sample.dart';
 import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
+import '../../utils/localization.dart';
 
 class PatientProfileScreen extends StatelessWidget {
   final Patient patient;
@@ -15,12 +16,16 @@ class PatientProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, app, child) {
+        final lang = AppLocalizations.of(context);
+        final theme = Theme.of(context);
+        final bodyColor = theme.textTheme.bodyLarge?.color ?? Colors.black;
+        final subColor = theme.textTheme.bodyMedium?.color ?? Colors.grey;
         final VitalSample? latest = app.getLatestVitals(patient.id);
 
         return Scaffold(
-          backgroundColor: const Color(0xffF6F8FB),
+          backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
-            title: const Text('Profile'),
+            title: Text(lang.translate('profile')),
             centerTitle: true,
             backgroundColor: PETROL_DARK,
             automaticallyImplyLeading: false,
@@ -31,7 +36,7 @@ class PatientProfileScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.cardColor,
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: const [
                     BoxShadow(
@@ -59,17 +64,17 @@ class PatientProfileScreen extends StatelessWidget {
                         children: [
                           Text(
                             patient.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
-                              color: PETROL_DARK,
+                              color: bodyColor,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Age: ${patient.age}',
-                            style: const TextStyle(
-                              color: Colors.black54,
+                            '${lang.translate('age')}: ${patient.age}',
+                            style: TextStyle(
+                              color: subColor,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -88,8 +93,8 @@ class PatientProfileScreen extends StatelessWidget {
                               const SizedBox(width: 6),
                               Text(
                                 app.isDeviceConnected
-                                    ? 'Device connected'
-                                    : 'Device disconnected',
+                                    ? lang.translate('device_connected')
+                                    : lang.translate('device_disconnected'),
                                 style: TextStyle(
                                   color: app.isDeviceConnected
                                       ? Colors.green
@@ -106,12 +111,12 @@ class PatientProfileScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              const Text(
-                'Latest Readings',
+              Text(
+                lang.translate('latest_readings'),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: PETROL_DARK,
+                  color: bodyColor,
                 ),
               ),
               const SizedBox(height: 12),
@@ -125,21 +130,21 @@ class PatientProfileScreen extends StatelessWidget {
                 children: [
                   _ProfileReadingCard(
                     icon: Icons.favorite_rounded,
-                    title: 'Heart Rate',
+                    title: lang.translate('heart_rate'),
                     value: latest?.hr.toString() ?? '--',
                     unit: 'bpm',
                     color: Colors.red,
                   ),
                   _ProfileReadingCard(
                     icon: Icons.air_rounded,
-                    title: 'SpO2',
+                    title: lang.translate('spo2'),
                     value: latest?.spo2.toString() ?? '--',
                     unit: '%',
                     color: Colors.blue,
                   ),
                   _ProfileReadingCard(
                     icon: Icons.monitor_heart_rounded,
-                    title: 'Blood Pressure',
+                    title: lang.translate('blood_pressure'),
                     value: latest == null
                         ? '--'
                         : '${latest.sys}/${latest.dia}',
@@ -148,7 +153,7 @@ class PatientProfileScreen extends StatelessWidget {
                   ),
                   _ProfileReadingCard(
                     icon: Icons.bloodtype_rounded,
-                    title: 'Glucose',
+                    title: lang.translate('glucose'),
                     value: latest == null
                         ? '--'
                         : latest.glucose.toInt().toString(),
@@ -157,7 +162,7 @@ class PatientProfileScreen extends StatelessWidget {
                   ),
                   _ProfileReadingCard(
                     icon: Icons.thermostat_rounded,
-                    title: 'Temperature',
+                    title: lang.translate('temperature'),
                     value: latest == null
                         ? '--'
                         : latest.temperature.toStringAsFixed(1),
@@ -166,7 +171,7 @@ class PatientProfileScreen extends StatelessWidget {
                   ),
                   _ProfileReadingCard(
                     icon: Icons.notifications_active_rounded,
-                    title: 'Alerts',
+                    title: lang.translate('alerts'),
                     value: app
                         .getAlertsForPatient(patient.id)
                         .length
@@ -201,10 +206,13 @@ class _ProfileReadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bodyColor = theme.textTheme.bodyLarge?.color ?? Colors.black;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [
           BoxShadow(
@@ -225,17 +233,21 @@ class _ProfileReadingCard extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 13,
-              color: PETROL_DARK,
+              color: bodyColor,
             ),
           ),
           const SizedBox(height: 8),
           FittedBox(
             child: Text(
               unit.isEmpty ? value : '$value $unit',
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+              style: TextStyle(
+                color: bodyColor,
+                fontWeight: FontWeight.w800,
+                fontSize: 17,
+              ),
             ),
           ),
         ],

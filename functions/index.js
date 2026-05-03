@@ -24,6 +24,52 @@ async function getPatientInstitutionId(patientId) {
   return (patientSnap.data()?.institutionId || '').toString();
 }
 
+async function generateHealthAssistantReply({
+  userMessage,
+  patientId = '',
+  patientName = '',
+  languageCode = 'en',
+  vitalsSummary = '',
+}) {
+  if (!openai.apiKey) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Missing OPENAI_API_KEY',
+    );
+  }
+
+  const systemPrompt = `
+You are SmartCare, a helpful health-information assistant inside a medical monitoring app.
+
+Rules:
+- Provide only general educational guidance.
+- Do not diagnose.
+- Do not prescribe or change medications.
+- If the user mentions severe symptoms or dangerous readings, clearly tell them to contact their doctor or emergency services immediately.
+- Keep answers short, calm, and practical.
+- Reply in ${languageCode === 'ar' ? 'Arabic' : 'English'}.
+
+Patient name: ${patientName || 'Unknown'}
+Patient id: ${patientId || 'Unknown'}
+
+Recent vitals summary:
+${vitalsSummary || 'No recent vitals available.'}
+`.trim();
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    temperature: 0.4,
+    max_tokens: 400,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage },
+    ],
+  });
+
+  return completion.choices?.[0]?.message?.content?.toString() ||
+    "I'm sorry, I couldn't generate a response.";
+}
+
 async function createAlert({
   patientId,
   institutionId,
@@ -252,4 +298,34 @@ ${vitalsSummary || 'No recent vitals available.'}
     console.error('aiChat error:', err);
     res.status(500).json({ error: 'AI error' });
   }
+});
+
+exports.askHealthAgent = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      'unauthenticated',
+      'Please log in first.',
+    );
+  }
+
+  const question = (data.question || data.message || '').toString().trim();
+  if (!question) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'question is required',
+    );
+  }
+
+  const answer = await generateHealthAssistantReply({
+    userMessage: question,
+    patientId: (data.patientId || context.auth.uid || '').toString(),
+    patientName: (data.patientName || '').toString(),
+    languageCode: (data.languageCode || 'en').toString(),
+    vitalsSummary: (data.vitalsSummary || '').toString(),
+  });
+
+  return {
+    answer,
+    alerts: [],
+  };
 });

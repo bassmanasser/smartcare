@@ -8,7 +8,7 @@ class ApiConfig {
   // مثال:
   // https://us-central1-YOUR_PROJECT_ID.cloudfunctions.net/aiChat
   static const String aiChatEndpoint =
-      'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/aiChat';
+      'https://us-central1-smartcare-app-wearable-device.cloudfunctions.net/aiChat';
 
   static get baseUrl => null;
 
