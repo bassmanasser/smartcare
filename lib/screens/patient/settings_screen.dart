@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/app_state.dart';
-import '../../utils/constants.dart';
 import '../../utils/localization.dart';
 import 'patient_qr_simple_screen.dart';
 
@@ -24,6 +23,9 @@ class PatientSettingsScreen extends StatelessWidget {
 
     return Consumer<AppState>(
       builder: (context, app, child) {
+        final isDark = app.isDarkMode;
+        final primaryColor = Theme.of(context).colorScheme.primary;
+
         return Scaffold(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
@@ -34,7 +36,7 @@ class PatientSettingsScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildSectionTitle(lang.translate('account')),
+              _buildSectionTitle(context, lang.translate('account')),
               _SettingsTile(
                 icon: Icons.qr_code_rounded,
                 iconColor: Colors.teal,
@@ -53,15 +55,20 @@ class PatientSettingsScreen extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 18),
-              _buildSectionTitle(lang.translate('device')),
+              _buildSectionTitle(context, lang.translate('device')),
               Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(18),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x11000000), blurRadius: 10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark
+                          ? Colors.black.withOpacity(0.25)
+                          : const Color(0x11000000),
+                      blurRadius: 10,
+                    ),
                   ],
                 ),
                 child: Row(
@@ -74,7 +81,9 @@ class PatientSettingsScreen extends StatelessWidget {
                         app.isDeviceConnected
                             ? Icons.bluetooth_connected
                             : Icons.bluetooth_disabled,
-                        color: app.isDeviceConnected ? Colors.green : Colors.red,
+                        color: app.isDeviceConnected
+                            ? Colors.green
+                            : Colors.red,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -95,7 +104,9 @@ class PatientSettingsScreen extends StatelessWidget {
                                 ? lang.translate('connected_monitoring_active')
                                 : lang.translate('disconnected'),
                             style: TextStyle(
-                              color: app.isDeviceConnected ? Colors.green : Colors.red,
+                              color: app.isDeviceConnected
+                                  ? Colors.green
+                                  : Colors.red,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -122,7 +133,8 @@ class PatientSettingsScreen extends StatelessWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(lang.translate('connecting_device')),
+                              content:
+                                  Text(lang.translate('connecting_device')),
                             ),
                           );
                         }
@@ -132,7 +144,8 @@ class PatientSettingsScreen extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton.icon(
-                      icon: const Icon(Icons.bluetooth_disabled, color: Colors.white),
+                      icon: const Icon(Icons.bluetooth_disabled,
+                          color: Colors.white),
                       label: Text(
                         lang.translate('disconnect'),
                         style: const TextStyle(color: Colors.white),
@@ -149,7 +162,8 @@ class PatientSettingsScreen extends StatelessWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(lang.translate('device_disconnected')),
+                              content:
+                                  Text(lang.translate('device_disconnected')),
                             ),
                           );
                         }
@@ -159,7 +173,9 @@ class PatientSettingsScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 18),
-              _buildSectionTitle(lang.translate('app')),
+              _buildSectionTitle(context, lang.translate('app')),
+
+              // ── Language ───────────────────────────────────────────────
               _SettingsTile(
                 icon: Icons.language_rounded,
                 iconColor: Colors.teal,
@@ -179,7 +195,7 @@ class PatientSettingsScreen extends StatelessWidget {
                             value: 'en',
                             groupValue: app.currentLocale.languageCode,
                             title: const Text('English'),
-                            onChanged: (value) async {
+                            onChanged: (_) async {
                               Navigator.pop(context);
                               await app.setLocale(const Locale('en'));
                             },
@@ -188,7 +204,7 @@ class PatientSettingsScreen extends StatelessWidget {
                             value: 'ar',
                             groupValue: app.currentLocale.languageCode,
                             title: const Text('العربية'),
-                            onChanged: (value) async {
+                            onChanged: (_) async {
                               Navigator.pop(context);
                               await app.setLocale(const Locale('ar'));
                             },
@@ -199,6 +215,8 @@ class PatientSettingsScreen extends StatelessWidget {
                   );
                 },
               ),
+
+              // ── Dark Mode ──────────────────────────────────────────────
               _SwitchSettingsTile(
                 icon: Icons.dark_mode_rounded,
                 iconColor: Colors.deepPurple,
@@ -211,6 +229,8 @@ class PatientSettingsScreen extends StatelessWidget {
                   await app.toggleDarkMode(value);
                 },
               ),
+
+              // ── About ──────────────────────────────────────────────────
               _SettingsTile(
                 icon: Icons.info_outline_rounded,
                 iconColor: Colors.orange,
@@ -225,7 +245,10 @@ class PatientSettingsScreen extends StatelessWidget {
                   );
                 },
               ),
+
               const SizedBox(height: 22),
+
+              // ── Logout ─────────────────────────────────────────────────
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -238,7 +261,8 @@ class PatientSettingsScreen extends StatelessWidget {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PETROL_DARK,
+                    // FIX: was hardcoded PETROL_DARK — now follows theme
+                    backgroundColor: primaryColor,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -262,7 +286,6 @@ class PatientSettingsScreen extends StatelessWidget {
                         ],
                       ),
                     );
-
                     if (ok == true) {
                       await onLogout();
                     }
@@ -276,20 +299,24 @@ class PatientSettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  /// Section title — uses theme primary color (dark-mode aware)
+  Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: PETROL_DARK,
+          // FIX: was hardcoded PETROL_DARK
+          color: Theme.of(context).colorScheme.primary,
         ),
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _SettingsTile extends StatelessWidget {
   final IconData icon;
@@ -308,25 +335,32 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // FIX: shadows now adapt to dark mode
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(color: Color(0x11000000), blurRadius: 10),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.25)
+                : const Color(0x11000000),
+            blurRadius: 10,
+          ),
         ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           backgroundColor: iconColor.withOpacity(0.12),
           child: Icon(icon, color: iconColor),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: Text(title,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(subtitle),
@@ -337,6 +371,8 @@ class _SettingsTile extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _SwitchSettingsTile extends StatelessWidget {
   final IconData icon;
@@ -357,25 +393,32 @@ class _SwitchSettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(color: Color(0x11000000), blurRadius: 10),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.25)
+                : const Color(0x11000000),
+            blurRadius: 10,
+          ),
         ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           backgroundColor: iconColor.withOpacity(0.12),
           child: Icon(icon, color: iconColor),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: Text(title,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(subtitle),
@@ -383,7 +426,8 @@ class _SwitchSettingsTile extends StatelessWidget {
         trailing: Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: PETROL,
+          // FIX: theme-aware instead of hardcoded PETROL constant
+          activeColor: primaryColor,
         ),
       ),
     );

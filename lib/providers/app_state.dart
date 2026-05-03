@@ -22,7 +22,7 @@ import '../services/notification_service.dart';
 import '../services/risk_engine.dart';
 
 class AppState extends ChangeNotifier {
-  Locale _currentLocale = const Locale('en');
+  Locale _currentLocale = const Locale('ar'); // الافتراضي عربي
   Locale get currentLocale => _currentLocale;
 
   bool _isDarkMode = false;
@@ -723,17 +723,9 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void changeLanguage(String code) async {
-    _currentLocale = Locale(code);
-    notifyListeners();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('lang', code);
-  }
-
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    final lang = prefs.getString('lang') ?? 'en';
+    final lang = prefs.getString('lang') ?? 'ar';
     final dark = prefs.getBool('dark_mode') ?? false;
 
     _currentLocale = Locale(lang);
@@ -1045,6 +1037,9 @@ class AppState extends ChangeNotifier {
     await prefs.setString('lang', locale.languageCode);
     notifyListeners();
   }
+
+  // دالة مساعدة للاستخدام بـ String مباشرة
+  Future<void> changeLanguage(String code) => setLocale(Locale(code));
 
   Future<void> toggleDarkMode(bool value) async {
     _isDarkMode = value;

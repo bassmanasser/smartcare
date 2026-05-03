@@ -33,6 +33,7 @@ class _VoiceScreenState extends State<VoiceScreen>
     _initTTS();
   }
 
+  // تهيئة محرك التعرف على الكلام ودعم العربية
   Future<void> _initSTT() async {
     _sttReady = await _stt.initialize(
       onStatus: (s) {
@@ -50,9 +51,10 @@ class _VoiceScreenState extends State<VoiceScreen>
     );
   }
 
+  // تهيئة محرك نطق النصوص باللغة العربية
   Future<void> _initTTS() async {
-    await _tts.setLanguage('en-US'); // غيري لـ 'ar-EG' للعربية
-    await _tts.setSpeechRate(0.45);
+    await _tts.setLanguage('ar-EG'); // ضبط اللغة للعربية (لهجة مصرية)
+    await _tts.setSpeechRate(0.5);   // سرعة النطق
     await _tts.setVolume(1.0);
     _tts.setCompletionHandler(() {
       if (mounted) setState(() => _state = 'idle');
@@ -62,7 +64,7 @@ class _VoiceScreenState extends State<VoiceScreen>
   Future<void> _onTap() async {
     if (_state == 'idle') {
       if (!_sttReady) {
-        _snack('Microphone not available');
+        _snack('الميكروفون غير متاح حالياً');
         return;
       }
       setState(() {
@@ -74,7 +76,7 @@ class _VoiceScreenState extends State<VoiceScreen>
         onResult: (r) => setState(() => _recognized = r.recognizedWords),
         listenFor: const Duration(seconds: 15),
         pauseFor: const Duration(seconds: 3),
-        localeId: 'en_US', // غيري لـ 'ar_EG' للعربية
+        localeId: 'ar_EG', // الاستماع باللغة العربية
       );
     } else if (_state == 'listening') {
       await _stt.stop();
@@ -94,24 +96,31 @@ class _VoiceScreenState extends State<VoiceScreen>
       _recognized = q;
     });
     await _stt.stop();
+    
+    // استدعاء الخدمة السحابية
     final res = await PHIAService.ask(q);
     final ans = res['answer'] as String;
     final alr = List<String>.from(res['alerts'] as List);
+    
     setState(() {
       _answer = ans;
       _alerts = alr;
       _state = 'speaking';
     });
+
     if (alr.isNotEmpty && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Alert: ${alr.first}'),
+        content: Text('تنبيه: ${alr.first}', textDirection: TextDirection.rtl),
         backgroundColor: Colors.red[700],
         duration: const Duration(seconds: 6),
       ));
     }
+    
+    // نطق الإجابة المُنظفة
     await _tts.speak(_clean(ans));
   }
 
+  // تنظيف النص من علامات الـ Markdown لضمان نطق سليم
   String _clean(String t) => t
       .replaceAll(RegExp(r'\*+([^*]+)\*+'), r'$1')
       .replaceAll(RegExp(r'^#{1,6}\s+', multiLine: true), '')
@@ -120,7 +129,9 @@ class _VoiceScreenState extends State<VoiceScreen>
       .trim();
 
   void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(m, textDirection: TextDirection.rtl),
+      ));
 
   Color get _color => const {
         'listening': Colors.red,
@@ -148,84 +159,94 @@ class _VoiceScreenState extends State<VoiceScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Row(children: [
-          Icon(Icons.mic, size: 20),
-          SizedBox(width: 8),
-          Text('Voice Assistant'),
-        ]),
+        title: const Row(
+          mainAxisAlignment: MainAxisAlignment.end, // ليتناسب مع اتجاه اليمين
+          children: [
+            Text('المساعد الصوتي'),
+            SizedBox(width: 8),
+            Icon(Icons.mic, size: 20),
+          ],
+        ),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
+        automaticallyImplyLeading: true, // للسماح بالرجوع
       ),
-      body: Column(children: [
-        const SizedBox(height: 40),
-        Icon(Icons.health_and_safety, size: 56, color: Colors.teal[600]),
-        const SizedBox(height: 8),
-        Text('PHIA Voice Assistant',
-            style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal[800])),
-        const Spacer(),
-        if (_answer.isNotEmpty && _state != 'listening')
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.teal[100]!)),
-            child: Text(
-                _answer.length > 300 ? '${_answer.substring(0, 300)}...' : _answer,
-                style: const TextStyle(fontSize: 14, height: 1.4)),
-          ),
-        const Spacer(),
-        Text(
-            _state == 'listening'
-                ? (_recognized.isEmpty ? 'Listening...' : '"$_recognized"')
-                : _state == 'thinking'
-                    ? 'Analyzing your data...'
-                    : _state == 'speaking'
-                        ? 'Speaking answer...'
-                        : 'Tap the mic to speak',
-            style: TextStyle(
-                fontSize: 16,
-                color: _state == 'idle' ? Colors.grey : _color)),
-        const SizedBox(height: 32),
-        AnimatedBuilder(
-          animation: _scale,
-          builder: (_, __) => Transform.scale(
-            scale: _state == 'listening' ? _scale.value : 1.0,
-            child: GestureDetector(
-              onTap: _onTap,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _color,
-                    boxShadow: [
-                      BoxShadow(
-                          color: _color.withOpacity(0.4),
-                          blurRadius: 20,
-                          spreadRadius: _state == 'listening' ? 8 : 2)
-                    ]),
-                child: Icon(_icon, color: Colors.white, size: 44),
+      body: Directionality(
+        textDirection: TextDirection.rtl, // توجيه الواجهة بالكامل لليمين
+        child: Column(children: [
+          const SizedBox(height: 40),
+          Icon(Icons.health_and_safety, size: 56, color: Colors.teal[600]),
+          const SizedBox(height: 8),
+          Text('مساعد PHIA الذكي',
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal[800])),
+          const Spacer(),
+          if (_answer.isNotEmpty && _state != 'listening')
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.teal[100]!)),
+              child: SingleChildScrollView(
+                child: Text(
+                    _answer,
+                    style: const TextStyle(fontSize: 15, height: 1.5)),
+              ),
+            ),
+          const Spacer(),
+          Text(
+              _state == 'listening'
+                  ? (_recognized.isEmpty ? 'جاري الاستماع...' : '"$_recognized"')
+                  : _state == 'thinking'
+                      ? 'جاري تحليل بياناتك...'
+                      : _state == 'speaking'
+                          ? 'جاري نطق الإجابة...'
+                          : 'اضغط على الميكروفون للتحدث',
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: _state == 'idle' ? Colors.grey : _color)),
+          const SizedBox(height: 32),
+          AnimatedBuilder(
+            animation: _scale,
+            builder: (_, __) => Transform.scale(
+              scale: _state == 'listening' ? _scale.value : 1.0,
+              child: GestureDetector(
+                onTap: _onTap,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _color,
+                      boxShadow: [
+                        BoxShadow(
+                            color: _color.withOpacity(0.4),
+                            blurRadius: 20,
+                            spreadRadius: _state == 'listening' ? 8 : 2)
+                      ]),
+                  child: Icon(_icon, color: Colors.white, size: 44),
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-            _state == 'listening'
-                ? 'Tap to send'
-                : _state == 'speaking'
-                    ? 'Tap to stop'
-                    : _state == 'thinking'
-                        ? 'Please wait...'
-                        : 'Tap to start',
-            style: TextStyle(fontSize: 13, color: Colors.grey[400])),
-        const SizedBox(height: 60),
-      ]),
+          const SizedBox(height: 16),
+          Text(
+              _state == 'listening'
+                  ? 'اضغط للإرسال'
+                  : _state == 'speaking'
+                      ? 'اضغط للإيقاف'
+                      : _state == 'thinking'
+                          ? 'يرجى الانتظار...'
+                          : 'اضغط للبدء',
+              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+          const SizedBox(height: 60),
+        ]),
+      ),
     );
   }
 }
