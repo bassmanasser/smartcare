@@ -44,6 +44,9 @@ dependencies:
   pdf: ^3.11.3
   printing: ^5.14.2
   intl: ^0.20.2
+  flutter_tts: ^4.0.0        # لإضافة خاصية نطق الإجابة
+  speech_to_text: ^7.0.0     # لإضافة خاصية التعرف على الصوت
+  cloud_functions: ^6.2.0
 
 dev_dependencies:
   flutter_test:

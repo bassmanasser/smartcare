@@ -29,6 +29,10 @@
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
+	<key>NSMicrophoneUsageDescription</key>
+    <string>This app uses the microphone to listen to your health questions.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>This app uses speech recognition to understand your questions.</string>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
