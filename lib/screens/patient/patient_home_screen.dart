@@ -26,6 +26,13 @@ import 'settings_screen.dart';
 // استيراد الشاشة الجديدة
 import 'voice_screen.dart';
 
+Color bg(BuildContext context) => Theme.of(context).scaffoldBackgroundColor;
+Color card(BuildContext context) => Theme.of(context).cardColor;
+Color text(BuildContext context) =>
+    Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
+Color subText(BuildContext context) =>
+    Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey;
+
 class PatientHomeScreen extends StatefulWidget {
   final Patient patient;
 
@@ -71,6 +78,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     ];
 
     return Scaffold(
+      backgroundColor: bg(context),
       body: tabs[_currentIndex],
       // إضافة زر المساعد الصوتي العائم
       floatingActionButton: _currentIndex == 0 
@@ -101,9 +109,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               icon: const Icon(Icons.home_rounded),
               label: lang.translate('home'),
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_rounded),
-              label: 'Profile',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.person_rounded),
+              label: lang.translate('profile'),
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.dashboard_customize_rounded),
@@ -134,27 +142,36 @@ class _PatientDispatchHomeTabState extends State<_PatientDispatchHomeTab> {
   List<String> activeAlerts = [];
 
   // ويدجت بانر التنبيهات الحمراء
-  Widget _buildAlertBanner() {
+  Widget _buildAlertBanner(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     if (activeAlerts.isEmpty) return const SizedBox.shrink();
     return Container(
-      color: Colors.red[50],
+      color: Colors.red.withOpacity(0.1),
       padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red[700], size: 18),
+            const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 18),
             const SizedBox(width: 6),
-            Text('Critical Alert', style: TextStyle(
-              color: Colors.red[800], fontWeight: FontWeight.bold)),
+            Text(
+              lang.translate('critical_alert'),
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const Spacer(),
             IconButton(
               icon: const Icon(Icons.close, size: 16),
               onPressed: () => setState(() => activeAlerts = []),
             ),
           ]),
-          ...activeAlerts.map((a) => Text('• $a',
-            style: TextStyle(color: Colors.red[800], fontSize: 12))),
+          ...activeAlerts.map((a) => Text(
+                '- $a',
+                style: const TextStyle(color: Colors.red, fontSize: 12),
+              )),
         ],
       ),
     );
@@ -185,7 +202,7 @@ class _PatientDispatchHomeTabState extends State<_PatientDispatchHomeTab> {
             );
 
             return Scaffold(
-              backgroundColor: const Color(0xffF6F8FB),
+              backgroundColor: bg(context),
               body: SafeArea(
                 child: RefreshIndicator(
                   onRefresh: () async {
@@ -197,7 +214,7 @@ class _PatientDispatchHomeTabState extends State<_PatientDispatchHomeTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // إضافة بانر التنبيهات هنا في البداية
-                        _buildAlertBanner(),
+                        _buildAlertBanner(context),
                         _PatientHeader(
                           patient: livePatient,
                           isConnected: app.isDeviceConnected,
@@ -255,21 +272,21 @@ class _PatientServicesTab extends StatelessWidget {
     final lang = AppLocalizations.of(context);
 
     final services = [
-      _Svc('My QR Code', Icons.qr_code_rounded, Colors.teal, (_) => PatientQrScreen(patient: patient)),
-      _Svc('Care Team', Icons.groups_rounded, Colors.deepPurple, (_) => CareTeamScreen(institutionId: patient.assignedInstitutionId ?? '')),
+      _Svc(lang.translate('my_qr_code'), Icons.qr_code_rounded, Colors.teal, (_) => PatientQrScreen(patient: patient)),
+      _Svc(lang.translate('care_team'), Icons.groups_rounded, Colors.deepPurple, (_) => CareTeamScreen(institutionId: patient.assignedInstitutionId ?? '')),
       _Svc(lang.translate('reports'), Icons.picture_as_pdf_rounded, Colors.red, (_) => ReportScreen(patientId: patient.id, patientName: patient.name)),
       _Svc(lang.translate('doctor_notes'), Icons.note_alt_rounded, Colors.indigo, (_) => DoctorNotesScreen(patientId: patient.id)),
       _Svc(lang.translate('medications'), Icons.medication_rounded, Colors.blue, (_) => MedicationScreen(patientId: patient.id)),
       _Svc(lang.translate('mood'), Icons.mood_rounded, Colors.orange, (_) => MoodScreen(patientId: patient.id)),
-      _Svc('Charts', Icons.show_chart_rounded, Colors.green, (_) => ChartsScreen(patientId: patient.id)),
+      _Svc(lang.translate('charts'), Icons.show_chart_rounded, Colors.green, (_) => ChartsScreen(patientId: patient.id)),
       _Svc(lang.translate('alerts_history'), Icons.history_rounded, Colors.redAccent, (_) => AlertsHistoryScreen(patientId: patient.id)),
-      _Svc('Arrhythmia Check', Icons.favorite_rounded, Colors.red, (_) => ArrhythmiaCheckScreen(patientId: patient.id)),
-      _Svc('Resp. Check', Icons.graphic_eq_rounded, Colors.teal, (_) => const RespiratoryTestScreen()),
+      _Svc(lang.translate('arrhythmia_check'), Icons.favorite_rounded, Colors.red, (_) => ArrhythmiaCheckScreen(patientId: patient.id)),
+      _Svc(lang.translate('resp_check'), Icons.graphic_eq_rounded, Colors.teal, (_) => const RespiratoryTestScreen()),
       _Svc(lang.translate('ai_bot'), Icons.smart_toy_rounded, Colors.purple, (_) => AiBotScreen(patient: patient)),
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xffF6F8FB),
+      backgroundColor: bg(context),
       appBar: AppBar(
         title: Text(lang.translate('services')),
         centerTitle: true,
@@ -291,7 +308,7 @@ class _PatientServicesTab extends StatelessWidget {
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: item.builder)),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: card(context),
                 borderRadius: BorderRadius.circular(22),
                 boxShadow: const [BoxShadow(color: Color(0x11000000), blurRadius: 14, offset: Offset(0, 6))],
               ),
@@ -305,7 +322,15 @@ class _PatientServicesTab extends StatelessWidget {
                     child: Icon(item.icon, size: 30, color: item.color),
                   ),
                   const SizedBox(height: 12),
-                  Text(item.title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  Text(
+                    item.title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: text(context),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -333,6 +358,8 @@ class _PatientHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
@@ -355,13 +382,18 @@ class _PatientHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Welcome back', style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13)),
+                    Text(lang.translate('welcome_back'), style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13)),
                     const SizedBox(height: 4),
                     Text(patient.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20)),
                   ],
                 ),
               ),
-              _ConnectionBadge(connected: isConnected, text: isConnected ? 'Connected' : 'Disconnected'),
+              _ConnectionBadge(
+                connected: isConnected,
+                text: isConnected
+                    ? lang.translate('connected')
+                    : lang.translate('disconnected'),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -377,7 +409,10 @@ class _PatientHeader extends StatelessWidget {
                 const Icon(Icons.bluetooth_connected_rounded, color: Colors.white),
                 const SizedBox(width: 10),
                 Expanded(child: Text(deviceStatus, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600))),
-                Text('Age: ${patient.age}', style: const TextStyle(color: Colors.white70)),
+                Text(
+                  '${lang.translate('age')}: ${patient.age}',
+                  style: const TextStyle(color: Colors.white70),
+                ),
               ],
             ),
           ),
@@ -402,8 +437,11 @@ class _InstitutionWorkflowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final institution = patient.assignedInstitutionName ?? patient.assignedInstitutionCode ?? 'Not assigned yet';
-    final department = patient.assignedDepartment ?? 'Pending triage';
+    final lang = AppLocalizations.of(context);
+    final institution = patient.assignedInstitutionName ??
+        patient.assignedInstitutionCode ??
+        lang.translate('not_assigned_yet');
+    final department = patient.assignedDepartment ?? lang.translate('pending_triage');
     final stage = patient.workflowStage ?? 'patient_intake';
     final priority = patient.queuePriority ?? 'routine';
 
@@ -411,29 +449,48 @@ class _InstitutionWorkflowCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: card(context),
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [BoxShadow(color: Color(0x11000000), blurRadius: 14, offset: Offset(0, 6))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Institution Workflow', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: PETROL_DARK)),
+          Text(
+            lang.translate('institution_workflow_title'),
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              color: text(context),
+            ),
+          ),
           const SizedBox(height: 14),
-          _kv('Institution', institution),
+          _kv(context, lang.translate('institution'), institution),
           const SizedBox(height: 8),
-          _kv('Department', department),
+          _kv(context, lang.translate('department'), department),
           const SizedBox(height: 8),
-          _kv('Stage', _prettyText(stage)),
+          _kv(context, lang.translate('stage'), lang.localizeDynamicValue(_prettyText(stage))),
           const SizedBox(height: 12),
           Row(
             children: [
-              const Text('Queue Priority:', style: TextStyle(fontWeight: FontWeight.w700, color: PETROL_DARK)),
+              Text(
+                '${lang.translate('queue_priority')}:',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: text(context),
+                ),
+              ),
               const SizedBox(width: 10),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(color: _priorityColor(priority).withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
-                child: Text(_prettyText(priority), style: TextStyle(color: _priorityColor(priority), fontWeight: FontWeight.bold)),
+                child: Text(
+                  lang.localizeDynamicValue(_prettyText(priority)),
+                  style: TextStyle(
+                    color: _priorityColor(priority),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -442,11 +499,20 @@ class _InstitutionWorkflowCard extends StatelessWidget {
     );
   }
 
-  Widget _kv(String key, String value) {
+  Widget _kv(BuildContext context, String key, String value) {
     return Row(
       children: [
-        SizedBox(width: 95, child: Text(key, style: const TextStyle(fontWeight: FontWeight.w700, color: PETROL_DARK))),
-        Expanded(child: Text(value, style: const TextStyle(color: Colors.black54))),
+        SizedBox(
+          width: 95,
+          child: Text(
+            key,
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: text(context),
+            ),
+          ),
+        ),
+        Expanded(child: Text(value, style: TextStyle(color: subText(context)))),
       ],
     );
   }
@@ -458,19 +524,28 @@ class _PatientShortcutsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     return _SectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Quick Access', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: PETROL_DARK)),
+          Text(
+            lang.translate('quick_access'),
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              color: text(context),
+            ),
+          ),
           const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(child: _shortcut(context, icon: Icons.groups_rounded, label: 'Care Team', color: Colors.deepPurple, onTap: () {
+              Expanded(child: _shortcut(context, icon: Icons.groups_rounded, label: lang.translate('care_team'), color: Colors.deepPurple, onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => CareTeamScreen(institutionId: patient.assignedInstitutionId ?? '')));
               })),
               const SizedBox(width: 10),
-              Expanded(child: _shortcut(context, icon: Icons.qr_code_rounded, label: 'My QR', color: Colors.teal, onTap: () {
+              Expanded(child: _shortcut(context, icon: Icons.qr_code_rounded, label: lang.translate('my_qr'), color: Colors.teal, onTap: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => PatientQrScreen(patient: patient)));
               })),
             ],
@@ -486,7 +561,7 @@ class _PatientShortcutsCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(18)),
-        child: Column(children: [Icon(icon, color: color), const SizedBox(height: 8), Text(label, style: const TextStyle(fontWeight: FontWeight.w700, color: PETROL_DARK))]),
+        child: Column(children: [Icon(icon, color: color), const SizedBox(height: 8), Text(label, style: TextStyle(fontWeight: FontWeight.w700, color: text(context)))]),
       ),
     );
   }
@@ -499,10 +574,11 @@ class _RiskSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
     final level = assessment?.riskLevel ?? RiskLevel.normal;
     final score = assessment?.score ?? 0;
     final color = _riskColor(level);
-    final label = _riskLabel(level);
+    final label = lang.localizeDynamicValue(_riskLabel(level));
 
     return Container(
       width: double.infinity,
@@ -515,7 +591,7 @@ class _RiskSummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Current Health Status', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
+          Text(lang.translate('current_health_status'), style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -523,12 +599,12 @@ class _RiskSummaryCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(14)),
-                child: Text('Score $score', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                child: Text('${lang.translate('score')} $score', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Text('Case status: $caseStatus', style: const TextStyle(color: Colors.white)),
+          Text('${lang.translate('case_status')}: ${lang.localizeDynamicValue(caseStatus)}', style: const TextStyle(color: Colors.white)),
         ],
       ),
     );
@@ -543,13 +619,15 @@ class _QuickFlagsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     return Row(
       children: [
-        Expanded(child: _FlagCard(title: 'Arrhythmia', value: arrhythmiaAbnormal ? 'Abnormal' : 'Normal', color: arrhythmiaAbnormal ? Colors.red : Colors.green, icon: Icons.favorite_rounded)),
+        Expanded(child: _FlagCard(title: lang.translate('arrhythmia'), value: arrhythmiaAbnormal ? lang.translate('abnormal') : lang.translate('normal'), color: arrhythmiaAbnormal ? Colors.red : Colors.green, icon: Icons.favorite_rounded)),
         const SizedBox(width: 10),
-        Expanded(child: _FlagCard(title: 'Respiratory', value: respiratoryAbnormal ? 'Abnormal' : 'Normal', color: respiratoryAbnormal ? Colors.orange : Colors.green, icon: Icons.air_rounded)),
+        Expanded(child: _FlagCard(title: lang.translate('respiratory'), value: respiratoryAbnormal ? lang.translate('abnormal') : lang.translate('normal'), color: respiratoryAbnormal ? Colors.orange : Colors.green, icon: Icons.air_rounded)),
         const SizedBox(width: 10),
-        Expanded(child: _FlagCard(title: 'Alerts', value: '$alertsCount', color: alertsCount > 0 ? Colors.purple : Colors.green, icon: Icons.notifications_active_rounded)),
+        Expanded(child: _FlagCard(title: lang.translate('alerts'), value: '$alertsCount', color: alertsCount > 0 ? Colors.purple : Colors.green, icon: Icons.notifications_active_rounded)),
       ],
     );
   }
@@ -566,7 +644,7 @@ class _SectionCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: card(context),
         borderRadius: BorderRadius.circular(22),
         boxShadow: const [BoxShadow(color: Color(0x11000000), blurRadius: 14, offset: Offset(0, 6))],
       ),
@@ -587,7 +665,7 @@ class _FlagCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: card(context),
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [BoxShadow(color: Color(0x11000000), blurRadius: 12, offset: Offset(0, 4))],
       ),
@@ -595,7 +673,7 @@ class _FlagCard extends StatelessWidget {
         children: [
           Icon(icon, color: color),
           const SizedBox(height: 8),
-          Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: subText(context))),
           const SizedBox(height: 4),
           Text(value, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w800, color: color, fontSize: 13)),
         ],

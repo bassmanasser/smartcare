@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -62,6 +63,11 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   Future<void> _onTap() async {
+    if (!_isLoggedIn) {
+      _showLoginRequired();
+      return;
+    }
+
     if (_state == 'idle') {
       if (!_sttReady) {
         _snack('الميكروفون غير متاح حالياً');
@@ -91,11 +97,18 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   Future<void> _askAgent(String q) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _showLoginRequired();
+      return;
+    }
+
     setState(() {
       _state = 'thinking';
       _recognized = q;
     });
     await _stt.stop();
+    await user.getIdToken();
     
     // استدعاء الخدمة السحابية
     final res = await PHIAService.ask(q);
@@ -133,6 +146,21 @@ class _VoiceScreenState extends State<VoiceScreen>
         content: Text(m, textDirection: TextDirection.rtl),
       ));
 
+  bool get _isLoggedIn => FirebaseAuth.instance.currentUser != null;
+
+  void _showLoginRequired() {
+    _stt.stop();
+    _tts.stop();
+    if (!mounted) return;
+
+    setState(() {
+      _state = 'idle';
+      _answer = 'Please log in first.';
+      _alerts = [];
+    });
+    _snack('Please log in first.');
+  }
+
   Color get _color => const {
         'listening': Colors.red,
         'thinking': Colors.orange,
@@ -157,6 +185,34 @@ class _VoiceScreenState extends State<VoiceScreen>
 
   @override
   Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data == null) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Voice Assistant'),
+              backgroundColor: Colors.teal,
+              foregroundColor: Colors.white,
+            ),
+            body: const Center(
+              child: Text('Please log in first.'),
+            ),
+          );
+        }
+
+        return _buildVoiceUi(context);
+      },
+    );
+  }
+
+  Widget _buildVoiceUi(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Row(

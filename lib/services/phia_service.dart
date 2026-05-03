@@ -1,4 +1,5 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PHIAService {
   // اسم الدالة يجب أن يطابق تماماً ما تم رفعه على Firebase
@@ -11,6 +12,12 @@ class PHIAService {
 
   static Future<Map<String, dynamic>> ask(String question) async {
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        return {'answer': 'Please log in first.', 'alerts': []};
+      }
+
+      await user.getIdToken();
       final result = await _fn.call({'question': question});
       return {
         'answer': result.data['answer'] as String? ?? 'No answer.',

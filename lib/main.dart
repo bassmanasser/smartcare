@@ -68,7 +68,7 @@ class MyApp extends StatelessWidget {
       brightness: Brightness.light,
       colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.lightBackground,
-      fontFamily: 'Cairo',
+      fontFamily: 'Roboto',
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         backgroundColor: AppColors.primary,
@@ -83,7 +83,63 @@ class MyApp extends StatelessWidget {
         ),
         margin: EdgeInsets.zero,
       ),
-      // ... باقي إعدادات الـ Light Theme الأصلية[cite: 7]
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 54),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 54),
+          side: const BorderSide(color: AppColors.primary),
+          foregroundColor: AppColors.primary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.white,
+        indicatorColor: AppColors.primary.withOpacity(0.12),
+        labelTextStyle: WidgetStateProperty.all(
+          const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         selectedItemColor: AppColors.primary,
         unselectedItemColor: Colors.grey,
@@ -104,48 +160,108 @@ class MyApp extends StatelessWidget {
       colorScheme: scheme,
       scaffoldBackgroundColor: AppColors.darkBackground,
       cardColor: AppColors.cardDark,
-      fontFamily: 'Cairo',
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         backgroundColor: AppColors.primaryDark,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      // ... باقي إعدادات الـ Dark Theme الأصلية[cite: 7]
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: AppColors.cardDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.secondary,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 54),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 54),
+          side: BorderSide(color: Colors.white.withOpacity(0.25)),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF1C222B),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: AppColors.secondary, width: 1.6),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: const Color(0xFF111827),
+        indicatorColor: Colors.tealAccent.withOpacity(0.14),
+        labelTextStyle: WidgetStateProperty.all(
+          const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         selectedItemColor: Colors.tealAccent,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Consumer يضمن إن MaterialApp يعمل rebuild فوراً لما الثيم أو اللغة تتغير
-    return Consumer<AppState>(
-      builder: (context, appState, _) {
-        return MaterialApp(
-          title: 'SmartCare',
-          debugShowCheckedModeBanner: false,
-          navigatorKey: navigatorKey,
-          locale: appState.currentLocale,
-          supportedLocales: const [
-            Locale('ar'),
-            Locale('en'),
-          ],
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          theme: _lightTheme(),
-          darkTheme: _darkTheme(),
-          themeMode: appState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-          home: const AuthWrapper(),
-        );
-      },
+    final appState = Provider.of<AppState>(context);
+
+    return MaterialApp(
+      title: 'SmartCare',
+      debugShowCheckedModeBanner: false,
+      navigatorKey: navigatorKey,
+      locale: appState.currentLocale,
+      supportedLocales: const [
+        Locale('en'),
+        Locale('ar'),
+      ],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      theme: _lightTheme(),
+      darkTheme: _darkTheme(),
+      themeMode: appState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      home: const AuthWrapper(),
     );
   }
 }
@@ -176,7 +292,11 @@ class AuthWrapper extends StatelessWidget {
 
 class UserDataFetcher extends StatefulWidget {
   final String uid;
-  const UserDataFetcher({super.key, required this.uid});
+
+  const UserDataFetcher({
+    super.key,
+    required this.uid,
+  });
 
   @override
   State<UserDataFetcher> createState() => _UserDataFetcherState();
@@ -204,19 +324,27 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
       future: _userFuture,
       builder: (context, userSnapshot) {
         if (userSnapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
-        if (userSnapshot.hasError || !userSnapshot.hasData || !userSnapshot.data!.exists) {
+        if (userSnapshot.hasError) {
+          return const Scaffold(
+            body: Center(child: Text('Error loading user data')),
+          );
+        }
+
+        if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
           return const UserTypeSelectionScreen();
         }
 
         try {
           final userData = userSnapshot.data!.data() ?? {};
           final role = (userData['role'] ?? 'patient').toString();
-          final approvalStatus = (userData['approvalStatus'] ?? 'approved').toString();
+          final approvalStatus =
+              (userData['approvalStatus'] ?? 'approved').toString();
 
-          // التحقق من حالة الموافقة للموظفين[cite: 7]
           if (_isStaffRole(role) && approvalStatus != 'approved') {
             return PendingApprovalScreen(
               roleLabel: (userData['medicalRole'] ?? role).toString(),
@@ -227,21 +355,47 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
             );
           }
 
-          // توجيه المستخدم حسب دوره[cite: 7]
           if (role == 'patient') {
-            return PatientHomeScreen(patient: Patient.fromJson({...userData, 'id': widget.uid}));
+            final patient = Patient.fromJson({
+              ...userData,
+              'id': widget.uid,
+            });
+            return PatientHomeScreen(patient: patient);
           }
-          if (role == 'doctor') {
-            return DoctorHomeScreen(doctor: Doctor.fromJson({...userData, 'id': widget.uid}));
-          }
-          if (role == 'parent') return ParentHomeScreen(parent: userData);
-          if (role == 'hospital_admin') return const AdminHomeScreen();
-          if (role == 'nurse') return const NurseHomeScreen();
-          if (role == 'support_staff' || role == 'staff') return const StaffHomeScreen();
 
-          return const Scaffold(body: Center(child: Text('Unknown user role')));
+          if (role == 'parent') {
+            return ParentHomeScreen(parent: userData);
+          }
+
+          if (role == 'hospital_admin') {
+            return const AdminHomeScreen();
+          }
+
+          if (role == 'doctor') {
+            final doctor = Doctor.fromJson({
+              ...userData,
+              'id': widget.uid,
+            });
+            return DoctorHomeScreen(doctor: doctor);
+          }
+
+          if (role == 'nurse') {
+            return const NurseHomeScreen();
+          }
+
+          if (role == 'support_staff' || role == 'staff') {
+            return const StaffHomeScreen();
+          }
+
+          return const Scaffold(
+            body: Center(child: Text('Unknown user role')),
+          );
         } catch (e) {
-          return Scaffold(body: Center(child: Text('Error: $e')));
+          return Scaffold(
+            body: Center(
+              child: Text('Error parsing user data: $e'),
+            ),
+          );
         }
       },
     );

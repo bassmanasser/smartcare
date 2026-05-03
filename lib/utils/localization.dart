@@ -25,6 +25,7 @@ class AppLocalizations {
       'welcome_back': 'Welcome back',
       'home': 'Home',
       'profile': 'Profile',
+      'critical_alert': 'Critical Alert',
       'services': 'Services',
       'settings': 'Settings',
       'account': 'Account',
@@ -320,6 +321,7 @@ class AppLocalizations {
       'welcome_back': 'أهلاً بعودتك',
       'home': 'الرئيسية',
       'profile': 'الملف الشخصي',
+      'critical_alert': 'تنبيه حرج',
       'services': 'الخدمات',
       'settings': 'الإعدادات',
       'account': 'الحساب',
@@ -644,6 +646,10 @@ class AppLocalizations {
         return translate('under_observation');
       case 'needs attention':
         return translate('needs_attention');
+      case 'attention needed':
+        return translate('attention_needed');
+      case 'high risk':
+        return translate('high_risk');
       case 'serious':
         return translate('serious');
       case 'healthy':
