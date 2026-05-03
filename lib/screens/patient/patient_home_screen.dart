@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../models/patient.dart';
 import '../../models/risk_assessment.dart';
 import '../../providers/app_state.dart';
+import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/localization.dart';
 
@@ -17,6 +18,7 @@ import 'charts_screen.dart';
 import 'doctor_notes_screen.dart';
 import 'medication_screen.dart';
 import 'mood_screen.dart';
+import '../auth/login_screen.dart';
 import 'patient_profile_screen.dart';
 import 'patient_qr_screen.dart';
 import 'report_screen.dart';
@@ -47,6 +49,22 @@ class PatientHomeScreen extends StatefulWidget {
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _currentIndex = 0;
+
+  void _openVoiceAssistant() {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    if (auth.user == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const VoiceScreen()),
+    );
+  }
 
   @override
   void initState() {
@@ -86,10 +104,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               heroTag: 'voice_main',
               backgroundColor: PETROL,
               child: const Icon(Icons.mic, color: Colors.white),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const VoiceScreen()),
-              ),
+              onPressed: _openVoiceAssistant,
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,

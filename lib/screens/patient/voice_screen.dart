@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import '../../services/auth_service.dart';
 import '../../services/phia_service.dart';
 
 class VoiceScreen extends StatefulWidget {
@@ -184,8 +186,21 @@ class _VoiceScreenState extends State<VoiceScreen>
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthService>(context, listen: false);
+
+    if (auth.user == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Voice Assistant'),
+          backgroundColor: Colors.teal,
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(child: Text('Please log in first')),
+      );
+    }
+
     return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+      stream: auth.authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(

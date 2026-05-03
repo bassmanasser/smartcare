@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  User? get user => _auth.currentUser;
+
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+
   Future<User?> signIn(String email, String password, BuildContext context) async {
     try {
       final res = await _auth.signInWithEmailAndPassword(email: email, password: password);

@@ -7,6 +7,7 @@ import '../../models/patient.dart';
 import '../../models/vital_sample.dart';
 import '../../providers/app_state.dart';
 import '../../services/ai_chat_service.dart';
+import '../../services/auth_service.dart';
 import '../../services/phia_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/localization.dart';
@@ -129,9 +130,22 @@ class _AiBotScreenState extends State<AiBotScreen> {
   @override
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context);
+    final auth = Provider.of<AuthService>(context, listen: false);
+
+    if (auth.user == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(lang.translate('ai_bot')),
+          backgroundColor: PETROL_DARK,
+        ),
+        body: Center(
+          child: Text(lang.translate('please_login_first')),
+        ),
+      );
+    }
 
     return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+      stream: auth.authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
