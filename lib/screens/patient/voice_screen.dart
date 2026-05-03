@@ -63,7 +63,8 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   Future<void> _onTap() async {
-    if (!_isLoggedIn) {
+    final user = await PHIAService.waitForSignedInUser();
+    if (user == null) {
       _showLoginRequired();
       return;
     }
@@ -97,7 +98,7 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   Future<void> _askAgent(String q) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = await PHIAService.waitForSignedInUser();
     if (user == null) {
       _showLoginRequired();
       return;
@@ -108,7 +109,7 @@ class _VoiceScreenState extends State<VoiceScreen>
       _recognized = q;
     });
     await _stt.stop();
-    await user.getIdToken();
+    await user.getIdToken(true);
     
     // استدعاء الخدمة السحابية
     final res = await PHIAService.ask(q);
@@ -145,8 +146,6 @@ class _VoiceScreenState extends State<VoiceScreen>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(m, textDirection: TextDirection.rtl),
       ));
-
-  bool get _isLoggedIn => FirebaseAuth.instance.currentUser != null;
 
   void _showLoginRequired() {
     _stt.stop();

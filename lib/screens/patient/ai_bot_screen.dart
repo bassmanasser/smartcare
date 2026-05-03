@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,7 @@ import '../../models/patient.dart';
 import '../../models/vital_sample.dart';
 import '../../providers/app_state.dart';
 import '../../services/ai_chat_service.dart';
+import '../../services/phia_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/localization.dart';
 
@@ -81,6 +83,13 @@ class _AiBotScreenState extends State<AiBotScreen> {
   }
 
   Future<void> _sendMessage() async {
+    final authUser = await PHIAService.waitForSignedInUser();
+    if (authUser == null) {
+      final lang = AppLocalizations.of(context);
+      _addMessage(lang.translate('please_login_first'), false);
+      return;
+    }
+
     final text = _textCtrl.text.trim();
     if (text.isEmpty || _loading) return;
 
@@ -121,8 +130,37 @@ class _AiBotScreenState extends State<AiBotScreen> {
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context);
 
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data == null) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(lang.translate('ai_bot')),
+              backgroundColor: PETROL_DARK,
+            ),
+            body: Center(
+              child: Text(lang.translate('please_login_first')),
+            ),
+          );
+        }
+
+        return _buildChatUi(context, lang);
+      },
+    );
+  }
+
+  Widget _buildChatUi(BuildContext context, AppLocalizations lang) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(lang.translate('ai_bot')),
         backgroundColor: PETROL_DARK,
@@ -155,7 +193,7 @@ class _AiBotScreenState extends State<AiBotScreen> {
                             maxWidth: MediaQuery.of(context).size.width * 0.78,
                           ),
                           decoration: BoxDecoration(
-                            color: msg.isUser ? PETROL : Colors.white,
+                            color: msg.isUser ? PETROL : theme.cardColor,
                             borderRadius: BorderRadius.only(
                               topLeft: const Radius.circular(14),
                               topRight: const Radius.circular(14),
@@ -181,6 +219,7 @@ class _AiBotScreenState extends State<AiBotScreen> {
                               : MarkdownBody(
                                   data: msg.text,
                                   selectable: true,
+                                  styleSheet: MarkdownStyleSheet.fromTheme(theme),
                                 ),
                         ),
                       );
@@ -198,7 +237,7 @@ class _AiBotScreenState extends State<AiBotScreen> {
             top: false,
             child: Container(
               padding: const EdgeInsets.all(12),
-              color: Colors.white,
+              color: theme.cardColor,
               child: Row(
                 children: [
                   Expanded(
@@ -216,7 +255,8 @@ class _AiBotScreenState extends State<AiBotScreen> {
                           vertical: 12,
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: theme.inputDecorationTheme.fillColor ??
+                            theme.cardColor,
                       ),
                       onSubmitted: (_) => _sendMessage(),
                     ),

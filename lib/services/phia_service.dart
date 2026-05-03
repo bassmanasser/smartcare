@@ -12,12 +12,12 @@ class PHIAService {
 
   static Future<Map<String, dynamic>> ask(String question) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = await waitForSignedInUser();
       if (user == null) {
         return {'answer': 'Please log in first.', 'alerts': []};
       }
 
-      await user.getIdToken();
+      await user.getIdToken(true);
       final result = await _fn.call({'question': question});
       return {
         'answer': result.data['answer'] as String? ?? 'No answer.',
@@ -30,6 +30,20 @@ class PHIAService {
       return {'answer': 'Error: ${e.message}', 'alerts': []};
     } catch (e) {
       return {'answer': 'Connection error. Check internet.', 'alerts': []};
+    }
+  }
+
+  static Future<User?> waitForSignedInUser() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) return currentUser;
+
+    try {
+      return await FirebaseAuth.instance
+          .idTokenChanges()
+          .firstWhere((user) => user != null)
+          .timeout(const Duration(seconds: 5));
+    } catch (_) {
+      return FirebaseAuth.instance.currentUser;
     }
   }
 }

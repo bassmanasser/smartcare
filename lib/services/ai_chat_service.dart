@@ -1,8 +1,4 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
-
-import '../config/api_config.dart';
+import 'phia_service.dart';
 
 class AiChatService {
   static Future<String> sendMessage({
@@ -12,36 +8,58 @@ class AiChatService {
     required String languageCode,
     Map<String, dynamic>? latestVitals,
   }) async {
-    final vitalsSummary = _buildVitalsSummary(latestVitals, languageCode);
-
-    final response = await http.post(
-      Uri.parse(ApiConfig.aiChatEndpoint),
-      headers: const {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'patientId': patientId,
-        'patientName': patientName,
-        'message': message,
-        'languageCode': languageCode,
-        'vitalsSummary': vitalsSummary,
-      }),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        'AI chat failed: ${response.statusCode} ${response.body}',
-      );
+    final user = await PHIAService.waitForSignedInUser();
+    if (user == null) {
+      return languageCode == 'ar'
+          ? 'من فضلك سجلي الدخول أولاً.'
+          : 'Please log in first.';
     }
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final reply = (data['reply'] ?? '').toString().trim();
+    final vitalsSummary = _buildVitalsSummary(latestVitals, languageCode);
+    final prompt = _buildPrompt(
+      patientName: patientName,
+      message: message,
+      languageCode: languageCode,
+      vitalsSummary: vitalsSummary,
+    );
+
+    final response = await PHIAService.ask(prompt);
+    final reply = (response['answer'] ?? '').toString().trim();
 
     if (reply.isEmpty) {
       throw Exception('Empty AI response');
     }
 
     return reply;
+  }
+
+  static String _buildPrompt({
+    required String patientName,
+    required String message,
+    required String languageCode,
+    required String vitalsSummary,
+  }) {
+    if (languageCode == 'ar') {
+      return '''
+اسم المريض: $patientName
+ملخص القراءات الحيوية: $vitalsSummary
+
+سؤال المريض:
+$message
+
+جاوب كمساعد صحي داخل تطبيق SmartCare. استخدم العربية، خلي الإجابة بسيطة وآمنة، واذكر أن الحالات الطارئة تحتاج تواصل فوري مع الطبيب أو الطوارئ.
+''';
+    }
+
+    return '''
+Patient name: $patientName
+Latest vitals summary: $vitalsSummary
+
+Patient question:
+$message
+
+Answer as the SmartCare health assistant. Keep it simple, safe, and remind the patient to contact a doctor or emergency services for urgent symptoms.
+''';
   }
 
   static String _buildVitalsSummary(

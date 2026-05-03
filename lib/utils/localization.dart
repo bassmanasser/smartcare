@@ -249,6 +249,9 @@ class AppLocalizations {
       'charts': 'Charts',
       'alerts_history': 'Alerts History',
       'ai_bot': 'AI Bot',
+      'start_chatting': 'Start chatting with your health assistant',
+      'ask_about_your_health': 'Ask about your health...',
+      'please_login_first': 'Please log in first.',
       'arrhythmia_check': 'Arrhythmia Check',
       'resp_check': 'Resp. Check',
 
@@ -546,6 +549,9 @@ class AppLocalizations {
       'charts': 'الرسوم البيانية',
       'alerts_history': 'سجل التنبيهات',
       'ai_bot': 'المساعد الذكي',
+      'start_chatting': 'ابدئي المحادثة مع المساعد الصحي',
+      'ask_about_your_health': 'اسألي عن صحتك...',
+      'please_login_first': 'من فضلك سجلي الدخول أولاً.',
       'arrhythmia_check': 'فحص اضطراب النبض',
       'resp_check': 'فحص التنفس',
 
