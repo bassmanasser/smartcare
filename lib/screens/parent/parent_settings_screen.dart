@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../utils/constants.dart';
+import '../../widgets/language_picker.dart';
 import '../auth/welcome_screen.dart';
 
 class ParentSettingsScreen extends StatefulWidget {
@@ -475,6 +476,16 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: () => showLanguagePicker(context),
+                    icon: const Icon(Icons.language_rounded),
+                    label: Text('Language: ${currentLanguageLabel(context)}'),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
                   height: 52,

@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/hospital_id_service.dart';
+import '../../utils/localization.dart';
+import '../../widgets/language_picker.dart';
 import 'admin_home_screen.dart';
 
 class HospitalAdminSignupScreen extends StatefulWidget {
@@ -131,9 +133,18 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hospital Setup'),
+        title: Text(lang.translate('hospital_setup')),
+        actions: [
+          IconButton(
+            tooltip: lang.translate('language'),
+            onPressed: () => showLanguagePicker(context),
+            icon: const Icon(Icons.language_rounded),
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,
@@ -143,7 +154,7 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
             TextFormField(
               controller: _adminNameController,
               decoration: _decoration(
-                label: 'Admin Full Name',
+                label: lang.translate('admin_full_name'),
                 icon: Icons.person_outline_rounded,
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
@@ -153,7 +164,7 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
               controller: _phoneController,
               keyboardType: TextInputType.phone,
               decoration: _decoration(
-                label: 'Phone Number',
+                label: lang.translate('phone'),
                 icon: Icons.phone_outlined,
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
@@ -162,7 +173,7 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
             TextFormField(
               controller: _institutionNameController,
               decoration: _decoration(
-                label: 'Hospital Name',
+                label: lang.translate('hospital_name'),
                 icon: Icons.business_outlined,
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
@@ -171,7 +182,7 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
             TextFormField(
               controller: _institutionCityController,
               decoration: _decoration(
-                label: 'City',
+                label: lang.translate('city'),
                 icon: Icons.location_city_outlined,
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
@@ -181,7 +192,7 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
               controller: _institutionAddressController,
               maxLines: 2,
               decoration: _decoration(
-                label: 'Address',
+                label: lang.translate('address'),
                 icon: Icons.location_on_outlined,
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
@@ -191,7 +202,7 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
               controller: _descriptionController,
               maxLines: 4,
               decoration: _decoration(
-                label: 'Description',
+                label: lang.translate('description'),
                 icon: Icons.description_outlined,
               ),
             ),
@@ -205,7 +216,7 @@ class _HospitalAdminSignupScreenState extends State<HospitalAdminSignupScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.check_circle_outline_rounded),
-              label: Text(_loading ? 'Saving...' : 'Complete Setup'),
+              label: Text(_loading ? lang.translate('loading') : lang.translate('complete_setup')),
             ),
           ],
         ),

@@ -1,9 +1,11 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../../providers/app_state.dart';
+import '../../models/patient.dart';
 import '../../utils/constants.dart';
 import '../auth/welcome_screen.dart';
 import '../doctor/patient_detail_for_doctor_screen.dart';
@@ -42,6 +44,128 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         .doc(_uid)
         .get();
     return snap.data() ?? {};
+  }
+
+  Map<String, String> _parsePatientQr(String rawValue) {
+    final value = rawValue.trim();
+    if (value.isEmpty) throw Exception('Patient QR is empty');
+
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is Map && decoded['type'] == 'patient_qr') {
+        final patientId = (decoded['patientId'] ?? '').toString().trim();
+        final patientName = (decoded['patientName'] ?? '').toString().trim();
+        if (patientId.isNotEmpty) {
+          return {
+            'patientId': patientId,
+            'patientName': patientName.isEmpty ? 'Patient' : patientName,
+          };
+        }
+      }
+    } catch (_) {}
+
+    return {
+      'patientId': value,
+      'patientName': 'Patient',
+    };
+  }
+
+  Future<void> _linkPatientByQr(String rawValue) async {
+    try {
+      final qr = _parsePatientQr(rawValue);
+      final patientId = qr['patientId']!;
+      var patientName = qr['patientName']!;
+
+      await FirebaseFirestore.instance
+          .collection('care_links')
+          .doc('${_uid}_$patientId')
+          .set({
+        'patientId': patientId,
+        'patientName': patientName,
+        'linkedUserId': _uid,
+        'linkedUserRole': 'parent',
+        'parentId': _uid,
+        'status': 'approved',
+        'relationshipLabel': 'family_patient',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      final patientDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(patientId)
+          .get();
+      final patientData = patientDoc.data();
+      if (patientData == null) {
+        await FirebaseFirestore.instance
+            .collection('care_links')
+            .doc('${_uid}_$patientId')
+            .delete();
+        throw Exception('Patient not found');
+      }
+
+      patientName = (patientData['name'] ?? patientData['fullName'] ?? patientName)
+          .toString();
+
+      await FirebaseFirestore.instance
+          .collection('care_links')
+          .doc('${_uid}_$patientId')
+          .set({
+        'patientName': patientName,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      await FirebaseFirestore.instance.collection('users').doc(_uid).set({
+        'linkedPatients': FieldValue.arrayUnion([patientId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$patientName linked successfully')),
+      );
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to link patient: $e')),
+      );
+    }
+  }
+
+  Future<void> _scanPatientQr() async {
+    final result = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const _ParentQrScannerPage()),
+    );
+
+    if (result == null || result.trim().isEmpty) return;
+    await _linkPatientByQr(result);
+  }
+
+  Stream<List<Patient>> _linkedPatientsStream() {
+    return FirebaseFirestore.instance
+        .collection('care_links')
+        .where('linkedUserId', isEqualTo: _uid)
+        .where('linkedUserRole', isEqualTo: 'parent')
+        .where('status', isEqualTo: 'approved')
+        .snapshots()
+        .asyncMap((snapshot) async {
+      final patients = <Patient>[];
+      for (final doc in snapshot.docs) {
+        final patientId = (doc.data()['patientId'] ?? '').toString();
+        if (patientId.isEmpty) continue;
+
+        final patientDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(patientId)
+            .get();
+        final data = patientDoc.data();
+        if (data == null) continue;
+
+        patients.add(Patient.fromJson({'id': patientDoc.id, ...data}));
+      }
+      return patients;
+    });
   }
 
   dynamic _readAny(dynamic item, List<String> fields) {
@@ -136,11 +260,6 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final app = Provider.of<AppState>(context);
-    final patientsMap = app.patients;
-    final children = _myChildren(patientsMap as Map<dynamic, dynamic>, _uid);
-    final criticalCount = _criticalCount(children);
-
     return FutureBuilder<Map<String, dynamic>>(
       future: _fetchParentData(),
       builder: (context, parentSnap) {
@@ -150,72 +269,92 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         final notificationsEnabled = parentData['notificationsEnabled'] == true;
         final criticalAlertsOnly = parentData['criticalAlertsOnly'] == true;
 
-        return Scaffold(
-          backgroundColor: const Color(0xFFF5F7FB),
-          appBar: AppBar(
-            elevation: 0,
-            backgroundColor: PETROL_DARK,
-            title: Text(
-              parentName.isEmpty ? 'Parent Dashboard' : parentName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            actions: [
-              IconButton(
-                tooltip: 'Settings',
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ParentSettingsScreen(),
+        return StreamBuilder<List<Patient>>(
+          stream: _linkedPatientsStream(),
+          builder: (context, patientSnap) {
+            final children = patientSnap.data ?? const <Patient>[];
+            final criticalCount = _criticalCount(children);
+
+            return Scaffold(
+              backgroundColor: LIGHT_BG,
+              appBar: AppBar(
+                elevation: 0,
+                backgroundColor: PETROL_DARK,
+                title: Text(
+                  parentName.isEmpty ? 'Parent Dashboard' : parentName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                actions: [
+                  IconButton(
+                    tooltip: 'Scan patient QR',
+                    onPressed: _scanPatientQr,
+                    icon: const Icon(
+                      Icons.qr_code_scanner_rounded,
+                      color: Colors.white,
                     ),
-                  ).then((_) => setState(() {}));
-                },
-                icon: const Icon(Icons.settings_rounded, color: Colors.white),
+                  ),
+                  IconButton(
+                    tooltip: 'Settings',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ParentSettingsScreen(),
+                        ),
+                      ).then((_) => setState(() {}));
+                    },
+                    icon:
+                        const Icon(Icons.settings_rounded, color: Colors.white),
+                  ),
+                  IconButton(
+                    tooltip: 'Logout',
+                    onPressed: () => _logout(context),
+                    icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                  ),
+                ],
               ),
-              IconButton(
-                tooltip: 'Logout',
-                onPressed: () => _logout(context),
-                icon: const Icon(Icons.logout_rounded, color: Colors.white),
+              body: RefreshIndicator(
+                color: PETROL_DARK,
+                onRefresh: _refresh,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 24),
+                  children: [
+                    _buildHeader(
+                      parentName: parentName,
+                      relation: relation,
+                      childrenCount: children.length,
+                      criticalCount: criticalCount,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildSummaryRow(
+                      childrenCount: children.length,
+                      criticalCount: criticalCount,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPreferenceSummary(
+                      notificationsEnabled: notificationsEnabled,
+                      criticalAlertsOnly: criticalAlertsOnly,
+                    ),
+                    const SizedBox(height: 20),
+                    _buildSectionTitle('Quick Access'),
+                    const SizedBox(height: 12),
+                    _buildQuickAccess(context, children),
+                    const SizedBox(height: 20),
+                    _buildSectionTitle('Children Status'),
+                    const SizedBox(height: 12),
+                    if (patientSnap.connectionState == ConnectionState.waiting)
+                      const Center(child: CircularProgressIndicator())
+                    else
+                      _buildChildrenCards(context, children),
+                  ],
+                ),
               ),
-            ],
-          ),
-          body: RefreshIndicator(
-            color: PETROL_DARK,
-            onRefresh: _refresh,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.only(bottom: 24),
-              children: [
-                _buildHeader(
-                  parentName: parentName,
-                  relation: relation,
-                  childrenCount: children.length,
-                  criticalCount: criticalCount,
-                ),
-                const SizedBox(height: 16),
-                _buildSummaryRow(
-                  childrenCount: children.length,
-                  criticalCount: criticalCount,
-                ),
-                const SizedBox(height: 12),
-                _buildPreferenceSummary(
-                  notificationsEnabled: notificationsEnabled,
-                  criticalAlertsOnly: criticalAlertsOnly,
-                ),
-                const SizedBox(height: 20),
-                _buildSectionTitle('Quick Access'),
-                const SizedBox(height: 12),
-                _buildQuickAccess(context, children),
-                const SizedBox(height: 20),
-                _buildSectionTitle('Children Status'),
-                const SizedBox(height: 12),
-                _buildChildrenCards(context, children),
-              ],
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -511,6 +650,13 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         childAspectRatio: 1.28,
         children: [
           _quickCard(
+            title: 'Scan QR',
+            subtitle: 'Link a patient account',
+            icon: Icons.qr_code_scanner_rounded,
+            color: Colors.teal,
+            onTap: _scanPatientQr,
+          ),
+          _quickCard(
             title: 'Alerts',
             subtitle: 'Critical cases first',
             icon: Icons.notifications_active_rounded,
@@ -533,8 +679,9 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      PatientDetailForDoctorScreen(patient: children.first),
+                  builder: (_) => PatientDetailForDoctorScreen(
+                    patient: children.first as Patient,
+                  ),
                 ),
               );
             },
@@ -724,7 +871,9 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
-                              PatientDetailForDoctorScreen(patient: child),
+                              PatientDetailForDoctorScreen(
+                            patient: child as Patient,
+                          ),
                         ),
                       );
                     },
@@ -802,6 +951,54 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               fontWeight: FontWeight.w800,
               fontSize: 12.5,
               color: PETROL_DARK,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ParentQrScannerPage extends StatefulWidget {
+  const _ParentQrScannerPage();
+
+  @override
+  State<_ParentQrScannerPage> createState() => _ParentQrScannerPageState();
+}
+
+class _ParentQrScannerPageState extends State<_ParentQrScannerPage> {
+  bool _handled = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Scan Patient QR'),
+        backgroundColor: PETROL_DARK,
+      ),
+      body: Stack(
+        children: [
+          MobileScanner(
+            onDetect: (capture) {
+              if (_handled) return;
+              final codes = capture.barcodes;
+              if (codes.isEmpty) return;
+
+              final value = codes.first.rawValue ?? '';
+              if (value.trim().isEmpty) return;
+
+              _handled = true;
+              Navigator.of(context).pop(value.trim());
+            },
+          ),
+          Center(
+            child: Container(
+              width: 240,
+              height: 240,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: 3),
+                borderRadius: BorderRadius.circular(20),
+              ),
             ),
           ),
         ],

@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../models/patient.dart';
 import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
+import '../../utils/localization.dart';
+import '../../widgets/language_picker.dart';
 import 'patient_home_screen.dart';
 
 class PatientSignUpScreen extends StatefulWidget {
@@ -106,25 +108,34 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Patient Intake'),
+        title: Text(lang.translate('patient_intake')),
         backgroundColor: PETROL_DARK,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            tooltip: lang.translate('language'),
+            onPressed: () => showLanguagePicker(context),
+            icon: const Icon(Icons.language_rounded),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: ListView(
           children: [
-            const Text(
-              'Basic Info',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL),
+            Text(
+              lang.translate('profile'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _name,
-              decoration: const InputDecoration(
-                labelText: 'Full Name',
+              decoration: InputDecoration(
+                labelText: lang.translate('full_name'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.person),
               ),
@@ -133,7 +144,7 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
             ListTile(
               title: Text(
                 _selectedBirthDate == null
-                    ? 'Select Birth Date'
+                    ? lang.translate('date')
                     : DateFormat('yyyy-MM-dd').format(_selectedBirthDate!),
               ),
               trailing: const Icon(Icons.calendar_today, color: PETROL),
@@ -156,8 +167,8 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
                         DropdownMenuItem(value: 'Male', child: Text('Male')),
                       ],
                       onChanged: (v) => _gender.value = v ?? 'Female',
-                      decoration: const InputDecoration(
-                        labelText: 'Gender',
+                      decoration: InputDecoration(
+                        labelText: lang.translate('gender'),
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -167,8 +178,8 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
                 Expanded(
                   child: TextField(
                     controller: _phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone',
+                    decoration: InputDecoration(
+                      labelText: lang.translate('phone'),
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.phone),
                     ),
@@ -178,24 +189,24 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Institution Link',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL),
+            Text(
+              lang.translate('institution'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _institutionCode,
-              decoration: const InputDecoration(
-                labelText: 'Institution Code (optional)',
+              decoration: InputDecoration(
+                labelText: '${lang.translate('hospital_id')} (${lang.translate('optional')})',
                 hintText: 'Example: smartcare_hospital',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.local_hospital),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Medical Details',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL),
+            Text(
+              lang.translate('medical_profile'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL),
             ),
             const SizedBox(height: 10),
             Row(
@@ -203,8 +214,8 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
                 Expanded(
                   child: TextField(
                     controller: _weight,
-                    decoration: const InputDecoration(
-                      labelText: 'Weight (kg)',
+                    decoration: InputDecoration(
+                      labelText: lang.translate('weight'),
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.monitor_weight),
                     ),
@@ -215,8 +226,8 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
                 Expanded(
                   child: TextField(
                     controller: _height,
-                    decoration: const InputDecoration(
-                      labelText: 'Height (cm)',
+                    decoration: InputDecoration(
+                      labelText: lang.translate('height'),
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.height),
                     ),
@@ -241,8 +252,8 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
                   DropdownMenuItem(value: 'AB-', child: Text('AB-')),
                 ],
                 onChanged: (v) => _bloodType.value = v ?? 'O+',
-                decoration: const InputDecoration(
-                  labelText: 'Blood Type',
+                decoration: InputDecoration(
+                  labelText: lang.translate('blood_type'),
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.bloodtype),
                 ),
@@ -251,29 +262,29 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
             const SizedBox(height: 10),
             TextField(
               controller: _chronicDiseases,
-              decoration: const InputDecoration(
-                labelText: 'Chronic Diseases (comma separated)',
+              decoration: InputDecoration(
+                labelText: lang.translate('chronic_diseases'),
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _allergies,
-              decoration: const InputDecoration(
-                labelText: 'Allergies (comma separated)',
+              decoration: InputDecoration(
+                labelText: lang.translate('allergies'),
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Emergency Contact',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.red),
+            Text(
+              lang.translate('emergency_contact'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.red),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _emergencyName,
-              decoration: const InputDecoration(
-                labelText: 'Contact Name',
+              decoration: InputDecoration(
+                labelText: lang.translate('contact_name'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.person_outline),
               ),
@@ -281,8 +292,8 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
             const SizedBox(height: 10),
             TextField(
               controller: _emergencyPhone,
-              decoration: const InputDecoration(
-                labelText: 'Contact Phone',
+              decoration: InputDecoration(
+                labelText: lang.translate('contact_phone'),
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.phone_in_talk),
               ),
@@ -297,9 +308,9 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
                   backgroundColor: PETROL,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                 ),
-                child: const Text(
-                  'Save & Continue',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                child: Text(
+                  lang.translate('save_continue'),
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
             ),

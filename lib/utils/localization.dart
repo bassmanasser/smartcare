@@ -79,6 +79,9 @@ class AppLocalizations {
       // Auth
       'login': 'Login',
       'signup': 'Sign Up',
+      'start_here': 'Start here',
+      'choose_login_or_signup':
+          'First choose whether you want to login or create a new account.',
       'create_account': 'Create Account',
       'registration': 'Registration',
       'email': 'Email',
@@ -171,6 +174,9 @@ class AppLocalizations {
       'parent_desc': 'Follow patient updates and status',
 
       // Patient app / settings
+      'update_my_data': 'Update my data',
+      'update_my_data_desc':
+          'Edit personal, emergency, and medical profile data',
       'my_qr_code': 'My QR Code',
       'show_qr_for_doctor_scan': 'Show your QR code for doctor scan',
       'device_status': 'Device Status',
@@ -622,6 +628,112 @@ class AppLocalizations {
   };
 
   String translate(String key) {
+    const englishOverrides = {
+      'medical_profile': 'Medical Profile',
+      'weight': 'Weight',
+      'height': 'Height',
+      'blood_type': 'Blood Type',
+      'chronic_diseases': 'Chronic Diseases',
+      'allergies': 'Allergies',
+      'emergency_contact': 'Emergency Contact',
+      'contact_name': 'Contact Name',
+      'contact_phone': 'Contact Phone',
+      'emergency_phone': 'Emergency Phone',
+      'national_id': 'National ID',
+      'relation': 'Relation',
+      'date_of_birth': 'Date of Birth',
+      'enable_notifications': 'Enable Notifications',
+      'critical_alerts_only': 'Critical Alerts Only',
+      'welcome_subtitle': 'Smart monitoring for patients and care teams',
+      'welcome_body':
+          'Follow vitals, reports, alerts, QR access, and hospital workflows in one place.',
+    };
+
+    if (locale.languageCode == 'ar') {
+      const arabicOverrides = {
+        'app_name': 'SmartCare',
+        'welcome': 'مرحبا',
+        'welcome_back': 'أهلا بعودتك',
+        'welcome_subtitle': 'متابعة صحية ذكية للمريض والطاقم الطبي',
+        'welcome_body':
+            'تابعي القياسات والتقارير والتنبيهات وQR ومسار المستشفى في مكان واحد.',
+        'start_here': 'ابدأ من هنا',
+        'choose_login_or_signup':
+            'اختاري تسجيل الدخول أو إنشاء حساب جديد للمتابعة.',
+        'choose_role': 'اختيار الدور',
+        'select_how_to_use': 'اختاري طريقة استخدام SmartCare',
+        'language': 'اللغة',
+        'arabic': 'العربية',
+        'english': 'الإنجليزية',
+        'login': 'تسجيل الدخول',
+        'signup': 'إنشاء حساب',
+        'create_account': 'إنشاء حساب',
+        'registration': 'التسجيل',
+        'email': 'البريد الإلكتروني',
+        'password': 'كلمة المرور',
+        'full_name': 'الاسم الكامل',
+        'phone': 'رقم الهاتف',
+        'patient': 'مريض',
+        'parent': 'ولي أمر',
+        'doctor': 'دكتور',
+        'nurse': 'ممرضة',
+        'staff': 'طاقم',
+        'hospital_admin': 'مدير المستشفى',
+        'hospital_admin_desc': 'تسجيل المستشفى وإدارة الموافقات',
+        'doctor_desc': 'طبيب تابع للمستشفى',
+        'nurse_desc': 'ممرضة تابعة للمستشفى',
+        'staff_desc': 'طاقم دعم داخل المستشفى',
+        'patient_desc': 'قياسات وتنبيهات وتقارير ومتابعة',
+        'parent_desc': 'متابعة حالة المريض',
+        'patient_intake': 'بيانات المريض',
+        'profile': 'الملف الشخصي',
+        'institution': 'المؤسسة',
+        'hospital_id': 'معرف المستشفى',
+        'medical_profile': 'الملف الطبي',
+        'weight': 'الوزن',
+        'height': 'الطول',
+        'blood_type': 'فصيلة الدم',
+        'chronic_diseases': 'الأمراض المزمنة',
+        'allergies': 'الحساسية',
+        'emergency_contact': 'جهة اتصال الطوارئ',
+        'contact_name': 'اسم جهة الاتصال',
+        'contact_phone': 'هاتف جهة الاتصال',
+        'emergency_phone': 'هاتف الطوارئ',
+        'national_id': 'الرقم القومي',
+        'relation': 'صلة القرابة',
+        'date_of_birth': 'تاريخ الميلاد',
+        'gender': 'النوع',
+        'date': 'التاريخ',
+        'optional': 'اختياري',
+        'save': 'حفظ',
+        'save_continue': 'حفظ ومتابعة',
+        'loading': 'جاري التحميل',
+        'department': 'القسم',
+        'employee_id': 'الرقم الوظيفي',
+        'license_number': 'رقم الترخيص',
+        'submit_registration': 'إرسال التسجيل',
+        'staff_registration': 'تسجيل الطاقم',
+        'hospital_setup': 'إعداد المستشفى',
+        'admin_full_name': 'اسم المدير الكامل',
+        'hospital_name': 'اسم المستشفى',
+        'city': 'المدينة',
+        'address': 'العنوان',
+        'description': 'الوصف',
+        'complete_setup': 'إكمال الإعداد',
+        'enable_notifications': 'تفعيل الإشعارات',
+        'critical_alerts_only': 'التنبيهات الحرجة فقط',
+        'update_my_data': 'تحديث بياناتي',
+        'update_my_data_desc': 'تعديل البيانات الشخصية والطوارئ والملف الطبي',
+      };
+      final value = arabicOverrides[key];
+      if (value != null) return value;
+    }
+
+    final englishValue = englishOverrides[key];
+    if (englishValue != null) {
+      return englishValue;
+    }
+
     return _localizedValues[locale.languageCode]?[key] ??
         _localizedValues['en']?[key] ??
         key;

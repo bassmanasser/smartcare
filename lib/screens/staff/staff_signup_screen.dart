@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../utils/localization.dart';
+import '../../widgets/language_picker.dart';
+
 class StaffSignupScreen extends StatefulWidget {
   const StaffSignupScreen({super.key, required String initialRole});
 
@@ -166,79 +169,34 @@ class _StaffSignupScreenState extends State<StaffSignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Staff Registration'),
+        title: Text(lang.translate('staff_registration')),
+        actions: [
+          IconButton(
+            tooltip: lang.translate('language'),
+            onPressed: () => showLanguagePicker(context),
+            icon: const Icon(Icons.language_rounded),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0F5C63), Color(0xFF2A8C95)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 62,
-                    height: 62,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: const Icon(
-                      Icons.how_to_reg_rounded,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Staff Registration',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 21,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Join your hospital as staff using the hospital ID.',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.92),
-                            fontSize: 13.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
             Form(
               key: _formKey,
               child: Column(
                 children: [
-                  _field(_fullNameController, 'Full Name', Icons.person_outline_rounded),
-                  _field(_hospitalIdController, 'Hospital ID', Icons.badge_outlined),
-                  _field(_departmentController, 'Department', Icons.apartment_outlined),
-                  _field(_employeeIdController, 'Employee ID', Icons.confirmation_number_outlined),
-                  _field(_phoneController, 'Phone Number', Icons.phone_outlined, keyboardType: TextInputType.phone),
-                  _field(_emailController, 'Email Address', Icons.email_outlined, keyboardType: TextInputType.emailAddress),
-                  _field(_passwordController, 'Password', Icons.lock_outline_rounded, obscure: true),
+                  _field(_fullNameController, lang.translate('full_name'), Icons.person_outline_rounded),
+                  _field(_hospitalIdController, lang.translate('hospital_id'), Icons.badge_outlined),
+                  _field(_departmentController, lang.translate('department'), Icons.apartment_outlined),
+                  _field(_employeeIdController, lang.translate('employee_id'), Icons.confirmation_number_outlined),
+                  _field(_phoneController, lang.translate('phone'), Icons.phone_outlined, keyboardType: TextInputType.phone),
+                  _field(_emailController, lang.translate('email'), Icons.email_outlined, keyboardType: TextInputType.emailAddress),
+                  _field(_passwordController, lang.translate('password'), Icons.lock_outline_rounded, obscure: true),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
@@ -251,7 +209,7 @@ class _StaffSignupScreenState extends State<StaffSignupScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.check_circle_outline_rounded),
-                      label: Text(_loading ? 'Creating...' : 'Create Account'),
+                      label: Text(_loading ? lang.translate('loading') : lang.translate('create_account')),
                     ),
                   ),
                 ],

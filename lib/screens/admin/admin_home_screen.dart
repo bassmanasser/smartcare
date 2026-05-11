@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../utils/localization.dart';
+import '../../widgets/language_picker.dart';
 import 'admit_patient_screen.dart';
 import 'department_management_screen.dart';
 import 'dispatch_dashboard_screen.dart';
@@ -172,6 +174,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
     if (_loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -211,26 +214,26 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         onDestinationSelected: (value) {
           setState(() => _currentIndex = value);
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home_rounded),
+            label: lang.translate('home'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.medical_services_outlined),
-            selectedIcon: Icon(Icons.medical_services_rounded),
-            label: 'Services',
+            icon: const Icon(Icons.medical_services_outlined),
+            selectedIcon: const Icon(Icons.medical_services_rounded),
+            label: lang.translate('services'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.business_outlined),
-            selectedIcon: Icon(Icons.business_rounded),
-            label: 'Profile',
+            icon: const Icon(Icons.business_outlined),
+            selectedIcon: const Icon(Icons.business_rounded),
+            label: lang.translate('profile'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings_rounded),
-            label: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings_rounded),
+            label: lang.translate('settings'),
           ),
         ],
       ),
@@ -524,6 +527,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildSettingsTab() {
+    final lang = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -542,6 +546,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 subtitle: const Text('Reload hospital information and counters'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: _loadData,
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.language_rounded),
+                title: Text(lang.translate('language')),
+                subtitle: Text(currentLanguageLabel(context)),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => showLanguagePicker(context),
               ),
               const Divider(height: 1),
               ListTile(

@@ -3,12 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'auth/welcome_screen.dart';
+import 'admin/admin_home_screen.dart';
 import 'patient/patient_home_screen.dart';
 import 'doctor/doctor_home_screen.dart';
+import 'nurse/nurse_home_screen.dart';
 import 'parent/parent_home_screen.dart';
+import 'staff/staff_home_screen.dart';
 import '../models/patient.dart';
 import '../models/doctor.dart';
-import '../models/parent.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -53,7 +55,17 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     final data = doc.data()!;
-    final role = data['role'] as String? ?? '';
+    final role = (data['role'] ?? '').toString();
+    final approvalStatus = (data['approvalStatus'] ?? 'approved').toString();
+
+    if (approvalStatus != 'approved' &&
+        ['doctor', 'nurse', 'staff', 'support_staff'].contains(role)) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      );
+      return;
+    }
 
     if (role == 'patient') {
       data['id'] = doc.id;
@@ -75,10 +87,26 @@ class _SplashScreenState extends State<SplashScreen> {
       );
     } else if (role == 'parent') {
       data['id'] = doc.id;
-      final p = ParentModel.fromMap(data);
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const ParentHomeScreen(parent: null,)),
+        MaterialPageRoute(
+          builder: (_) => ParentHomeScreen(parent: data),
+        ),
+      );
+    } else if (role == 'hospital_admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
+      );
+    } else if (role == 'nurse') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const NurseHomeScreen()),
+      );
+    } else if (role == 'staff' || role == 'support_staff') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const StaffHomeScreen()),
       );
     } else {
       Navigator.pushReplacement(

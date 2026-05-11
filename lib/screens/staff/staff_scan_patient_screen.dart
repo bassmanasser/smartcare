@@ -7,11 +7,15 @@ import '../../utils/constants.dart';
 class StaffScanPatientScreen extends StatefulWidget {
   final String staffId;
   final String staffName;
+  final String institutionId;
+  final String institutionName;
 
   const StaffScanPatientScreen({
     super.key,
     required this.staffId,
     required this.staffName,
+    this.institutionId = '',
+    this.institutionName = '',
   });
 
   @override
@@ -82,8 +86,18 @@ class _StaffScanPatientScreenState extends State<StaffScanPatientScreen> {
       }, SetOptions(merge: true));
 
       await users.doc(linkedPatientDocId).set({
+        if (widget.institutionId.isNotEmpty) ...{
+          'institutionId': widget.institutionId,
+          'assignedInstitutionId': widget.institutionId,
+        },
+        if (widget.institutionName.isNotEmpty) ...{
+          'institutionName': widget.institutionName,
+          'assignedInstitutionName': widget.institutionName,
+        },
         'staffId': widget.staffId,
         'staffName': widget.staffName,
+        'workflowStage': 'pending_triage',
+        'queuePriority': 'routine',
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 

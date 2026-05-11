@@ -5,10 +5,12 @@ import '../../utils/constants.dart';
 
 class StaffPatientsScreen extends StatefulWidget {
   final String staffId;
+  final String institutionId;
 
   const StaffPatientsScreen({
     super.key,
     required this.staffId,
+    this.institutionId = '',
   });
 
   @override
@@ -43,10 +45,13 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
   Future<Map<String, dynamic>?> _loadPatient(String patientId) async {
     final doc =
         await FirebaseFirestore.instance.collection('users').doc(patientId).get();
-    return doc.data();
+    final data = doc.data();
+    if (data == null) return null;
+    return {'id': doc.id, ...data};
   }
 
   void _showPatientDetails(Map<String, dynamic> data) {
+    final docId = (data['id'] ?? '').toString();
     final name = (data['name'] ?? data['fullName'] ?? 'Unknown').toString();
     final patientId = (data['patientId'] ?? '-').toString();
     final email = (data['email'] ?? '-').toString();
@@ -73,8 +78,102 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
               _SheetInfoRow(label: 'Phone', value: phone),
               _SheetInfoRow(label: 'Age', value: age),
               _SheetInfoRow(label: 'Gender', value: gender, isLast: true),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: docId.isEmpty
+                      ? null
+                      : () {
+                          Navigator.pop(context);
+                          _openAssignDoctorSheet(docId);
+                        },
+                  icon: const Icon(Icons.medical_services_rounded),
+                  label: const Text('Assign to Doctor'),
+                ),
+              ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Future<void> _assignDoctor({
+    required String patientId,
+    required String doctorId,
+    required String doctorName,
+  }) async {
+    await FirebaseFirestore.instance.collection('users').doc(patientId).set({
+      'assignedDoctorId': doctorId,
+      'assignedDoctorUid': doctorId,
+      'assignedDoctorName': doctorName,
+      'workflowStage': 'awaiting_doctor',
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Patient assigned to Dr. $doctorName')),
+    );
+  }
+
+  void _openAssignDoctorSheet(String patientId) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) {
+        return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .where('role', isEqualTo: 'doctor')
+              .where('institutionId', isEqualTo: widget.institutionId)
+              .where('approvalStatus', isEqualTo: 'approved')
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 220,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            final doctors = snapshot.data?.docs ?? [];
+            if (doctors.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('No approved doctors found for this hospital.'),
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: doctors.length,
+              itemBuilder: (context, index) {
+                final doc = doctors[index];
+                final data = doc.data();
+                final name = (data['name'] ?? data['fullName'] ?? 'Doctor')
+                    .toString();
+                final specialty = (data['specialty'] ?? data['department'] ?? '')
+                    .toString();
+
+                return ListTile(
+                  leading: const CircleAvatar(
+                    child: Icon(Icons.person_rounded),
+                  ),
+                  title: Text(name),
+                  subtitle: specialty.isEmpty ? null : Text(specialty),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _assignDoctor(
+                      patientId: patientId,
+                      doctorId: doc.id,
+                      doctorName: name,
+                    );
+                  },
+                );
+              },
+            );
+          },
         );
       },
     );
@@ -168,12 +267,18 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
           const SizedBox(height: 12),
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('care_links')
-                  .where('linkedUserId', isEqualTo: widget.staffId)
-                  .where('linkedUserRole', isEqualTo: 'staff')
-                  .where('status', isEqualTo: 'approved')
-                  .snapshots(),
+              stream: widget.institutionId.isNotEmpty
+                  ? FirebaseFirestore.instance
+                      .collection('users')
+                      .where('role', isEqualTo: 'patient')
+                      .where('institutionId', isEqualTo: widget.institutionId)
+                      .snapshots()
+                  : FirebaseFirestore.instance
+                      .collection('care_links')
+                      .where('linkedUserId', isEqualTo: widget.staffId)
+                      .where('linkedUserRole', isEqualTo: 'staff')
+                      .where('status', isEqualTo: 'approved')
+                      .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(
@@ -200,11 +305,15 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    final linkData = docs[index].data();
-                    final patientId = (linkData['patientId'] ?? '').toString();
+                    final rowData = docs[index].data();
+                    final patientId = widget.institutionId.isNotEmpty
+                        ? docs[index].id
+                        : (rowData['patientId'] ?? '').toString();
 
                     return FutureBuilder<Map<String, dynamic>?>(
-                      future: _loadPatient(patientId),
+                      future: widget.institutionId.isNotEmpty
+                          ? Future.value({'id': patientId, ...rowData})
+                          : _loadPatient(patientId),
                       builder: (context, patientSnapshot) {
                         if (patientSnapshot.connectionState ==
                             ConnectionState.waiting) {

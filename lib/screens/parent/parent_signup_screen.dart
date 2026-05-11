@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../utils/constants.dart';
+import '../../utils/localization.dart';
+import '../../widgets/language_picker.dart';
 
 class ParentSignUpScreen extends StatefulWidget {
   const ParentSignUpScreen({super.key});
@@ -121,15 +123,24 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
         backgroundColor: PETROL_DARK,
-        title: const Text(
-          "Parent Profile",
+        title: Text(
+          lang.translate('parent'),
           style: TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            tooltip: lang.translate('language'),
+            onPressed: () => showLanguagePicker(context),
+            icon: const Icon(Icons.language_rounded, color: Colors.white),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -137,54 +148,9 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
           key: _formKey,
           child: Column(
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [PETROL_DARK, PETROL],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: Colors.white,
-                      child: Icon(
-                        Icons.family_restroom_rounded,
-                        color: PETROL_DARK,
-                        size: 28,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      "Create Parent Account",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      "Enter parent data to complete the family follow-up profile",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-
               TextFormField(
                 controller: _name,
-                decoration: _decoration("Full Name", Icons.person),
+                decoration: _decoration(lang.translate('full_name'), Icons.person),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? "Required" : null,
               ),
@@ -193,7 +159,7 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
               TextFormField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
-                decoration: _decoration("Phone", Icons.phone),
+                decoration: _decoration(lang.translate('phone'), Icons.phone),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? "Required" : null,
               ),
@@ -202,7 +168,7 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: _decoration("Password", Icons.lock),
+                decoration: _decoration(lang.translate('password'), Icons.lock),
                 validator: (v) =>
                     (v == null || v.length < 6) ? "Min 6 chars" : null,
               ),
@@ -210,7 +176,7 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
 
               TextFormField(
                 controller: _address,
-                decoration: _decoration("Address", Icons.location_on),
+                decoration: _decoration(lang.translate('address'), Icons.location_on),
               ),
               const SizedBox(height: 14),
 
@@ -218,14 +184,14 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
                 controller: _emergencyPhone,
                 keyboardType: TextInputType.phone,
                 decoration:
-                    _decoration("Emergency Phone", Icons.emergency_rounded),
+                    _decoration(lang.translate('emergency_phone'), Icons.emergency_rounded),
               ),
               const SizedBox(height: 14),
 
               TextFormField(
                 controller: _nationalId,
                 keyboardType: TextInputType.number,
-                decoration: _decoration("National ID", Icons.badge_rounded),
+                decoration: _decoration(lang.translate('national_id'), Icons.badge_rounded),
               ),
               const SizedBox(height: 14),
 
@@ -235,7 +201,7 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
                   return DropdownButtonFormField<String>(
                     value: v,
                     decoration:
-                        _decoration("Relation", Icons.family_restroom_rounded),
+                        _decoration(lang.translate('relation'), Icons.family_restroom_rounded),
                     items: const [
                       DropdownMenuItem(value: "Father", child: Text("Father")),
                       DropdownMenuItem(value: "Mother", child: Text("Mother")),
@@ -255,7 +221,7 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
                 builder: (_, v, __) {
                   return DropdownButtonFormField<String>(
                     value: v,
-                    decoration: _decoration("Gender", Icons.wc),
+                    decoration: _decoration(lang.translate('gender'), Icons.wc),
                     items: const [
                       DropdownMenuItem(value: "Female", child: Text("Female")),
                       DropdownMenuItem(value: "Male", child: Text("Male")),
@@ -271,7 +237,7 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
                 readOnly: true,
                 onTap: _pickDateOfBirth,
                 decoration: _decoration(
-                  "Date of Birth",
+                  lang.translate('date_of_birth'),
                   Icons.calendar_today_rounded,
                 ).copyWith(
                   suffixIcon: IconButton(
@@ -292,7 +258,7 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
                   onChanged: (v) {
                     setState(() => _notificationsEnabled = v);
                   },
-                  title: const Text("Enable Notifications"),
+                  title: Text(lang.translate('enable_notifications')),
                   activeColor: PETROL_DARK,
                 ),
               ),
@@ -308,7 +274,7 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
                   onChanged: (v) {
                     setState(() => _criticalAlertsOnly = v);
                   },
-                  title: const Text("Critical Alerts Only"),
+                  title: Text(lang.translate('critical_alerts_only')),
                   activeColor: PETROL_DARK,
                 ),
               ),
@@ -331,8 +297,8 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
                           height: 24,
                           child: CircularProgressIndicator(color: Colors.white),
                         )
-                      : const Text(
-                          "Save Profile",
+                      : Text(
+                          lang.translate('save'),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,

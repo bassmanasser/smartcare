@@ -3,9 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../utils/constants.dart';
+import '../../utils/localization.dart';
+import '../../widgets/language_picker.dart';
 import '../admin/admin_home_screen.dart';
 import '../doctor/doctor_home_screen.dart';
 import '../nurse/nurse_home_screen.dart';
+import '../parent/parent_home_screen.dart';
 import '../staff/staff_home_screen.dart';
 import '../patient/patient_home_screen.dart';
 import 'pending_approval_screen.dart';
@@ -97,6 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
           break;
 
         case 'staff':
+        case 'support_staff':
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const StaffHomeScreen()),
@@ -107,6 +111,13 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => PatientHomeScreen(patient: Patient.fromJson({...data, 'id': uid}))),
+          );
+          break;
+
+        case 'parent':
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => ParentHomeScreen(parent: data)),
           );
           break;
 
@@ -141,12 +152,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: LIGHT_BG,
       appBar: AppBar(
-        title: const Text('Login'),
+        title: Text(lang.translate('login')),
         backgroundColor: PETROL_DARK,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            tooltip: lang.translate('language'),
+            onPressed: () => showLanguagePicker(context),
+            icon: const Icon(Icons.language_rounded),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Center(
@@ -162,20 +182,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   size: 60,
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Welcome Back',
+                Text(
+                  lang.translate('welcome_back'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
                     color: PETROL_DARK,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Login to continue to your SmartCare dashboard',
+                Text(
+                  lang.translate('choose_login_or_signup'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.black54,
                     fontSize: 15,
                   ),
@@ -187,13 +207,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       _field(
                         _emailController,
-                        'Email',
+                        lang.translate('email'),
                         Icons.email,
                         keyboardType: TextInputType.emailAddress,
                       ),
                       _field(
                         _passwordController,
-                        'Password',
+                        lang.translate('password'),
                         Icons.lock,
                         obscure: true,
                       ),
@@ -210,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(18),
                             ),
                           ),
-                          child: Text(_loading ? 'Logging in...' : 'Login'),
+                          child: Text(_loading ? lang.translate('loading') : lang.translate('login')),
                         ),
                       ),
                     ],

@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../utils/localization.dart';
+import '../widgets/language_picker.dart';
 import 'admin/hospital_admin_signup_screen.dart';
 import 'doctor/doctor_signup_screen.dart';
 import 'parent/parent_signup_screen.dart';
@@ -13,11 +15,17 @@ class UserTypeSelectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final user = FirebaseAuth.instance.currentUser;
+    final lang = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Choose Account Type'),
+        title: Text(lang.translate('choose_role')),
         actions: [
+          IconButton(
+            tooltip: lang.translate('language'),
+            onPressed: () => showLanguagePicker(context),
+            icon: const Icon(Icons.language_rounded),
+          ),
           IconButton(
             tooltip: 'Sign out',
             onPressed: () async {
@@ -31,74 +39,19 @@ class UserTypeSelectionScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primaryContainer,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 18),
+              child: Text(
+                '${lang.translate('select_how_to_use')}\n${user?.email ?? ''}',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 62,
-                    height: 62,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.16),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: const Icon(
-                      Icons.groups_rounded,
-                      color: Colors.white,
-                      size: 30,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Select your role',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Logged in as: ${user?.email ?? 'No email found'}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.92),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Choose your role to complete the registration form.',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.92),
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
             ),
-            const SizedBox(height: 22),
             _RoleCard(
               icon: Icons.local_hospital_rounded,
-              title: 'Hospital / Institution Admin',
-              subtitle: 'Create and manage a hospital account.',
+              title: lang.translate('hospital_admin'),
+              subtitle: lang.translate('hospital_admin_desc'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -111,8 +64,8 @@ class UserTypeSelectionScreen extends StatelessWidget {
             const SizedBox(height: 14),
             _RoleCard(
               icon: Icons.medical_services_rounded,
-              title: 'Doctor',
-              subtitle: 'Join an existing hospital using Hospital ID.',
+              title: lang.translate('doctor'),
+              subtitle: lang.translate('doctor_desc'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -125,8 +78,8 @@ class UserTypeSelectionScreen extends StatelessWidget {
             const SizedBox(height: 14),
             _RoleCard(
               icon: Icons.health_and_safety_rounded,
-              title: 'Nurse',
-              subtitle: 'Register under a hospital and wait for approval.',
+              title: lang.translate('nurse'),
+              subtitle: lang.translate('nurse_desc'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -139,8 +92,8 @@ class UserTypeSelectionScreen extends StatelessWidget {
             const SizedBox(height: 14),
             _RoleCard(
               icon: Icons.badge_outlined,
-              title: 'Staff',
-              subtitle: 'Join the hospital team using Hospital ID.',
+              title: lang.translate('staff'),
+              subtitle: lang.translate('staff_desc'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -153,8 +106,8 @@ class UserTypeSelectionScreen extends StatelessWidget {
             const SizedBox(height: 14),
             _RoleCard(
               icon: Icons.favorite_rounded,
-              title: 'Patient',
-              subtitle: 'Complete the patient intake profile.',
+              title: lang.translate('patient'),
+              subtitle: lang.translate('patient_desc'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -167,8 +120,8 @@ class UserTypeSelectionScreen extends StatelessWidget {
             const SizedBox(height: 14),
             _RoleCard(
               icon: Icons.family_restroom_rounded,
-              title: 'Parent',
-              subtitle: 'Create a parent account linked to patient care.',
+              title: lang.translate('parent'),
+              subtitle: lang.translate('parent_desc'),
               onTap: () {
                 Navigator.push(
                   context,

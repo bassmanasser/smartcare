@@ -9,6 +9,8 @@ import '../../models/patient.dart';
 import '../../models/risk_assessment.dart';
 import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
+import '../../utils/localization.dart';
+import '../../widgets/language_picker.dart';
 import '../auth/welcome_screen.dart';
 import 'assigned_cases_screen.dart';
 import 'doctor_patients_screen.dart';
@@ -53,6 +55,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, app, child) {
+        final lang = AppLocalizations.of(context);
         final List<Patient> allPatients = app.patients
             .map((item) => Patient.fromJson(item))
             .where((p) => p.doctorId == widget.doctor.id)
@@ -89,26 +92,26 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           bottomNavigationBar: NavigationBar(
             selectedIndex: _selectedTab,
             onDestinationSelected: (i) => setState(() => _selectedTab = i),
-            destinations: const [
+            destinations: [
               NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home_rounded),
-                label: 'Home',
+                icon: const Icon(Icons.home_outlined),
+                selectedIcon: const Icon(Icons.home_rounded),
+                label: lang.translate('home'),
               ),
               NavigationDestination(
-                icon: Icon(Icons.groups_outlined),
-                selectedIcon: Icon(Icons.groups_rounded),
-                label: 'Patients',
+                icon: const Icon(Icons.groups_outlined),
+                selectedIcon: const Icon(Icons.groups_rounded),
+                label: lang.translate('assigned_patients'),
               ),
               NavigationDestination(
-                icon: Icon(Icons.person_outline_rounded),
-                selectedIcon: Icon(Icons.person_rounded),
-                label: 'Profile',
+                icon: const Icon(Icons.person_outline_rounded),
+                selectedIcon: const Icon(Icons.person_rounded),
+                label: lang.translate('profile'),
               ),
               NavigationDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings_rounded),
-                label: 'Settings',
+                icon: const Icon(Icons.settings_outlined),
+                selectedIcon: const Icon(Icons.settings_rounded),
+                label: lang.translate('settings'),
               ),
             ],
           ),
@@ -140,6 +143,7 @@ class _DoctorOverviewTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final doctorName = doctor.name.toString();
+    final lang = AppLocalizations.of(context);
     final specialty = doctor.specialty.toString().isEmpty
         ? 'General'
         : doctor.specialty.toString();
@@ -378,6 +382,7 @@ class _DoctorSettingsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final doctorName = doctor.name.toString();
+    final lang = AppLocalizations.of(context);
     final specialty = doctor.specialty.toString().isEmpty
         ? 'General'
         : doctor.specialty.toString();
@@ -401,10 +406,11 @@ class _DoctorSettingsTab extends StatelessWidget {
               subtitle: 'Doctor account options and system access',
             ),
             const SizedBox(height: 12),
-            const _SettingTile(
+            _SettingTile(
               icon: Icons.language_rounded,
-              title: 'Language',
-              subtitle: 'Doctor screens now use clearer professional English',
+              title: lang.translate('language'),
+              subtitle: currentLanguageLabel(context),
+              onTap: () => showLanguagePicker(context),
             ),
             _SettingTile(
               icon: Icons.qr_code_scanner_rounded,

@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../utils/localization.dart';
+import '../../widgets/language_picker.dart';
 import '../auth/pending_approval_screen.dart';
 
 class DoctorSignupScreen extends StatefulWidget {
@@ -193,9 +195,18 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('$_roleLabel Registration'),
+        title: Text('${lang.localizeDynamicValue(_roleLabel)} ${lang.translate('registration')}'),
+        actions: [
+          IconButton(
+            tooltip: lang.translate('language'),
+            onPressed: () => showLanguagePicker(context),
+            icon: const Icon(Icons.language_rounded),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ListView(
@@ -207,33 +218,33 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
                 children: [
                   _field(
                     _fullNameController,
-                    'Full Name',
+                    lang.translate('full_name'),
                     Icons.person_outline_rounded,
                   ),
                   _field(
                     _hospitalIdController,
-                    'Hospital ID',
+                    lang.translate('hospital_id'),
                     Icons.badge_outlined,
                   ),
                   _field(
                     _departmentController,
-                    'Department',
+                    lang.translate('department'),
                     Icons.apartment_outlined,
                   ),
                   _field(
                     _employeeIdController,
-                    'Employee ID',
+                    lang.translate('employee_id'),
                     Icons.confirmation_number_outlined,
                   ),
                   if (_showLicense)
                     _field(
                       _licenseNumberController,
-                      'License Number',
+                      lang.translate('license_number'),
                       Icons.verified_user_outlined,
                     ),
                   _field(
                     _phoneController,
-                    'Phone Number',
+                    lang.translate('phone'),
                     Icons.phone_outlined,
                     keyboardType: TextInputType.phone,
                   ),
@@ -247,7 +258,7 @@ class _DoctorSignupScreenState extends State<DoctorSignupScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.check_circle_outline_rounded),
-                    label: Text(_loading ? 'Saving...' : 'Submit Registration'),
+                    label: Text(_loading ? lang.translate('loading') : lang.translate('submit_registration')),
                   ),
                 ],
               ),

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -31,6 +32,11 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  if (kIsWeb) {
+    await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+  }
+
   await BleMonitorManager.init();
 
   runApp(
@@ -272,7 +278,7 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+      stream: FirebaseAuth.instance.idTokenChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -284,7 +290,10 @@ class AuthWrapper extends StatelessWidget {
           return const WelcomeScreen();
         }
 
-        return UserDataFetcher(uid: snapshot.data!.uid);
+        return UserDataFetcher(
+          key: ValueKey(snapshot.data!.uid),
+          uid: snapshot.data!.uid,
+        );
       },
     );
   }
@@ -308,10 +317,22 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
   @override
   void initState() {
     super.initState();
+    _loadUser();
+  }
+
+  @override
+  void didUpdateWidget(covariant UserDataFetcher oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.uid != widget.uid) {
+      _loadUser();
+    }
+  }
+
+  void _loadUser() {
     _userFuture = FirebaseFirestore.instance
         .collection('users')
         .doc(widget.uid)
-        .get();
+        .get(const GetOptions(source: Source.serverAndCache));
   }
 
   bool _isStaffRole(String role) {

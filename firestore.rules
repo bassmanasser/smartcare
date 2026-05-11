@@ -121,6 +121,36 @@ service cloud.firestore {
       );
     }
 
+    function canRouteScannedPatient() {
+      return signedIn() &&
+        isApprovedStaff() &&
+        resource.data.role == 'patient' &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'institutionId',
+          'institutionName',
+          'assignedInstitutionId',
+          'assignedInstitutionName',
+          'assignedInstitutionCode',
+          'staffId',
+          'staffName',
+          'assignedDepartment',
+          'assignedDoctorId',
+          'assignedDoctorName',
+          'assignedDoctorUid',
+          'queuePriority',
+          'workflowStage',
+          'patientStatus',
+          'priorityLevel',
+          'admissionNotes',
+          'arrivalDayKey',
+          'arrivalTimestamp',
+          'isAdmittedToday',
+          'updatedAt'
+        ]) &&
+        request.resource.data.institutionId == myInstitutionId();
+    }
+
     function allowedSelfUserFieldsOnly() {
       return request.resource.data.role == resource.data.role &&
         request.resource.data.institutionId == resource.data.institutionId &&
@@ -147,6 +177,10 @@ service cloud.firestore {
         uid() == userId ||
         parentLinkedToPatient(userId) ||
         (
+          isApprovedStaff() &&
+          resource.data.role == 'patient'
+        ) ||
+        (
           isAdmin() &&
           resource.data.institutionId != null &&
           sameInstitution(resource.data.institutionId)
@@ -168,6 +202,7 @@ service cloud.firestore {
           resource != null &&
           allowedSelfUserFieldsOnly()
         ) ||
+        canRouteScannedPatient() ||
         (
           isAdmin() &&
           resource.data.institutionId != null &&
@@ -298,6 +333,20 @@ service cloud.firestore {
       allow read: if canReadPatientData(userId);
       allow create: if canWritePatientClinicalData(userId);
       allow update, delete: if canWritePatientClinicalData(userId);
+    }
+
+    match /institutions/{hospitalId}/today_patients/{patientId} {
+      allow read: if signedIn() &&
+        sameInstitution(hospitalId) &&
+        (isAdmin() || isApprovedStaff());
+
+      allow create, update: if signedIn() &&
+        sameInstitution(hospitalId) &&
+        (isAdmin() || isApprovedStaff());
+
+      allow delete: if signedIn() &&
+        sameInstitution(hospitalId) &&
+        isAdmin();
     }
 
     match /users/{userId}/alerts/{alertId} {

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../providers/app_state.dart';
 import '../../utils/localization.dart';
+import '../../widgets/language_picker.dart';
+import 'edit_patient_profile_screen.dart';
 import 'patient_qr_simple_screen.dart';
 
 class PatientSettingsScreen extends StatelessWidget {
@@ -37,6 +39,20 @@ class PatientSettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               _buildSectionTitle(context, lang.translate('account')),
+              _SettingsTile(
+                icon: Icons.edit_rounded,
+                iconColor: Colors.indigo,
+                title: lang.translate('update_my_data'),
+                subtitle: lang.translate('update_my_data_desc'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const EditPatientProfileScreen(),
+                    ),
+                  );
+                },
+              ),
               _SettingsTile(
                 icon: Icons.qr_code_rounded,
                 iconColor: Colors.teal,

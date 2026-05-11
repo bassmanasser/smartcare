@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../utils/constants.dart';
+import '../../utils/localization.dart';
+import '../../widgets/language_picker.dart';
 import 'staff_patients_screen.dart';
 import 'staff_scan_patient_screen.dart';
 
@@ -134,10 +136,11 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
     final staffId =
         (_userData['uid'] ?? FirebaseAuth.instance.currentUser?.uid ?? '')
             .toString();
+    final lang = AppLocalizations.of(context);
 
     final pages = [
       _buildHomeTab(staffId),
-      StaffPatientsScreen(staffId: staffId),
+      StaffPatientsScreen(staffId: staffId, institutionId: _institutionId),
       _buildProfileTab(),
       _buildSettingsTab(),
     ];
@@ -155,26 +158,26 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
         onDestinationSelected: (i) {
           setState(() => _selectedTab = i);
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home_rounded),
+            label: lang.translate('home'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.groups_outlined),
-            selectedIcon: Icon(Icons.groups_rounded),
-            label: 'Patients',
+            icon: const Icon(Icons.groups_outlined),
+            selectedIcon: const Icon(Icons.groups_rounded),
+            label: lang.translate('assigned_patients'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
+            icon: const Icon(Icons.person_outline_rounded),
+            selectedIcon: const Icon(Icons.person_rounded),
+            label: lang.translate('profile'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings_rounded),
-            label: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings_rounded),
+            label: lang.translate('settings'),
           ),
         ],
       ),
@@ -262,6 +265,8 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                   builder: (_) => StaffScanPatientScreen(
                     staffId: staffId,
                     staffName: _staffName,
+                    institutionId: _institutionId,
+                    institutionName: _institutionName,
                   ),
                 ),
               );
@@ -331,6 +336,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   }
 
   Widget _buildSettingsTab() {
+    final lang = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -349,9 +355,9 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
         const SizedBox(height: 12),
         _ActionTile(
           icon: Icons.language_rounded,
-          title: 'Language',
-          subtitle: 'Staff pages now use clearer professional English',
-          onTap: () {},
+          title: lang.translate('language'),
+          subtitle: currentLanguageLabel(context),
+          onTap: () => showLanguagePicker(context),
         ),
         _ActionTile(
           icon: Icons.refresh_rounded,
