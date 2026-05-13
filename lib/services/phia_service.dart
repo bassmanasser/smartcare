@@ -5,7 +5,7 @@ class PHIAService {
   static final _fn = FirebaseFunctions.instance.httpsCallable(
     'askHealthAgent',
     options: HttpsCallableOptions(
-      timeout: const Duration(seconds: 120),
+      timeout: const Duration(seconds: 540),
     ),
   );
 
