@@ -14,7 +14,11 @@ import '../../utils/localization.dart';
 
 class AiBotScreen extends StatefulWidget {
   final Patient patient;
-  const AiBotScreen({super.key, required this.patient});
+
+  const AiBotScreen({
+    super.key,
+    required this.patient,
+  });
 
   @override
   State<AiBotScreen> createState() => _AiBotScreenState();
@@ -25,6 +29,7 @@ class _AiBotScreenState extends State<AiBotScreen> {
   final ScrollController _scrollCtrl = ScrollController();
 
   final List<ChatMessage> _messages = [];
+
   bool _loading = false;
 
   @override
@@ -32,7 +37,6 @@ class _AiBotScreenState extends State<AiBotScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final lang = AppLocalizations.of(context);
       final isArabic =
           Localizations.localeOf(context).languageCode.toLowerCase() == 'ar';
 
@@ -54,11 +58,17 @@ class _AiBotScreenState extends State<AiBotScreen> {
 
   void _addMessage(String text, bool isUser) {
     setState(() {
-      _messages.add(ChatMessage(text: text, isUser: isUser));
+      _messages.add(
+        ChatMessage(
+          text: text,
+          isUser: isUser,
+        ),
+      );
     });
 
     Future.delayed(const Duration(milliseconds: 100), () {
       if (!_scrollCtrl.hasClients) return;
+
       _scrollCtrl.animateTo(
         _scrollCtrl.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
@@ -68,7 +78,9 @@ class _AiBotScreenState extends State<AiBotScreen> {
   }
 
   Map<String, dynamic>? _latestVitalsMap(AppState appState) {
-    final VitalSample? lastVital = appState.getLatestVitals(widget.patient.id);
+    final VitalSample? lastVital =
+        appState.getLatestVitals(widget.patient.id);
+
     if (lastVital == null) return null;
 
     return {
@@ -85,21 +97,37 @@ class _AiBotScreenState extends State<AiBotScreen> {
 
   Future<void> _sendMessage() async {
     final authUser = await PHIAService.waitForSignedInUser();
+
     if (authUser == null) {
       final lang = AppLocalizations.of(context);
-      _addMessage(lang.translate('please_login_first'), false);
+
+      _addMessage(
+        lang.translate('please_login_first'),
+        false,
+      );
+
       return;
     }
 
     final text = _textCtrl.text.trim();
+
     if (text.isEmpty || _loading) return;
 
-    final appState = Provider.of<AppState>(context, listen: false);
-    final languageCode = Localizations.localeOf(context).languageCode;
+    final appState = Provider.of<AppState>(
+      context,
+      listen: false,
+    );
+
+    final languageCode =
+        Localizations.localeOf(context).languageCode;
 
     _textCtrl.clear();
+
     _addMessage(text, true);
-    setState(() => _loading = true);
+
+    setState(() {
+      _loading = true;
+    });
 
     try {
       final reply = await AiChatService.sendMessage(
@@ -113,16 +141,20 @@ class _AiBotScreenState extends State<AiBotScreen> {
       _addMessage(reply, false);
     } catch (e) {
       final isArabic = languageCode == 'ar';
+
       _addMessage(
         isArabic
             ? 'حدث خطأ أثناء الاتصال بالمساعد الذكي. تأكدي من الإنترنت أو السيرفر.'
             : 'There was an error connecting to the AI assistant. Check internet or backend.',
         false,
       );
-      debugPrint('❌ AI Chat Error: $e');
+
+      debugPrint('AI Chat Error: $e');
     } finally {
       if (mounted) {
-        setState(() => _loading = false);
+        setState(() {
+          _loading = false;
+        });
       }
     }
   }
@@ -130,37 +162,36 @@ class _AiBotScreenState extends State<AiBotScreen> {
   @override
   Widget build(BuildContext context) {
     final lang = AppLocalizations.of(context);
-    final auth = Provider.of<AuthService>(context, listen: false);
 
-    if (auth.user == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(lang.translate('ai_bot')),
-          backgroundColor: PETROL_DARK,
-        ),
-        body: Center(
-          child: Text(lang.translate('please_login_first')),
-        ),
-      );
-    }
+    final auth = Provider.of<AuthService>(
+      context,
+      listen: false,
+    );
 
     return StreamBuilder<User?>(
       stream: auth.authStateChanges,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState ==
+            ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
           );
         }
 
         if (!snapshot.hasData || snapshot.data == null) {
           return Scaffold(
             appBar: AppBar(
-              title: Text(lang.translate('ai_bot')),
+              title: Text(
+                lang.translate('ai_bot'),
+              ),
               backgroundColor: PETROL_DARK,
             ),
             body: Center(
-              child: Text(lang.translate('please_login_first')),
+              child: Text(
+                lang.translate('please_login_first'),
+              ),
             ),
           );
         }
@@ -170,7 +201,10 @@ class _AiBotScreenState extends State<AiBotScreen> {
     );
   }
 
-  Widget _buildChatUi(BuildContext context, AppLocalizations lang) {
+  Widget _buildChatUi(
+    BuildContext context,
+    AppLocalizations lang,
+  ) {
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -186,7 +220,9 @@ class _AiBotScreenState extends State<AiBotScreen> {
                 ? Center(
                     child: Text(
                       lang.translate('start_chatting'),
-                      style: const TextStyle(color: Colors.grey),
+                      style: const TextStyle(
+                        color: Colors.grey,
+                      ),
                     ),
                   )
                 : ListView.builder(
@@ -201,22 +237,37 @@ class _AiBotScreenState extends State<AiBotScreen> {
                             ? Alignment.centerRight
                             : Alignment.centerLeft,
                         child: Container(
-                          margin: const EdgeInsets.only(bottom: 12),
+                          margin: const EdgeInsets.only(
+                            bottom: 12,
+                          ),
                           padding: const EdgeInsets.all(12),
                           constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.78,
+                            maxWidth:
+                                MediaQuery.of(context)
+                                        .size
+                                        .width *
+                                    0.78,
                           ),
                           decoration: BoxDecoration(
-                            color: msg.isUser ? PETROL : theme.cardColor,
-                            borderRadius: BorderRadius.only(
-                              topLeft: const Radius.circular(14),
-                              topRight: const Radius.circular(14),
+                            color: msg.isUser
+                                ? PETROL
+                                : theme.cardColor,
+                            borderRadius:
+                                BorderRadius.only(
+                              topLeft:
+                                  const Radius.circular(14),
+                              topRight:
+                                  const Radius.circular(14),
                               bottomLeft: msg.isUser
-                                  ? const Radius.circular(14)
+                                  ? const Radius.circular(
+                                      14,
+                                    )
                                   : Radius.zero,
                               bottomRight: msg.isUser
                                   ? Radius.zero
-                                  : const Radius.circular(14),
+                                  : const Radius.circular(
+                                      14,
+                                    ),
                             ),
                             boxShadow: const [
                               BoxShadow(
@@ -228,12 +279,18 @@ class _AiBotScreenState extends State<AiBotScreen> {
                           child: msg.isUser
                               ? Text(
                                   msg.text,
-                                  style: const TextStyle(color: Colors.white),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                  ),
                                 )
                               : MarkdownBody(
                                   data: msg.text,
                                   selectable: true,
-                                  styleSheet: MarkdownStyleSheet.fromTheme(theme),
+                                  styleSheet:
+                                      MarkdownStyleSheet
+                                          .fromTheme(
+                                    theme,
+                                  ),
                                 ),
                         ),
                       );
@@ -243,8 +300,11 @@ class _AiBotScreenState extends State<AiBotScreen> {
 
           if (_loading)
             const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: LinearProgressIndicator(color: PETROL),
+              padding:
+                  EdgeInsets.symmetric(horizontal: 12),
+              child: LinearProgressIndicator(
+                color: PETROL,
+              ),
             ),
 
           SafeArea(
@@ -260,27 +320,40 @@ class _AiBotScreenState extends State<AiBotScreen> {
                       minLines: 1,
                       maxLines: 4,
                       decoration: InputDecoration(
-                        hintText: lang.translate('ask_about_your_health'),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(28),
+                        hintText: lang.translate(
+                          'ask_about_your_health',
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
+                        border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(28),
+                        ),
+                        contentPadding:
+                            const EdgeInsets.symmetric(
                           horizontal: 20,
                           vertical: 12,
                         ),
                         filled: true,
-                        fillColor: theme.inputDecorationTheme.fillColor ??
+                        fillColor: theme
+                                .inputDecorationTheme
+                                .fillColor ??
                             theme.cardColor,
                       ),
-                      onSubmitted: (_) => _sendMessage(),
+                      onSubmitted: (_) =>
+                          _sendMessage(),
                     ),
                   ),
+
                   const SizedBox(width: 8),
+
                   FloatingActionButton(
-                    onPressed: _loading ? null : _sendMessage,
+                    onPressed:
+                        _loading ? null : _sendMessage,
                     backgroundColor: PETROL,
                     mini: true,
-                    child: const Icon(Icons.send, color: Colors.white),
+                    child: const Icon(
+                      Icons.send,
+                      color: Colors.white,
+                    ),
                   ),
                 ],
               ),

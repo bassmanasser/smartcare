@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+
 import '../../services/auth_service.dart';
 import '../../services/phia_service.dart';
 
 class VoiceScreen extends StatefulWidget {
   const VoiceScreen({super.key});
+
   @override
   State<VoiceScreen> createState() => _VoiceScreenState();
 }
@@ -16,56 +18,77 @@ class _VoiceScreenState extends State<VoiceScreen>
     with SingleTickerProviderStateMixin {
   final SpeechToText _stt = SpeechToText();
   final FlutterTts _tts = FlutterTts();
-  String _state = 'idle'; // idle/listening/thinking/speaking
+
+  String _state = 'idle';
   String _recognized = '';
   String _answer = '';
+
   List<String> _alerts = [];
+
   bool _sttReady = false;
+
   late AnimationController _pulse;
   late Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
+
     _pulse = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
-    _scale = Tween<double>(begin: 1.0, end: 1.3).animate(
-        CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+
+    _scale = Tween<double>(
+      begin: 1.0,
+      end: 1.3,
+    ).animate(
+      CurvedAnimation(
+        parent: _pulse,
+        curve: Curves.easeInOut,
+      ),
+    );
+
     _initSTT();
     _initTTS();
   }
 
-  // تهيئة محرك التعرف على الكلام ودعم العربية
   Future<void> _initSTT() async {
     _sttReady = await _stt.initialize(
       onStatus: (s) {
-        if ((s == 'done' || s == 'notListening') && _state == 'listening') {
-          if (_recognized.isNotEmpty)
+        if ((s == 'done' || s == 'notListening') &&
+            _state == 'listening') {
+          if (_recognized.isNotEmpty) {
             _askAgent(_recognized);
-          else
+          } else {
             setState(() => _state = 'idle');
+          }
         }
       },
-      onError: (_) => setState(() {
-        _state = 'idle';
-        _recognized = '';
-      }),
+      onError: (_) {
+        setState(() {
+          _state = 'idle';
+          _recognized = '';
+        });
+      },
     );
   }
 
-  // تهيئة محرك نطق النصوص باللغة العربية
   Future<void> _initTTS() async {
-    await _tts.setLanguage('ar-EG'); // ضبط اللغة للعربية (لهجة مصرية)
-    await _tts.setSpeechRate(0.5);   // سرعة النطق
+    await _tts.setLanguage('ar-EG');
+    await _tts.setSpeechRate(0.5);
     await _tts.setVolume(1.0);
+
     _tts.setCompletionHandler(() {
-      if (mounted) setState(() => _state = 'idle');
+      if (mounted) {
+        setState(() => _state = 'idle');
+      }
     });
   }
 
   Future<void> _onTap() async {
     final user = await PHIAService.waitForSignedInUser();
+
     if (user == null) {
       _showLoginRequired();
       return;
@@ -76,31 +99,41 @@ class _VoiceScreenState extends State<VoiceScreen>
         _snack('الميكروفون غير متاح حالياً');
         return;
       }
+
       setState(() {
         _state = 'listening';
         _recognized = '';
         _answer = '';
       });
+
       await _stt.listen(
-        onResult: (r) => setState(() => _recognized = r.recognizedWords),
+        onResult: (r) {
+          setState(() {
+            _recognized = r.recognizedWords;
+          });
+        },
         listenFor: const Duration(seconds: 15),
         pauseFor: const Duration(seconds: 3),
-        localeId: 'ar_EG', // الاستماع باللغة العربية
+        localeId: 'ar_EG',
       );
     } else if (_state == 'listening') {
       await _stt.stop();
-      if (_recognized.isNotEmpty)
+
+      if (_recognized.isNotEmpty) {
         await _askAgent(_recognized);
-      else
+      } else {
         setState(() => _state = 'idle');
+      }
     } else if (_state == 'speaking') {
       await _tts.stop();
+
       setState(() => _state = 'idle');
     }
   }
 
   Future<void> _askAgent(String q) async {
     final user = await PHIAService.waitForSignedInUser();
+
     if (user == null) {
       _showLoginRequired();
       return;
@@ -110,14 +143,19 @@ class _VoiceScreenState extends State<VoiceScreen>
       _state = 'thinking';
       _recognized = q;
     });
+
     await _stt.stop();
+
     await user.getIdToken(true);
-    
-    // استدعاء الخدمة السحابية
+
     final res = await PHIAService.ask(q);
+
     final ans = res['answer'] as String;
-    final alr = List<String>.from(res['alerts'] as List);
-    
+
+    final alr = List<String>.from(
+      res['alerts'] as List,
+    );
+
     setState(() {
       _answer = ans;
       _alerts = alr;
@@ -125,33 +163,63 @@ class _VoiceScreenState extends State<VoiceScreen>
     });
 
     if (alr.isNotEmpty && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('تنبيه: ${alr.first}', textDirection: TextDirection.rtl),
-        backgroundColor: Colors.red[700],
-        duration: const Duration(seconds: 6),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تنبيه: ${alr.first}',
+            textDirection: TextDirection.rtl,
+          ),
+          backgroundColor: Colors.red[700],
+          duration: const Duration(seconds: 6),
+        ),
+      );
     }
-    
-    // نطق الإجابة المُنظفة
+
     await _tts.speak(_clean(ans));
   }
 
-  // تنظيف النص من علامات الـ Markdown لضمان نطق سليم
-  String _clean(String t) => t
-      .replaceAll(RegExp(r'\*+([^*]+)\*+'), r'$1')
-      .replaceAll(RegExp(r'^#{1,6}\s+', multiLine: true), '')
-      .replaceAll(RegExp(r'^\s*[-•]\s+', multiLine: true), '')
-      .replaceAll(RegExp(r'[━=─]{3,}'), '')
-      .trim();
+  String _clean(String t) {
+    return t
+        .replaceAll(
+          RegExp(r'\*+([^*]+)\*+'),
+          r'$1',
+        )
+        .replaceAll(
+          RegExp(
+            r'^#{1,6}\s+',
+            multiLine: true,
+          ),
+          '',
+        )
+        .replaceAll(
+          RegExp(
+            r'^\s*[-•]\s+',
+            multiLine: true,
+          ),
+          '',
+        )
+        .replaceAll(
+          RegExp(r'[━=─]{3,}'),
+          '',
+        )
+        .trim();
+  }
 
-  void _snack(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(m, textDirection: TextDirection.rtl),
-      ));
+  void _snack(String m) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          m,
+          textDirection: TextDirection.rtl,
+        ),
+      ),
+    );
+  }
 
   void _showLoginRequired() {
     _stt.stop();
     _tts.stop();
+
     if (!mounted) return;
 
     setState(() {
@@ -159,17 +227,20 @@ class _VoiceScreenState extends State<VoiceScreen>
       _answer = 'Please log in first.';
       _alerts = [];
     });
+
     _snack('Please log in first.');
   }
 
-  Color get _color => const {
+  Color get _color =>
+      const {
         'listening': Colors.red,
         'thinking': Colors.orange,
         'speaking': Colors.teal,
       }[_state] ??
       Colors.teal;
 
-  IconData get _icon => const {
+  IconData get _icon =>
+      const {
         'listening': Icons.mic,
         'thinking': Icons.hourglass_top,
         'speaking': Icons.volume_up,
@@ -181,42 +252,43 @@ class _VoiceScreenState extends State<VoiceScreen>
     _pulse.dispose();
     _stt.stop();
     _tts.stop();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthService>(context, listen: false);
-
-    if (auth.user == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Voice Assistant'),
-          backgroundColor: Colors.teal,
-          foregroundColor: Colors.white,
-        ),
-        body: const Center(child: Text('Please log in first')),
-      );
-    }
+    final auth = Provider.of<AuthService>(
+      context,
+      listen: false,
+    );
 
     return StreamBuilder<User?>(
       stream: auth.authStateChanges,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState ==
+            ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
           );
         }
 
-        if (!snapshot.hasData || snapshot.data == null) {
+        if (!snapshot.hasData ||
+            snapshot.data == null) {
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Voice Assistant'),
+              title: const Text(
+                'Voice Assistant',
+              ),
               backgroundColor: Colors.teal,
               foregroundColor: Colors.white,
             ),
             body: const Center(
-              child: Text('Please log in first.'),
+              child: Text(
+                'Please log in first.',
+              ),
             ),
           );
         }
@@ -230,7 +302,8 @@ class _VoiceScreenState extends State<VoiceScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Row(
-          mainAxisAlignment: MainAxisAlignment.end, // ليتناسب مع اتجاه اليمين
+          mainAxisAlignment:
+              MainAxisAlignment.end,
           children: [
             Text('المساعد الصوتي'),
             SizedBox(width: 8),
@@ -239,73 +312,126 @@ class _VoiceScreenState extends State<VoiceScreen>
         ),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
-        automaticallyImplyLeading: true, // للسماح بالرجوع
       ),
       body: Directionality(
-        textDirection: TextDirection.rtl, // توجيه الواجهة بالكامل لليمين
-        child: Column(children: [
-          const SizedBox(height: 40),
-          Icon(Icons.health_and_safety, size: 56, color: Colors.teal[600]),
-          const SizedBox(height: 8),
-          Text('مساعد PHIA الذكي',
+        textDirection: TextDirection.rtl,
+        child: Column(
+          children: [
+            const SizedBox(height: 40),
+
+            Icon(
+              Icons.health_and_safety,
+              size: 56,
+              color: Colors.teal[600],
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'مساعد PHIA الذكي',
               style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal[800])),
-          const Spacer(),
-          if (_answer.isNotEmpty && _state != 'listening')
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.teal[100]!)),
-              child: SingleChildScrollView(
-                child: Text(
-                    _answer,
-                    style: const TextStyle(fontSize: 15, height: 1.5)),
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal[800],
               ),
             ),
-          const Spacer(),
-          Text(
+
+            const Spacer(),
+
+            if (_answer.isNotEmpty &&
+                _state != 'listening')
+              Container(
+                margin:
+                    const EdgeInsets.symmetric(
+                  horizontal: 24,
+                ),
+                padding:
+                    const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius:
+                      BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.teal[100]!,
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    _answer,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+
+            const Spacer(),
+
+            Text(
               _state == 'listening'
-                  ? (_recognized.isEmpty ? 'جاري الاستماع...' : '"$_recognized"')
+                  ? (_recognized.isEmpty
+                      ? 'جاري الاستماع...'
+                      : '"$_recognized"')
                   : _state == 'thinking'
                       ? 'جاري تحليل بياناتك...'
                       : _state == 'speaking'
                           ? 'جاري نطق الإجابة...'
                           : 'اضغط على الميكروفون للتحدث',
               style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: _state == 'idle' ? Colors.grey : _color)),
-          const SizedBox(height: 32),
-          AnimatedBuilder(
-            animation: _scale,
-            builder: (_, __) => Transform.scale(
-              scale: _state == 'listening' ? _scale.value : 1.0,
-              child: GestureDetector(
-                onTap: _onTap,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _color,
-                      boxShadow: [
-                        BoxShadow(
-                            color: _color.withOpacity(0.4),
-                            blurRadius: 20,
-                            spreadRadius: _state == 'listening' ? 8 : 2)
-                      ]),
-                  child: Icon(_icon, color: Colors.white, size: 44),
-                ),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: _state == 'idle'
+                    ? Colors.grey
+                    : _color,
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
+
+            const SizedBox(height: 32),
+
+            AnimatedBuilder(
+              animation: _scale,
+              builder: (_, __) {
+                return Transform.scale(
+                  scale: _state == 'listening'
+                      ? _scale.value
+                      : 1.0,
+                  child: GestureDetector(
+                    onTap: _onTap,
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _color,
+                        boxShadow: [
+                          BoxShadow(
+                            color: _color.withOpacity(
+                              0.4,
+                            ),
+                            blurRadius: 20,
+                            spreadRadius:
+                                _state ==
+                                        'listening'
+                                    ? 8
+                                    : 2,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        _icon,
+                        color: Colors.white,
+                        size: 44,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 16),
+
+            Text(
               _state == 'listening'
                   ? 'اضغط للإرسال'
                   : _state == 'speaking'
@@ -313,9 +439,15 @@ class _VoiceScreenState extends State<VoiceScreen>
                       : _state == 'thinking'
                           ? 'يرجى الانتظار...'
                           : 'اضغط للبدء',
-              style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-          const SizedBox(height: 60),
-        ]),
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[600],
+              ),
+            ),
+
+            const SizedBox(height: 60),
+          ],
+        ),
       ),
     );
   }
