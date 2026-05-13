@@ -2,7 +2,6 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class PHIAService {
-  // اسم الدالة يجب أن يطابق تماماً ما تم رفعه على Firebase
   static final _fn = FirebaseFunctions.instance.httpsCallable(
     'askHealthAgent',
     options: HttpsCallableOptions(
@@ -17,13 +16,16 @@ class PHIAService {
     String? languageCode,
     String? vitalsSummary,
   }) async {
-    try {
-      final user = await waitForSignedInUser();
-      if (user == null) {
-        return {'answer': 'Please log in first.', 'alerts': []};
-      }
+    final user = FirebaseAuth.instance.currentUser;
 
+    if (user == null) {
+      throw Exception('not_logged_in');
+    }
+
+    try {
+      // Force refresh token
       await user.getIdToken(true);
+
       final result = await _fn.call({
         'question': question,
         if (patientId != null) 'patientId': patientId,
@@ -31,31 +33,21 @@ class PHIAService {
         if (languageCode != null) 'languageCode': languageCode,
         if (vitalsSummary != null) 'vitalsSummary': vitalsSummary,
       });
+
       return {
         'answer': result.data['answer'] as String? ?? 'No answer.',
-        'alerts': List<String>.from(result.data['alerts'] ?? []),
+        'alerts': List<String>.from(
+          result.data['alerts'] ?? [],
+        ),
       };
     } on FirebaseFunctionsException catch (e) {
-      if (e.code == 'unauthenticated') {
-        return {'answer': 'Please log in first.', 'alerts': []};
-      }
-      return {'answer': 'Error: ${e.message}', 'alerts': []};
+      throw Exception(
+        'FirebaseFunctionsException: ${e.code} - ${e.message}',
+      );
     } catch (e) {
-      return {'answer': 'Connection error. Check internet.', 'alerts': []};
-    }
-  }
-
-  static Future<User?> waitForSignedInUser() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) return currentUser;
-
-    try {
-      return await FirebaseAuth.instance
-          .idTokenChanges()
-          .firstWhere((user) => user != null)
-          .timeout(const Duration(seconds: 5));
-    } catch (_) {
-      return FirebaseAuth.instance.currentUser;
+      throw Exception(
+        'Connection error: $e',
+      );
     }
   }
 }

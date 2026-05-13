@@ -16,6 +16,7 @@ class VoiceScreen extends StatefulWidget {
 
 class _VoiceScreenState extends State<VoiceScreen>
     with SingleTickerProviderStateMixin {
+
   final SpeechToText _stt = SpeechToText();
   final FlutterTts _tts = FlutterTts();
 
@@ -58,6 +59,7 @@ class _VoiceScreenState extends State<VoiceScreen>
       onStatus: (s) {
         if ((s == 'done' || s == 'notListening') &&
             _state == 'listening') {
+
           if (_recognized.isNotEmpty) {
             _askAgent(_recognized);
           } else {
@@ -87,7 +89,8 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   Future<void> _onTap() async {
-    final user = await PHIAService.waitForSignedInUser();
+
+    final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
       _showLoginRequired();
@@ -95,6 +98,7 @@ class _VoiceScreenState extends State<VoiceScreen>
     }
 
     if (_state == 'idle') {
+
       if (!_sttReady) {
         _snack('الميكروفون غير متاح حالياً');
         return;
@@ -116,7 +120,9 @@ class _VoiceScreenState extends State<VoiceScreen>
         pauseFor: const Duration(seconds: 3),
         localeId: 'ar_EG',
       );
+
     } else if (_state == 'listening') {
+
       await _stt.stop();
 
       if (_recognized.isNotEmpty) {
@@ -124,7 +130,9 @@ class _VoiceScreenState extends State<VoiceScreen>
       } else {
         setState(() => _state = 'idle');
       }
+
     } else if (_state == 'speaking') {
+
       await _tts.stop();
 
       setState(() => _state = 'idle');
@@ -132,12 +140,6 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   Future<void> _askAgent(String q) async {
-    final user = await PHIAService.waitForSignedInUser();
-
-    if (user == null) {
-      _showLoginRequired();
-      return;
-    }
 
     setState(() {
       _state = 'thinking';
@@ -146,36 +148,49 @@ class _VoiceScreenState extends State<VoiceScreen>
 
     await _stt.stop();
 
-    await user.getIdToken(true);
+    try {
 
-    final res = await PHIAService.ask(q);
+      final res = await PHIAService.ask(q);
 
-    final ans = res['answer'] as String;
+      final ans = res['answer'] as String;
 
-    final alr = List<String>.from(
-      res['alerts'] as List,
-    );
-
-    setState(() {
-      _answer = ans;
-      _alerts = alr;
-      _state = 'speaking';
-    });
-
-    if (alr.isNotEmpty && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'تنبيه: ${alr.first}',
-            textDirection: TextDirection.rtl,
-          ),
-          backgroundColor: Colors.red[700],
-          duration: const Duration(seconds: 6),
-        ),
+      final alr = List<String>.from(
+        res['alerts'] as List,
       );
-    }
 
-    await _tts.speak(_clean(ans));
+      setState(() {
+        _answer = ans;
+        _alerts = alr;
+        _state = 'speaking';
+      });
+
+      if (alr.isNotEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تنبيه: ${alr.first}',
+              textDirection: TextDirection.rtl,
+            ),
+            backgroundColor: Colors.red[700],
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+
+      await _tts.speak(_clean(ans));
+
+    } catch (e) {
+
+      debugPrint('PHIA ERROR: $e');
+
+      setState(() {
+        _state = 'idle';
+        _answer = 'حدث خطأ. تحقق من الاتصال.';
+        _alerts = [];
+      });
+
+      _snack('حدث خطأ أثناء الاتصال بالخادم');
+    }
   }
 
   String _clean(String t) {
@@ -217,6 +232,7 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   void _showLoginRequired() {
+
     _stt.stop();
     _tts.stop();
 
@@ -258,6 +274,7 @@ class _VoiceScreenState extends State<VoiceScreen>
 
   @override
   Widget build(BuildContext context) {
+
     final auth = Provider.of<AuthService>(
       context,
       listen: false,
@@ -266,8 +283,10 @@ class _VoiceScreenState extends State<VoiceScreen>
     return StreamBuilder<User?>(
       stream: auth.authStateChanges,
       builder: (context, snapshot) {
+
         if (snapshot.connectionState ==
             ConnectionState.waiting) {
+
           return const Scaffold(
             body: Center(
               child: CircularProgressIndicator(),
@@ -277,6 +296,7 @@ class _VoiceScreenState extends State<VoiceScreen>
 
         if (!snapshot.hasData ||
             snapshot.data == null) {
+
           return Scaffold(
             appBar: AppBar(
               title: const Text(
@@ -299,6 +319,7 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   Widget _buildVoiceUi(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         title: const Row(
@@ -317,6 +338,7 @@ class _VoiceScreenState extends State<VoiceScreen>
         textDirection: TextDirection.rtl,
         child: Column(
           children: [
+
             const SizedBox(height: 40),
 
             Icon(
