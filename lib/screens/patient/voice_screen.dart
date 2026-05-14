@@ -80,6 +80,7 @@ class _VoiceScreenState extends State<VoiceScreen>
     await _tts.setLanguage('ar-EG');
     await _tts.setSpeechRate(0.5);
     await _tts.setVolume(1.0);
+    await _tts.awaitSpeakCompletion(true);
 
     _tts.setCompletionHandler(() {
       if (mounted) {
@@ -91,6 +92,8 @@ class _VoiceScreenState extends State<VoiceScreen>
   Future<void> _onTap() async {
 
     final user = FirebaseAuth.instance.currentUser;
+
+    debugPrint("CURRENT USER => ${user?.email}");
 
     if (user == null) {
       _showLoginRequired();
@@ -155,7 +158,7 @@ class _VoiceScreenState extends State<VoiceScreen>
       final ans = res['answer'] as String;
 
       final alr = List<String>.from(
-        res['alerts'] as List,
+        res['alerts'] ?? [],
       );
 
       setState(() {
@@ -185,7 +188,7 @@ class _VoiceScreenState extends State<VoiceScreen>
 
       setState(() {
         _state = 'idle';
-        _answer = 'حدث خطأ. تحقق من الاتصال.';
+        _answer = 'حدث خطأ أثناء الاتصال بالخادم';
         _alerts = [];
       });
 
@@ -334,141 +337,145 @@ class _VoiceScreenState extends State<VoiceScreen>
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
       ),
-      body: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Column(
-          children: [
+      body: SafeArea(
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Column(
+            children: [
 
-            const SizedBox(height: 40),
+              const SizedBox(height: 24),
 
-            Icon(
-              Icons.health_and_safety,
-              size: 56,
-              color: Colors.teal[600],
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              'مساعد PHIA الذكي',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal[800],
+              Icon(
+                Icons.health_and_safety,
+                size: 56,
+                color: Colors.teal[600],
               ),
-            ),
 
-            const Spacer(),
+              const SizedBox(height: 8),
 
-            if (_answer.isNotEmpty &&
-                _state != 'listening')
-              Container(
-                margin:
-                    const EdgeInsets.symmetric(
-                  horizontal: 24,
+              Text(
+                'مساعد PHIA الذكي',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.teal[800],
                 ),
-                padding:
-                    const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius:
-                      BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.teal[100]!,
-                  ),
-                ),
-                child: SingleChildScrollView(
-                  child: Text(
-                    _answer,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.5,
+              ),
+
+              const SizedBox(height: 20),
+
+              if (_answer.isNotEmpty &&
+                  _state != 'listening')
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
                     ),
-                  ),
-                ),
-              ),
-
-            const Spacer(),
-
-            Text(
-              _state == 'listening'
-                  ? (_recognized.isEmpty
-                      ? 'جاري الاستماع...'
-                      : '"$_recognized"')
-                  : _state == 'thinking'
-                      ? 'جاري تحليل بياناتك...'
-                      : _state == 'speaking'
-                          ? 'جاري نطق الإجابة...'
-                          : 'اضغط على الميكروفون للتحدث',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: _state == 'idle'
-                    ? Colors.grey
-                    : _color,
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            AnimatedBuilder(
-              animation: _scale,
-              builder: (_, __) {
-                return Transform.scale(
-                  scale: _state == 'listening'
-                      ? _scale.value
-                      : 1.0,
-                  child: GestureDetector(
-                    onTap: _onTap,
                     child: Container(
-                      width: 100,
-                      height: 100,
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _color,
-                        boxShadow: [
-                          BoxShadow(
-                            color: _color.withOpacity(
-                              0.4,
-                            ),
-                            blurRadius: 20,
-                            spreadRadius:
-                                _state ==
-                                        'listening'
-                                    ? 8
-                                    : 2,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        _icon,
                         color: Colors.white,
-                        size: 44,
+                        borderRadius:
+                            BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.teal[100]!,
+                        ),
+                      ),
+                      child: Text(
+                        _answer,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          height: 1.7,
+                        ),
                       ),
                     ),
                   ),
-                );
-              },
-            ),
+                )
+              else
+                const Spacer(),
 
-            const SizedBox(height: 16),
-
-            Text(
-              _state == 'listening'
-                  ? 'اضغط للإرسال'
-                  : _state == 'speaking'
-                      ? 'اضغط للإيقاف'
-                      : _state == 'thinking'
-                          ? 'يرجى الانتظار...'
-                          : 'اضغط للبدء',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[600],
+              Text(
+                _state == 'listening'
+                    ? (_recognized.isEmpty
+                        ? 'جاري الاستماع...'
+                        : '"$_recognized"')
+                    : _state == 'thinking'
+                        ? 'جاري تحليل بياناتك...'
+                        : _state == 'speaking'
+                            ? 'جاري نطق الإجابة...'
+                            : 'اضغط على الميكروفون للتحدث',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: _state == 'idle'
+                      ? Colors.grey
+                      : _color,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
 
-            const SizedBox(height: 60),
-          ],
+              const SizedBox(height: 32),
+
+              AnimatedBuilder(
+                animation: _scale,
+                builder: (_, __) {
+                  return Transform.scale(
+                    scale: _state == 'listening'
+                        ? _scale.value
+                        : 1.0,
+                    child: GestureDetector(
+                      onTap: _onTap,
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _color,
+                          boxShadow: [
+                            BoxShadow(
+                              color: _color.withOpacity(
+                                0.4,
+                              ),
+                              blurRadius: 20,
+                              spreadRadius:
+                                  _state ==
+                                          'listening'
+                                      ? 8
+                                      : 2,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          _icon,
+                          color: Colors.white,
+                          size: 44,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              Text(
+                _state == 'listening'
+                    ? 'اضغط للإرسال'
+                    : _state == 'speaking'
+                        ? 'اضغط للإيقاف'
+                        : _state == 'thinking'
+                            ? 'يرجى الانتظار...'
+                            : 'اضغط للبدء',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey[600],
+                ),
+              ),
+
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
       ),
     );
