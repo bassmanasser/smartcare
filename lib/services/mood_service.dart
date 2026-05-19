@@ -12,21 +12,26 @@ class MoodService {
   // جلب سجل المزاج
   Stream<List<MoodRecord>> moodsStream(String patientId, {int limit = 50}) {
     return _db
+        .collection('users')
+        .doc(patientId)
         .collection('moods')
-        .where('patientId', isEqualTo: patientId)
         .orderBy('date', descending: true)
         .limit(limit)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return MoodRecord.fromJson(data, doc.id);
-      }).toList();
-    });
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            return MoodRecord.fromJson(data, doc.id);
+          }).toList();
+        });
   }
 
   // إضافة تسجيل جديد
   Future<void> addMood(MoodRecord record) async {
-    await _db.collection('moods').add(record.toJson());
+    await _db
+        .collection('users')
+        .doc(record.patientId)
+        .collection('moods')
+        .add(record.toJson());
   }
 }

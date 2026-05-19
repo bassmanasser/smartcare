@@ -794,6 +794,11 @@ class AppState extends ChangeNotifier {
         mood: rec.mood,
         note: rec.note,
         date: rec.date,
+        sleepHours: rec.sleepHours,
+        activity: rec.activity,
+        waterCups: rec.waterCups,
+        stress: rec.stress,
+        exercise: rec.exercise,
       );
 
       _moodRecords.removeWhere((m) => m.id == ref.id);
