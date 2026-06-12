@@ -169,16 +169,6 @@ class PatientProfileScreen extends StatelessWidget {
                     unit: '°C',
                     color: Colors.orange,
                   ),
-                  _ProfileReadingCard(
-                    icon: Icons.notifications_active_rounded,
-                    title: lang.translate('alerts'),
-                    value: app
-                        .getAlertsForPatient(patient.id)
-                        .length
-                        .toString(),
-                    unit: '',
-                    color: Colors.redAccent,
-                  ),
                 ],
               ),
             ],

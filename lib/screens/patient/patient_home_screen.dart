@@ -25,8 +25,8 @@ import 'report_screen.dart';
 import 'respiratory_test_screen.dart';
 import 'settings_screen.dart';
 
-// استيراد الشاشة الجديدة
 import 'voice_screen.dart';
+import '../../services/ble_monitor_manager.dart';
 
 Color bg(BuildContext context) => Theme.of(context).scaffoldBackgroundColor;
 Color card(BuildContext context) => Theme.of(context).cardColor;
@@ -73,6 +73,16 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       final app = Provider.of<AppState>(context, listen: false);
       await app.fetchHistory(widget.patient.id);
       await app.connectDevice(widget.patient.id);
+
+      // start foreground service so BLE stays alive when the app is backgrounded
+      final deviceId = app.bleService.connectedDeviceId;
+      if (deviceId != null && deviceId.isNotEmpty) {
+        await BleMonitorManager.init();
+        await BleMonitorManager.start(
+          patientId: widget.patient.id,
+          deviceId: deviceId,
+        );
+      }
     });
   }
 
@@ -90,6 +100,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         onLogout: () async {
           final app = Provider.of<AppState>(context, listen: false);
           await app.disconnectDevice();
+          await BleMonitorManager.stop();
           await FirebaseAuth.instance.signOut();
         },
       ),
@@ -256,11 +267,6 @@ class _PatientDispatchHomeTabState extends State<_PatientDispatchHomeTab> {
                             respiratoryAbnormal: app.respiratoryAbnormal,
                             alertsCount: app.alerts.length,
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: _PatientShortcutsCard(patient: livePatient),
                         ),
                         const SizedBox(height: 20),
                       ],
@@ -533,55 +539,6 @@ class _InstitutionWorkflowCard extends StatelessWidget {
   }
 }
 
-class _PatientShortcutsCard extends StatelessWidget {
-  final Patient patient;
-  const _PatientShortcutsCard({required this.patient});
-
-  @override
-  Widget build(BuildContext context) {
-    final lang = AppLocalizations.of(context);
-
-    return _SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            lang.translate('quick_access'),
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-              color: text(context),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(child: _shortcut(context, icon: Icons.groups_rounded, label: lang.translate('care_team'), color: Colors.deepPurple, onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => CareTeamScreen(institutionId: patient.assignedInstitutionId ?? '')));
-              })),
-              const SizedBox(width: 10),
-              Expanded(child: _shortcut(context, icon: Icons.qr_code_rounded, label: lang.translate('my_qr'), color: Colors.teal, onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => PatientQrScreen(patient: patient)));
-              })),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _shortcut(BuildContext context, {required IconData icon, required String label, required Color color, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(18)),
-        child: Column(children: [Icon(icon, color: color), const SizedBox(height: 8), Text(label, style: TextStyle(fontWeight: FontWeight.w700, color: text(context)))]),
-      ),
-    );
-  }
-}
-
 class _RiskSummaryCard extends StatelessWidget {
   final RiskAssessment? assessment;
   final String caseStatus;
@@ -644,26 +601,6 @@ class _QuickFlagsRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(child: _FlagCard(title: lang.translate('alerts'), value: '$alertsCount', color: alertsCount > 0 ? Colors.purple : Colors.green, icon: Icons.notifications_active_rounded)),
       ],
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry padding;
-  const _SectionCard({required this.child, this.padding = const EdgeInsets.all(16)});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: padding,
-      decoration: BoxDecoration(
-        color: card(context),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const [BoxShadow(color: Color(0x11000000), blurRadius: 14, offset: Offset(0, 6))],
-      ),
-      child: child,
     );
   }
 }

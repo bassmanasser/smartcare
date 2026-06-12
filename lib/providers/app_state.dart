@@ -36,6 +36,7 @@ class AppState extends ChangeNotifier {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final BleEsp32Service _bleService = BleEsp32Service();
+  BleEsp32Service get bleService => _bleService;
   final RiskEngine _riskEngine = const RiskEngine();
   final DispatchEngine _dispatchEngine = const DispatchEngine();
 
@@ -205,10 +206,16 @@ class AppState extends ChangeNotifier {
 
       final data = jsonDecode(safeStr);
 
-      final int hrVal = _safeInt(data['hr']);
-      final int spo2Val = _safeInt(data['spo2']);
-      final int sysVal = _safeInt(data['sys'] ?? data['systolic']);
-      final int diaVal = _safeInt(data['dia'] ?? data['diastolic']);
+      final int hrVal = _safeInt(data['hr'] ?? data['HR'] ?? data['heartRate'] ?? data['heart_rate']);
+      final int spo2Val = _safeInt(data['spo2'] ?? data['SPO2'] ?? data['oxygen'] ?? data['sp02']);
+      final int sysVal = _safeInt(
+        data['sys'] ?? data['systolic'] ?? data['sbp'] ?? data['SBP'] ??
+        data['bp_sys'] ?? data['bpSys'] ?? data['bp_high'] ?? data['high_bp'],
+      );
+      final int diaVal = _safeInt(
+        data['dia'] ?? data['diastolic'] ?? data['dbp'] ?? data['DBP'] ??
+        data['bp_dia'] ?? data['bpDia'] ?? data['bp_low'] ?? data['low_bp'],
+      );
       final double tempVal = _safeDouble(data['temp'] ?? data['temperature']);
       final bool fallVal = _safeBool(data['fall'] ?? data['fallFlag']);
       final int currentIr = _safeInt(data['ir'] ?? data['IR']);
@@ -957,6 +964,12 @@ class AppState extends ChangeNotifier {
 
     patientVitals.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return patientVitals.first;
+  }
+
+  List<VitalSample> getCachedVitalsForPatient(String id) {
+    final list = _vitals.where((v) => v.patientId == id).toList();
+    list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return list;
   }
 
   Future<void> fetchDoctorNotes(String id) async {

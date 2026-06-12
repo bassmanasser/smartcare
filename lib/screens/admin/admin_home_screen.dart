@@ -194,12 +194,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         title: Text(_hospitalName),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: lang.translate('refresh'),
             onPressed: _loadData,
             icon: const Icon(Icons.refresh_rounded),
           ),
           IconButton(
-            tooltip: 'Logout',
+            tooltip: lang.translate('logout'),
             onPressed: _signOut,
             icon: const Icon(Icons.logout_rounded),
           ),
@@ -241,6 +241,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildHomeTab() {
+    final lang = AppLocalizations.of(context);
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView(
@@ -254,9 +255,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             adminName: _adminName,
           ),
           const SizedBox(height: 16),
-          const _SectionTitle(
-            title: 'Overview',
-            subtitle: 'Quick summary of your hospital today',
+          _SectionTitle(
+            title: lang.translate('overview'),
+            subtitle: lang.translate('hospital_overview_subtitle'),
           ),
           const SizedBox(height: 12),
           FutureBuilder<List<int>>(
@@ -269,7 +270,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ]),
             builder: (context, snapshot) {
               final values = snapshot.data ?? [0, 0, 0, 0, 0];
-
+              final l = AppLocalizations.of(context);
               return GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -279,27 +280,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 mainAxisSpacing: 12,
                 children: [
                   _ModernStatCard(
-                    title: 'Doctors',
+                    title: l.translate('doctors'),
                     value: values[0].toString(),
                     icon: Icons.badge_outlined,
                   ),
                   _ModernStatCard(
-                    title: 'Nurses',
+                    title: l.translate('nurses'),
                     value: values[1].toString(),
                     icon: Icons.local_hospital_outlined,
                   ),
                   _ModernStatCard(
-                    title: 'Patients Today',
+                    title: l.translate('patients_today'),
                     value: values[2].toString(),
                     icon: Icons.groups_outlined,
                   ),
                   _ModernStatCard(
-                    title: 'Pending Approvals',
+                    title: l.translate('pending_approvals'),
                     value: values[3].toString(),
                     icon: Icons.approval_outlined,
                   ),
                   _ModernStatCard(
-                    title: 'Emergency Cases',
+                    title: l.translate('emergency_cases'),
                     value: values[4].toString(),
                     icon: Icons.warning_amber_rounded,
                   ),
@@ -308,9 +309,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             },
           ),
           const SizedBox(height: 20),
-          const _SectionTitle(
-            title: 'Latest Alerts',
-            subtitle: 'Recent notifications and patient alerts',
+          _SectionTitle(
+            title: lang.translate('latest_alerts'),
+            subtitle: lang.translate('latest_alerts_subtitle'),
           ),
           const SizedBox(height: 12),
           FutureBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
@@ -324,12 +325,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               }
 
               final docs = snapshot.data ?? [];
+              final l = AppLocalizations.of(context);
 
               if (docs.isEmpty) {
-                return const _EmptyStateCard(
+                return _EmptyStateCard(
                   icon: Icons.notifications_none_rounded,
-                  title: 'No alerts yet',
-                  subtitle: 'Everything looks stable for now.',
+                  title: l.translate('no_alerts_yet'),
+                  subtitle: l.translate('all_stable'),
                 );
               }
 
@@ -337,7 +339,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 children: docs.map((doc) {
                   final data = doc.data();
                   final title =
-                      (data['title'] ?? data['type'] ?? 'Alert').toString();
+                      (data['title'] ?? data['type'] ?? l.translate('alerts')).toString();
                   final subtitle =
                       (data['message'] ?? data['description'] ?? '-').toString();
                   final patient =
@@ -386,18 +388,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildServicesTab() {
+    final lang = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const _SectionTitle(
-          title: 'Services',
-          subtitle: 'Hospital operations and management tools',
+        _SectionTitle(
+          title: lang.translate('services'),
+          subtitle: lang.translate('hospital_services_subtitle'),
         ),
         const SizedBox(height: 12),
         _ServiceCard(
           icon: Icons.person_add_alt_1_rounded,
-          title: 'Admit Patient',
-          subtitle: 'Register and admit a new patient to the institution.',
+          title: lang.translate('admit_patient'),
+          subtitle: lang.translate('admit_patient_subtitle'),
           onTap: () => _push(
             AdmitPatientScreen(
               institutionId: _institutionId,
@@ -407,66 +410,66 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
         _ServiceCard(
           icon: Icons.approval_rounded,
-          title: 'Staff Approvals',
-          subtitle: 'Review and approve pending doctors and nurses requests.',
+          title: lang.translate('staff_approvals'),
+          subtitle: lang.translate('staff_approvals_subtitle_admin'),
           onTap: () => _push(
             StaffApprovalScreen(institutionId: _institutionId),
           ),
         ),
         _ServiceCard(
           icon: Icons.account_tree_outlined,
-          title: 'Departments',
-          subtitle: 'Manage hospital departments and institutional structure.',
+          title: lang.translate('departments'),
+          subtitle: lang.translate('departments_subtitle'),
           onTap: () => _push(
             DepartmentManagementScreen(institutionId: _institutionId),
           ),
         ),
         _ServiceCard(
           icon: Icons.emergency_rounded,
-          title: 'Emergency Queue',
-          subtitle: 'Track urgent patients and active emergency cases.',
+          title: lang.translate('emergency_queue'),
+          subtitle: lang.translate('emergency_queue_subtitle'),
           onTap: () => _push(const EmergencyQueueScreen()),
         ),
         _ServiceCard(
           icon: Icons.space_dashboard_outlined,
-          title: 'Dispatch Dashboard',
-          subtitle: 'Monitor smart medical dispatching and case flow.',
+          title: lang.translate('dispatch_dashboard'),
+          subtitle: lang.translate('dispatch_dashboard_subtitle'),
           onTap: () => _push(
             DispatchDashboardScreen(institutionId: _institutionId),
           ),
         ),
         _ServiceCard(
           icon: Icons.badge_outlined,
-          title: 'Doctors List',
-          subtitle: 'View all doctors linked to this hospital.',
+          title: lang.translate('doctors_list'),
+          subtitle: lang.translate('doctors_list_subtitle'),
           onTap: () => _push(
             HospitalPeopleListScreen(
               institutionId: _institutionId,
-              title: 'Doctors',
+              title: lang.translate('doctors'),
               roleFilter: 'doctor',
             ),
           ),
         ),
         _ServiceCard(
           icon: Icons.health_and_safety_outlined,
-          title: 'Nurses List',
-          subtitle: 'View all nurses linked to this hospital.',
+          title: lang.translate('nurses_list'),
+          subtitle: lang.translate('nurses_list_subtitle'),
           onTap: () => _push(
             HospitalPeopleListScreen(
               institutionId: _institutionId,
-              title: 'Nurses',
+              title: lang.translate('nurses'),
               roleFilter: 'nurse',
             ),
           ),
         ),
         _ServiceCard(
           icon: Icons.groups_2_outlined,
-          title: 'Patients Today',
-          subtitle: 'See all patients who arrived today.',
+          title: lang.translate('patients_today'),
+          subtitle: lang.translate('patients_today_subtitle'),
           onTap: () => _push(
             HospitalPeopleListScreen(
               institutionId: _institutionId,
-              title: 'Patients Today',
+              title: lang.translate('patients_today'),
               roleFilter: 'patient',
               onlyToday: true,
             ),
@@ -477,6 +480,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildProfileTab() {
+    final lang = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -488,9 +492,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           compact: true,
         ),
         const SizedBox(height: 16),
-        const _SectionTitle(
-          title: 'Hospital Profile',
-          subtitle: 'Basic information and institutional identity',
+        _SectionTitle(
+          title: lang.translate('hospital_profile'),
+          subtitle: lang.translate('hospital_profile_subtitle'),
         ),
         const SizedBox(height: 12),
         Card(
@@ -499,15 +503,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _ProfileInfoRow(label: 'Hospital Name', value: _hospitalName),
+                _ProfileInfoRow(label: lang.translate('hospital_name'), value: _hospitalName),
                 _ProfileInfoRow(
-                  label: 'Hospital ID',
+                  label: lang.translate('hospital_id'),
                   value: _institutionId.isEmpty ? '-' : _institutionId,
                 ),
-                _ProfileInfoRow(label: 'City', value: _hospitalCity),
-                _ProfileInfoRow(label: 'Admin Name', value: _adminName),
+                _ProfileInfoRow(label: lang.translate('city'), value: _hospitalCity),
+                _ProfileInfoRow(label: lang.translate('admin_label'), value: _adminName),
                 _ProfileInfoRow(
-                  label: 'Email',
+                  label: lang.translate('email'),
                   value: (_userData?['email'] ?? _auth.currentUser?.email ?? '-')
                       .toString(),
                   isLast: true,
@@ -520,7 +524,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         FilledButton.icon(
           onPressed: () => _push(const HospitalProfileScreen()),
           icon: const Icon(Icons.edit_outlined),
-          label: const Text('Open Full Hospital Profile'),
+          label: Text(lang.translate('open_full_hospital_profile')),
         ),
       ],
     );
@@ -531,9 +535,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const _SectionTitle(
-          title: 'Settings',
-          subtitle: 'Manage dashboard actions and account options',
+        _SectionTitle(
+          title: lang.translate('settings'),
+          subtitle: lang.translate('admin_settings_subtitle'),
         ),
         const SizedBox(height: 12),
         Card(
@@ -542,8 +546,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.refresh_rounded),
-                title: const Text('Refresh data'),
-                subtitle: const Text('Reload hospital information and counters'),
+                title: Text(lang.translate('refresh_data')),
+                subtitle: Text(lang.translate('refresh_data_subtitle')),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: _loadData,
               ),
@@ -558,16 +562,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.business_rounded),
-                title: const Text('Hospital profile'),
-                subtitle: const Text('Open hospital profile and institution details'),
+                title: Text(lang.translate('hospital_profile')),
+                subtitle: Text(lang.translate('hospital_profile_settings_subtitle')),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => _push(const HospitalProfileScreen()),
               ),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.logout_rounded),
-                title: const Text('Logout'),
-                subtitle: const Text('Sign out from the hospital dashboard'),
+                title: Text(lang.translate('logout')),
+                subtitle: Text(lang.translate('logout_admin_subtitle')),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: _signOut,
               ),
@@ -641,12 +645,20 @@ class _HospitalOverviewCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                _HeaderMetaText(
-                  label: 'Hospital ID',
-                  value: institutionId.isEmpty ? '-' : institutionId,
-                ),
-                _HeaderMetaText(label: 'City', value: city),
-                _HeaderMetaText(label: 'Admin', value: adminName),
+                Builder(builder: (ctx) {
+                  final l = AppLocalizations.of(ctx);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _HeaderMetaText(
+                        label: l.translate('hospital_id_label'),
+                        value: institutionId.isEmpty ? '-' : institutionId,
+                      ),
+                      _HeaderMetaText(label: l.translate('city'), value: city),
+                      _HeaderMetaText(label: l.translate('admin_label'), value: adminName),
+                    ],
+                  );
+                }),
               ],
             ),
           ),

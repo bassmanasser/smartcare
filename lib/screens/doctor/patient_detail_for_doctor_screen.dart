@@ -261,6 +261,8 @@ class _PatientDetailForDoctorScreenState
     _noteCtrl.clear();
     FocusScope.of(context).unfocus();
 
+    await app.addDoctorNote(newNote);
+
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('تم حفظ الملاحظة بنجاح ✅')),
@@ -664,7 +666,7 @@ class _PatientDetailForDoctorScreenState
 
   Widget _vitalsTab(AppState app) {
     final VitalSample? latest = app.getLatestVitals(widget.patient.id);
-    final history = app.getVitalsForPatient(widget.patient.id).reversed.toList();
+    final history = app.getCachedVitalsForPatient(widget.patient.id);
 
     if (latest == null) {
       return ListView(
@@ -1235,6 +1237,3 @@ class _PatientDetailForDoctorScreenState
   }
 }
 
-extension on Future<List<VitalSample>> {
-  get reversed => null;
-}

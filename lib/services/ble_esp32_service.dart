@@ -14,6 +14,8 @@ class BleEsp32Service {
   StreamSubscription<List<ScanResult>>? _scanSub;
   StreamSubscription<BluetoothConnectionState>? _connSub;
 
+  String? get connectedDeviceId => _device?.remoteId.str;
+
   final _linesCtrl = StreamController<String>.broadcast();
   Stream<String> get linesStream => _linesCtrl.stream;
 

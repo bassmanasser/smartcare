@@ -185,6 +185,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   }
 
   Widget _buildHomeTab(String staffId) {
+    final lang = AppLocalizations.of(context);
     return RefreshIndicator(
       onRefresh: _loadUserData,
       child: ListView(
@@ -198,9 +199,9 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
             medicalRole: _medicalRole,
           ),
           const SizedBox(height: 16),
-          const _SectionTitle(
-            title: 'Overview',
-            subtitle: 'Professional staff dashboard summary',
+          _SectionTitle(
+            title: lang.translate('overview'),
+            subtitle: lang.translate('staff_overview_subtitle'),
           ),
           const SizedBox(height: 12),
           FutureBuilder<List<int>>(
@@ -211,6 +212,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
               _countOpenCases(),
             ]),
             builder: (context, snapshot) {
+              final l = AppLocalizations.of(context);
               final values = snapshot.data ?? [0, 0, 0, 0];
               return GridView.count(
                 shrinkWrap: true,
@@ -221,25 +223,25 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                 childAspectRatio: 1.18,
                 children: [
                   _StatCard(
-                    title: 'Assigned Patients',
+                    title: l.translate('assigned_patients_label'),
                     value: values[0].toString(),
                     icon: Icons.groups_rounded,
                     color: Colors.blue,
                   ),
                   _StatCard(
-                    title: 'Patients Today',
+                    title: l.translate('patients_today'),
                     value: values[1].toString(),
                     icon: Icons.today_rounded,
                     color: Colors.teal,
                   ),
                   _StatCard(
-                    title: 'Alerts',
+                    title: l.translate('alerts'),
                     value: values[2].toString(),
                     icon: Icons.notifications_active_rounded,
                     color: Colors.orange,
                   ),
                   _StatCard(
-                    title: 'Open Cases',
+                    title: l.translate('open_cases'),
                     value: values[3].toString(),
                     icon: Icons.local_hospital_rounded,
                     color: Colors.red,
@@ -249,15 +251,15 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
             },
           ),
           const SizedBox(height: 20),
-          const _SectionTitle(
-            title: 'Staff Work',
-            subtitle: 'Main staff tools in a clean professional layout',
+          _SectionTitle(
+            title: lang.translate('staff_work'),
+            subtitle: lang.translate('staff_work_subtitle'),
           ),
           const SizedBox(height: 12),
           _ActionTile(
             icon: Icons.qr_code_scanner_rounded,
-            title: 'Scan Patient QR',
-            subtitle: 'Link a patient by scanning QR or entering patient ID',
+            title: lang.translate('scan_patient_qr'),
+            subtitle: lang.translate('staff_scan_subtitle'),
             onTap: () {
               Navigator.push(
                 context,
@@ -274,8 +276,8 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           ),
           _ActionTile(
             icon: Icons.groups_outlined,
-            title: 'My Patients',
-            subtitle: 'Open patient list assigned to this staff member',
+            title: lang.translate('my_patients'),
+            subtitle: lang.translate('staff_patients_subtitle'),
             onTap: () {
               setState(() => _selectedTab = 1);
             },
@@ -286,12 +288,13 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   }
 
   Widget _buildProfileTab() {
+    final lang = AppLocalizations.of(context);
     final email =
         (_userData['email'] ?? FirebaseAuth.instance.currentUser?.email ?? '--')
             .toString();
     final phone = (_userData['phone'] ?? '--').toString();
     final employeeId = (_userData['employeeId'] ?? '--').toString();
-    final approvalStatus = (_userData['approvalStatus'] ?? 'pending').toString();
+    final approvalStatus = (_userData['approvalStatus'] ?? lang.translate('pending')).toString();
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -304,9 +307,9 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           compact: true,
         ),
         const SizedBox(height: 16),
-        const _SectionTitle(
-          title: 'Staff Profile',
-          subtitle: 'Identity, department, and hospital registration details',
+        _SectionTitle(
+          title: lang.translate('staff_profile'),
+          subtitle: lang.translate('staff_profile_subtitle'),
         ),
         const SizedBox(height: 12),
         Card(
@@ -315,18 +318,18 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _ProfileInfoRow(label: 'Full Name', value: _staffName),
-                _ProfileInfoRow(label: 'Medical Role', value: _medicalRole),
-                _ProfileInfoRow(label: 'Department', value: _departmentName),
-                _ProfileInfoRow(label: 'Hospital', value: _institutionName),
+                _ProfileInfoRow(label: lang.translate('full_name'), value: _staffName),
+                _ProfileInfoRow(label: lang.translate('medical_role'), value: _medicalRole),
+                _ProfileInfoRow(label: lang.translate('department'), value: _departmentName),
+                _ProfileInfoRow(label: lang.translate('hospital_label'), value: _institutionName),
                 _ProfileInfoRow(
-                  label: 'Hospital ID',
+                  label: lang.translate('hospital_id'),
                   value: _institutionId.isEmpty ? '--' : _institutionId,
                 ),
-                _ProfileInfoRow(label: 'Employee ID', value: employeeId),
-                _ProfileInfoRow(label: 'Approval Status', value: approvalStatus),
-                _ProfileInfoRow(label: 'Phone', value: phone),
-                _ProfileInfoRow(label: 'Email', value: email, isLast: true),
+                _ProfileInfoRow(label: lang.translate('employee_id'), value: employeeId),
+                _ProfileInfoRow(label: lang.translate('approval_status'), value: approvalStatus),
+                _ProfileInfoRow(label: lang.translate('phone'), value: phone),
+                _ProfileInfoRow(label: lang.translate('email'), value: email, isLast: true),
               ],
             ),
           ),
@@ -348,9 +351,9 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           compact: true,
         ),
         const SizedBox(height: 16),
-        const _SectionTitle(
-          title: 'Settings',
-          subtitle: 'Staff account options',
+        _SectionTitle(
+          title: lang.translate('settings'),
+          subtitle: lang.translate('staff_settings_subtitle'),
         ),
         const SizedBox(height: 12),
         _ActionTile(
@@ -361,14 +364,14 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
         ),
         _ActionTile(
           icon: Icons.refresh_rounded,
-          title: 'Refresh Data',
-          subtitle: 'Reload staff dashboard data',
+          title: lang.translate('refresh_data'),
+          subtitle: lang.translate('staff_refresh_subtitle'),
           onTap: _loadUserData,
         ),
         _ActionTile(
           icon: Icons.logout_rounded,
-          title: 'Logout',
-          subtitle: 'Sign out from staff account',
+          title: lang.translate('logout'),
+          subtitle: lang.translate('staff_logout_subtitle'),
           onTap: _logout,
         ),
       ],

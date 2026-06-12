@@ -33,8 +33,10 @@ class VitalSample {
       patientId: (json['patientId'] as String?) ?? '',
       hr: (json['hr'] as num?)?.toInt() ?? 0,
       spo2: (json['spo2'] as num?)?.toInt() ?? 0,
-      sys: (json['sys'] as num?)?.toInt() ?? 0,
-      dia: (json['dia'] as num?)?.toInt() ?? 0,
+      sys: ((json['sys'] ?? json['systolic'] ?? json['sbp'] ?? json['SBP'] ??
+             json['bp_sys'] ?? json['bpSys']) as num?)?.toInt() ?? 0,
+      dia: ((json['dia'] ?? json['diastolic'] ?? json['dbp'] ?? json['DBP'] ??
+             json['bp_dia'] ?? json['bpDia']) as num?)?.toInt() ?? 0,
       // التعامل مع الاحتمالين (الاسم القديم والجديد)
       glucose: (json['glucose'] as num?)?.toDouble() ?? (json['glucose_mgdl'] as num?)?.toDouble() ?? 0.0,
       temperature: (json['temperature'] as num?)?.toDouble() ?? (json['temp_c'] as num?)?.toDouble() ?? 0.0,
@@ -45,11 +47,11 @@ class VitalSample {
     );
   }
 
-  get glucoseMgdl => null;
+  double? get glucoseMgdl => null;
 
   double? get tempC => null;
 
-  get temp => null;
+  double? get temp => null;
 
   Map<String, dynamic> toJson() {
     return {

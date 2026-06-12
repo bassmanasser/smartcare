@@ -7,6 +7,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../models/patient.dart';
 import '../../utils/constants.dart';
+import '../../utils/localization.dart';
 import '../auth/welcome_screen.dart';
 import '../doctor/patient_detail_for_doctor_screen.dart';
 import 'parent_settings_screen.dart';
@@ -209,13 +210,6 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     }
   }
 
-  List<dynamic> _myChildren(Map<dynamic, dynamic> patientsMap, String uid) {
-    return patientsMap.values.where((p) {
-      final parentId = _readAny(p, ['parentId', 'guardianId', 'caregiverId']);
-      return parentId != null && parentId.toString() == uid;
-    }).toList();
-  }
-
   String _childName(dynamic child) {
     final name = _readAny(child, ['name']);
     return (name == null || name.toString().trim().isEmpty)
@@ -224,16 +218,17 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
   }
 
   String _childSubtitle(dynamic child) {
+    final lang = AppLocalizations.of(context);
     final age = _readAny(child, ['age']);
     final condition = _readAny(child, ['condition']);
 
     final parts = <String>[];
-    if (age != null) parts.add('Age: $age');
+    if (age != null) parts.add('${lang.translate('age')}: $age');
     if (condition != null && condition.toString().trim().isNotEmpty) {
       parts.add(condition.toString());
     }
 
-    return parts.isEmpty ? 'Follow-up profile' : parts.join(' • ');
+    return parts.isEmpty ? lang.translate('follow_up_profile') : parts.join(' • ');
   }
 
   String _reading(dynamic value, String unit) {
@@ -272,6 +267,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         return StreamBuilder<List<Patient>>(
           stream: _linkedPatientsStream(),
           builder: (context, patientSnap) {
+            final lang = AppLocalizations.of(context);
             final children = patientSnap.data ?? const <Patient>[];
             final criticalCount = _criticalCount(children);
 
@@ -281,7 +277,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                 elevation: 0,
                 backgroundColor: PETROL_DARK,
                 title: Text(
-                  parentName.isEmpty ? 'Parent Dashboard' : parentName,
+                  parentName.isEmpty ? lang.translate('parent_dashboard') : parentName,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -289,7 +285,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                 ),
                 actions: [
                   IconButton(
-                    tooltip: 'Scan patient QR',
+                    tooltip: lang.translate('scan_patient_qr'),
                     onPressed: _scanPatientQr,
                     icon: const Icon(
                       Icons.qr_code_scanner_rounded,
@@ -297,7 +293,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Settings',
+                    tooltip: lang.translate('settings'),
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -310,7 +306,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                         const Icon(Icons.settings_rounded, color: Colors.white),
                   ),
                   IconButton(
-                    tooltip: 'Logout',
+                    tooltip: lang.translate('logout'),
                     onPressed: () => _logout(context),
                     icon: const Icon(Icons.logout_rounded, color: Colors.white),
                   ),
@@ -340,11 +336,11 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                       criticalAlertsOnly: criticalAlertsOnly,
                     ),
                     const SizedBox(height: 20),
-                    _buildSectionTitle('Quick Access'),
+                    _buildSectionTitle(lang.translate('quick_access')),
                     const SizedBox(height: 12),
                     _buildQuickAccess(context, children),
                     const SizedBox(height: 20),
-                    _buildSectionTitle('Children Status'),
+                    _buildSectionTitle(lang.translate('children_status')),
                     const SizedBox(height: 12),
                     if (patientSnap.connectionState == ConnectionState.waiting)
                       const Center(child: CircularProgressIndicator())
@@ -400,34 +396,42 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  parentName.isEmpty ? 'Family Monitoring' : parentName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  relation.isEmpty
-                      ? 'Track your children, alerts, and daily health status'
-                      : '$relation • Family follow-up account',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12.5,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _chip('$childrenCount linked'),
-                    _chip('$criticalCount critical'),
-                    _chip('Real-time follow up'),
-                  ],
-                ),
+                Builder(builder: (ctx) {
+                  final l = AppLocalizations.of(ctx);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        parentName.isEmpty ? l.translate('family_monitoring') : parentName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        relation.isEmpty
+                            ? l.translate('parent_track_subtitle')
+                            : '$relation • ${l.translate('family_follow_up')}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _chip('$childrenCount ${l.translate('linked')}'),
+                          _chip('$criticalCount ${l.translate('critical').toLowerCase()}'),
+                          _chip(l.translate('real_time_follow_up')),
+                        ],
+                      ),
+                    ],
+                  );
+                }),
               ],
             ),
           ),
@@ -458,13 +462,14 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     required int childrenCount,
     required int criticalCount,
   }) {
+    final lang = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
           Expanded(
             child: _smallMetric(
-              title: 'Children',
+              title: lang.translate('children'),
               value: '$childrenCount',
               icon: Icons.child_care_rounded,
               color: Colors.blue,
@@ -473,7 +478,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: _smallMetric(
-              title: 'Critical',
+              title: lang.translate('critical'),
               value: '$criticalCount',
               icon: Icons.warning_amber_rounded,
               color: Colors.redAccent,
@@ -503,27 +508,30 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             ),
           ],
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: _prefTile(
-                icon: Icons.notifications_active_rounded,
-                title: 'Notifications',
-                value: notificationsEnabled ? 'Enabled' : 'Disabled',
-                color: notificationsEnabled ? Colors.green : Colors.redAccent,
+        child: Builder(builder: (ctx) {
+          final l = AppLocalizations.of(ctx);
+          return Row(
+            children: [
+              Expanded(
+                child: _prefTile(
+                  icon: Icons.notifications_active_rounded,
+                  title: l.translate('notifications'),
+                  value: notificationsEnabled ? l.translate('enabled') : l.translate('disabled'),
+                  color: notificationsEnabled ? Colors.green : Colors.redAccent,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _prefTile(
-                icon: Icons.warning_amber_rounded,
-                title: 'Critical Only',
-                value: criticalAlertsOnly ? 'Yes' : 'No',
-                color: criticalAlertsOnly ? Colors.orange : Colors.blue,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _prefTile(
+                  icon: Icons.warning_amber_rounded,
+                  title: l.translate('critical_only'),
+                  value: criticalAlertsOnly ? l.translate('yes') : l.translate('no'),
+                  color: criticalAlertsOnly ? Colors.orange : Colors.blue,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -639,6 +647,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
   }
 
   Widget _buildQuickAccess(BuildContext context, List<dynamic> children) {
+    final lang = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.count(
@@ -650,28 +659,26 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         childAspectRatio: 1.28,
         children: [
           _quickCard(
-            title: 'Scan QR',
-            subtitle: 'Link a patient account',
+            title: lang.translate('scan_qr'),
+            subtitle: lang.translate('link_patient_subtitle'),
             icon: Icons.qr_code_scanner_rounded,
             color: Colors.teal,
             onTap: _scanPatientQr,
           ),
           _quickCard(
-            title: 'Alerts',
-            subtitle: 'Critical cases first',
+            title: lang.translate('alerts'),
+            subtitle: lang.translate('critical_cases_first'),
             icon: Icons.notifications_active_rounded,
             color: Colors.redAccent,
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Connect this button to alerts screen'),
-                ),
+                SnackBar(content: Text(lang.translate('alerts'))),
               );
             },
           ),
           _quickCard(
-            title: 'Reports',
-            subtitle: 'Medical PDF / summaries',
+            title: lang.translate('reports'),
+            subtitle: lang.translate('medical_pdf_subtitle'),
             icon: Icons.picture_as_pdf_rounded,
             color: Colors.deepPurple,
             onTap: () {
@@ -687,21 +694,19 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             },
           ),
           _quickCard(
-            title: 'Doctor',
-            subtitle: 'Call or message doctor',
+            title: lang.translate('doctor'),
+            subtitle: lang.translate('call_doctor_subtitle'),
             icon: Icons.local_hospital_rounded,
             color: Colors.green,
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Connect this button to doctor contact screen'),
-                ),
+                SnackBar(content: Text(lang.translate('doctor'))),
               );
             },
           ),
           _quickCard(
-            title: 'Settings',
-            subtitle: 'Profile and preferences',
+            title: lang.translate('settings'),
+            subtitle: lang.translate('profile_preferences_subtitle'),
             icon: Icons.settings_rounded,
             color: Colors.orange,
             onTap: () {
@@ -775,6 +780,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
   }
 
   Widget _buildChildrenCards(BuildContext context, List<dynamic> children) {
+    final lang = AppLocalizations.of(context);
     if (children.isEmpty) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -794,9 +800,9 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'No linked children yet',
-              style: TextStyle(
+            Text(
+              lang.translate('no_linked_children'),
+              style: const TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 15,
                 color: PETROL_DARK,
@@ -804,7 +810,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Once a patient is connected to this parent account, the child profile will appear here.',
+              lang.translate('no_linked_children_desc'),
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[600], fontSize: 12.5),
             ),
@@ -877,7 +883,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                         ),
                       );
                     },
-                    child: const Text('Report'),
+                    child: Text(lang.translate('report_button')),
                   ),
                 ],
               ),
@@ -971,9 +977,10 @@ class _ParentQrScannerPageState extends State<_ParentQrScannerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan Patient QR'),
+        title: Text(lang.translate('scan_patient_qr')),
         backgroundColor: PETROL_DARK,
       ),
       body: Stack(

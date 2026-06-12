@@ -1,6 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ══════════════════════════════════════════════════════
+    //  HELPER FUNCTIONS
+    // ══════════════════════════════════════════════════════
+
     function signedIn() {
       return request.auth != null;
     }
@@ -37,6 +42,8 @@ service cloud.firestore {
       return myUserDocExists() ? myUserDoc().data.approvalStatus : null;
     }
 
+    // ── Role checks ──────────────────────────────────────
+
     function isAdmin() {
       return signedIn() && myRole() == 'hospital_admin';
     }
@@ -72,6 +79,8 @@ service cloud.firestore {
       return isMedicalStaff() && myApprovalStatus() == 'approved';
     }
 
+    // ── Institution helpers ───────────────────────────────
+
     function sameInstitution(institutionId) {
       return signedIn() &&
         institutionId != null &&
@@ -95,10 +104,28 @@ service cloud.firestore {
         patientInstitutionId(patientId) == myInstitutionId();
     }
 
+    // Returns institutionId for any staff/doctor/nurse user
+    function staffInstitutionId(staffId) {
+      return exists(userDocPath(staffId))
+        ? get(userDocPath(staffId)).data.institutionId
+        : null;
+    }
+
+    // True if the current admin manages the same institution as staffId
+    function isAdminForUser(staffId) {
+      return isAdmin() &&
+        staffInstitutionId(staffId) != null &&
+        sameInstitution(staffInstitutionId(staffId));
+    }
+
+    // ── Parent ↔ patient link ────────────────────────────
+
     function parentLinkedToPatient(patientId) {
       return signedIn() &&
         exists(/databases/$(database)/documents/care_links/$(uid() + "_" + patientId));
     }
+
+    // ── Patient data access ──────────────────────────────
 
     function canReadPatientData(patientId) {
       return signedIn() && (
@@ -109,10 +136,6 @@ service cloud.firestore {
       );
     }
 
-    function canWritePatientProfile(patientId) {
-      return signedIn() && uid() == patientId;
-    }
-
     function canWritePatientClinicalData(patientId) {
       return signedIn() && (
         uid() == patientId ||
@@ -120,6 +143,17 @@ service cloud.firestore {
         (isApprovedStaff() && patientBelongsToMyInstitution(patientId))
       );
     }
+
+    // ── User-doc self-update guard ───────────────────────
+    // Prevents a user from changing their own role / institutionId / approvalStatus
+
+    function allowedSelfUserFieldsOnly() {
+      return request.resource.data.role == resource.data.role &&
+        request.resource.data.institutionId == resource.data.institutionId &&
+        request.resource.data.approvalStatus == resource.data.approvalStatus;
+    }
+
+    // ── Staff scanning a patient into their institution ──
 
     function canRouteScannedPatient() {
       return signedIn() &&
@@ -151,11 +185,12 @@ service cloud.firestore {
         request.resource.data.institutionId == myInstitutionId();
     }
 
-    function allowedSelfUserFieldsOnly() {
-      return request.resource.data.role == resource.data.role &&
-        request.resource.data.institutionId == resource.data.institutionId &&
-        request.resource.data.approvalStatus == resource.data.approvalStatus;
-    }
+
+    // ══════════════════════════════════════════════════════
+    //  INSTITUTIONS
+    //  /institutions/{hospitalId}
+    //  /institutions/{hospitalId}/today_patients/{patientId}
+    // ══════════════════════════════════════════════════════
 
     match /institutions/{hospitalId} {
       allow read: if signedIn();
@@ -164,32 +199,53 @@ service cloud.firestore {
         && request.resource.data.adminUid == uid()
         && request.resource.data.hospitalId == hospitalId;
 
-      allow update: if signedIn() && (
-        resource.data.adminUid == uid() ||
-        (isAdmin() && sameInstitution(hospitalId) && resource.data.adminUid == uid())
-      );
+      allow update: if signedIn() && resource.data.adminUid == uid();
 
       allow delete: if false;
+
+      // Patients admitted today — managed by admin & approved staff
+      match /today_patients/{patientId} {
+        allow read: if signedIn() &&
+          sameInstitution(hospitalId) &&
+          (isAdmin() || isApprovedStaff());
+
+        allow create, update: if signedIn() &&
+          sameInstitution(hospitalId) &&
+          (isAdmin() || isApprovedStaff());
+
+        allow delete: if signedIn() &&
+          sameInstitution(hospitalId) &&
+          isAdmin();
+      }
     }
 
+
+    // ══════════════════════════════════════════════════════
+    //  USERS
+    //  /users/{userId}
+    //
+    //  Subcollections per role:
+    //    PATIENT  → vitals, arrhythmia_results, alerts, assessments,
+    //               dispatches, timeline, doctor_notes, medications,
+    //               meds, moods, mood_logs, wellness_logs, reports
+    //    DOCTOR   → doctor_requests
+    //    NURSE    → nurse_assignments, nurse_notes
+    //    STAFF    → staff_tasks
+    //    PARENT   → parent_patients
+    // ══════════════════════════════════════════════════════
+
     match /users/{userId} {
+
+      // ── Main user document ─────────────────────────────
+
       allow read: if signedIn() && (
         uid() == userId ||
         parentLinkedToPatient(userId) ||
-        (
-          isApprovedStaff() &&
-          resource.data.role == 'patient'
-        ) ||
-        (
-          isAdmin() &&
-          resource.data.institutionId != null &&
-          sameInstitution(resource.data.institutionId)
-        ) ||
-        (
-          isApprovedStaff() &&
-          resource.data.institutionId != null &&
-          sameInstitution(resource.data.institutionId)
-        )
+        (isApprovedStaff() && resource.data.role == 'patient') ||
+        (isAdmin() && resource.data.institutionId != null &&
+          sameInstitution(resource.data.institutionId)) ||
+        (isApprovedStaff() && resource.data.institutionId != null &&
+          sameInstitution(resource.data.institutionId))
       );
 
       allow create: if signedIn()
@@ -197,29 +253,243 @@ service cloud.firestore {
         && request.resource.data.uid == userId;
 
       allow update: if signedIn() && (
-        (
-          uid() == userId &&
-          resource != null &&
-          allowedSelfUserFieldsOnly()
-        ) ||
+        // Self-update — cannot change role / institution / approval
+        (uid() == userId && resource != null && allowedSelfUserFieldsOnly()) ||
+        // Approved staff routing a scanned patient
         canRouteScannedPatient() ||
+        // Admin approving / updating a staff member in same institution
         (
           isAdmin() &&
           resource.data.institutionId != null &&
           sameInstitution(resource.data.institutionId) &&
-          (
-            resource.data.role == 'doctor' ||
-            resource.data.role == 'nurse' ||
-            resource.data.role == 'staff' ||
-            resource.data.role == 'support_staff'
-          ) &&
+          resource.data.role in ['doctor', 'nurse', 'staff', 'support_staff'] &&
           request.resource.data.role == resource.data.role &&
           request.resource.data.institutionId == resource.data.institutionId
         )
       );
 
       allow delete: if signedIn() && uid() == userId;
+
+
+      // ══════════════════════════════════════════════════
+      //  PATIENT subcollections
+      //  Read  : patient | linked parent | admin | approved staff (same institution)
+      //  Write : patient | admin | approved staff (same institution)
+      // ══════════════════════════════════════════════════
+
+      match /vitals/{vitalId} {
+        allow read: if canReadPatientData(userId);
+        allow create, update, delete: if canWritePatientClinicalData(userId);
+      }
+
+      match /arrhythmia_results/{resultId} {
+        allow read: if canReadPatientData(userId);
+        allow create, update, delete: if canWritePatientClinicalData(userId);
+      }
+
+      match /alerts/{alertId} {
+        allow read: if canReadPatientData(userId);
+        // Alerts are written by the device / backend only; deny direct client writes
+        allow create, update, delete: if false;
+      }
+
+      match /assessments/{docId} {
+        allow read: if canReadPatientData(userId);
+        allow create, update, delete: if canWritePatientClinicalData(userId);
+      }
+
+      match /dispatches/{docId} {
+        allow read: if canReadPatientData(userId);
+        allow create, update, delete: if canWritePatientClinicalData(userId);
+      }
+
+      match /timeline/{docId} {
+        allow read: if canReadPatientData(userId);
+        allow create, update, delete: if canWritePatientClinicalData(userId);
+      }
+
+      match /doctor_notes/{noteId} {
+        allow read: if canReadPatientData(userId);
+        // Only doctors / admin can write clinical notes on a patient
+        allow create, update, delete: if signedIn() && (
+          (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+          (isAdmin() && patientBelongsToMyInstitution(userId))
+        );
+      }
+
+      match /medications/{medId} {
+        allow read: if canReadPatientData(userId);
+        allow create, update: if signedIn() && (
+          uid() == userId ||
+          (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+          (isNurse() && patientBelongsToMyInstitution(userId)) ||
+          (isAdmin() && patientBelongsToMyInstitution(userId))
+        );
+        allow delete: if signedIn() && (
+          (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+          (isAdmin() && patientBelongsToMyInstitution(userId))
+        );
+      }
+
+      // Alias collection — same rules as /medications
+      match /meds/{medId} {
+        allow read: if canReadPatientData(userId);
+        allow create, update: if signedIn() && (
+          uid() == userId ||
+          (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+          (isNurse() && patientBelongsToMyInstitution(userId)) ||
+          (isAdmin() && patientBelongsToMyInstitution(userId))
+        );
+        allow delete: if signedIn() && (
+          (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+          (isAdmin() && patientBelongsToMyInstitution(userId))
+        );
+      }
+
+      match /moods/{moodId} {
+        allow read: if canReadPatientData(userId);
+        allow create, update: if uid() == userId;
+        allow delete: if uid() == userId || isAdmin();
+      }
+
+      match /mood_logs/{docId} {
+        allow read: if canReadPatientData(userId);
+        allow create, update: if uid() == userId;
+        allow delete: if uid() == userId || isAdmin();
+      }
+
+      match /wellness_logs/{docId} {
+        allow read: if canReadPatientData(userId);
+        allow create, update: if uid() == userId;
+        allow delete: if uid() == userId || isAdmin();
+      }
+
+      match /reports/{reportId} {
+        allow read: if canReadPatientData(userId);
+        allow create, update: if signedIn() && (
+          uid() == userId ||
+          (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+          (isNurse() && patientBelongsToMyInstitution(userId)) ||
+          (isAdmin() && patientBelongsToMyInstitution(userId))
+        );
+        allow delete: if signedIn() && (
+          (isDoctor() && patientBelongsToMyInstitution(userId)) ||
+          (isAdmin() && patientBelongsToMyInstitution(userId))
+        );
+      }
+
+
+      // ══════════════════════════════════════════════════
+      //  DOCTOR subcollections
+      //  Read  : the doctor themselves | admin (same institution)
+      //  Write : the doctor themselves | admin (same institution)
+      // ══════════════════════════════════════════════════
+
+      match /doctor_requests/{requestId} {
+        allow read: if signedIn() && (
+          uid() == userId ||
+          isAdminForUser(userId)
+        );
+        allow create, update: if signedIn() && (
+          uid() == userId ||
+          isAdminForUser(userId)
+        );
+        allow delete: if signedIn() && (
+          uid() == userId ||
+          isAdminForUser(userId)
+        );
+      }
+
+
+      // ══════════════════════════════════════════════════
+      //  NURSE subcollections
+      //  Read  : the nurse themselves | admin | approved staff (same institution)
+      //  Write : the nurse themselves | admin (same institution)
+      // ══════════════════════════════════════════════════
+
+      match /nurse_assignments/{assignId} {
+        allow read: if signedIn() && (
+          uid() == userId ||
+          isAdminForUser(userId) ||
+          (isApprovedStaff() && sameInstitution(staffInstitutionId(userId)))
+        );
+        allow create, update: if signedIn() && (
+          uid() == userId ||
+          isAdminForUser(userId)
+        );
+        allow delete: if signedIn() && (
+          uid() == userId ||
+          isAdminForUser(userId)
+        );
+      }
+
+      match /nurse_notes/{noteId} {
+        allow read: if signedIn() && (
+          uid() == userId ||
+          isAdminForUser(userId) ||
+          (isApprovedStaff() && sameInstitution(staffInstitutionId(userId)))
+        );
+        allow create, update: if signedIn() && (
+          uid() == userId ||
+          isAdminForUser(userId)
+        );
+        allow delete: if signedIn() && (
+          uid() == userId ||
+          isAdminForUser(userId)
+        );
+      }
+
+
+      // ══════════════════════════════════════════════════
+      //  STAFF subcollections
+      //  Read  : the staff member themselves | admin (same institution)
+      //  Write : the staff member themselves | admin (same institution)
+      // ══════════════════════════════════════════════════
+
+      match /staff_tasks/{taskId} {
+        allow read: if signedIn() && (
+          uid() == userId ||
+          isAdminForUser(userId)
+        );
+        allow create, update: if signedIn() && (
+          uid() == userId ||
+          isAdminForUser(userId)
+        );
+        allow delete: if signedIn() && (
+          uid() == userId ||
+          isAdminForUser(userId)
+        );
+      }
+
+
+      // ══════════════════════════════════════════════════
+      //  PARENT subcollections
+      //  Read  : the parent themselves only
+      //  Write : the parent themselves only
+      // ══════════════════════════════════════════════════
+
+      match /parent_patients/{patientId} {
+        allow read, create, update, delete: if signedIn() && uid() == userId;
+      }
+
+
+      // ══════════════════════════════════════════════════
+      //  Catch-all for any other subcollection
+      //  (e.g. custom collections added later)
+      //  Falls back to patient-data access model
+      // ══════════════════════════════════════════════════
+
+      match /{subCollection}/{docId} {
+        allow read: if canReadPatientData(userId);
+        allow create, update, delete: if canWritePatientClinicalData(userId);
+      }
     }
+
+
+    // ══════════════════════════════════════════════════════
+    //  STAFF REQUESTS  (pending staff approval)
+    //  /staff_requests/{requestId}
+    // ══════════════════════════════════════════════════════
 
     match /staff_requests/{requestId} {
       allow create: if signedIn()
@@ -228,17 +498,22 @@ service cloud.firestore {
 
       allow read, update, delete: if signedIn() && (
         resource.data.uid == uid() ||
-        (
-          isAdmin() &&
+        (isAdmin() &&
           resource.data.institutionId != null &&
-          sameInstitution(resource.data.institutionId)
-        )
+          sameInstitution(resource.data.institutionId))
       );
     }
 
+
+    // ══════════════════════════════════════════════════════
+    //  DEPARTMENTS
+    //  /departments/{docId}
+    // ══════════════════════════════════════════════════════
+
     match /departments/{docId} {
       allow read: if signedIn() && (
-        (resource.data.institutionId != null && sameInstitution(resource.data.institutionId)) ||
+        (resource.data.institutionId != null &&
+          sameInstitution(resource.data.institutionId)) ||
         isAdmin() ||
         isApprovedStaff()
       );
@@ -254,24 +529,51 @@ service cloud.firestore {
         sameInstitution(resource.data.institutionId);
     }
 
+
+    // ══════════════════════════════════════════════════════
+    //  CARE LINKS  (parent ↔ patient connections)
+    //  /care_links/{linkId}   linkId = parentUid + "_" + patientId
+    // ══════════════════════════════════════════════════════
+
+    match /care_links/{linkId} {
+      allow read: if signedIn() && (
+        resource.data.patientId == uid() ||
+        resource.data.linkedUserId == uid() ||
+        (isAdmin() &&
+          resource.data.institutionId != null &&
+          sameInstitution(resource.data.institutionId))
+      );
+
+      // Parent or patient can create the link; admin can too
+      allow create: if signedIn();
+
+      allow update, delete: if signedIn() && (
+        resource.data.patientId == uid() ||
+        resource.data.linkedUserId == uid() ||
+        (isAdmin() &&
+          resource.data.institutionId != null &&
+          sameInstitution(resource.data.institutionId))
+      );
+    }
+
+
+    // ══════════════════════════════════════════════════════
+    //  DISPATCH CASES
+    //  /dispatch_cases/{docId}
+    // ══════════════════════════════════════════════════════
+
     match /dispatch_cases/{docId} {
       allow read: if signedIn() && (
         canReadPatientData(resource.data.patientId) ||
-        (
-          resource.data.institutionId != null &&
+        (resource.data.institutionId != null &&
           sameInstitution(resource.data.institutionId) &&
-          (isAdmin() || isApprovedStaff())
-        )
+          (isAdmin() || isApprovedStaff()))
       );
 
-      allow create, update: if signedIn() && (
-        (
-          isAdmin() ||
-          isApprovedStaff()
-        ) &&
+      allow create, update: if signedIn() &&
+        (isAdmin() || isApprovedStaff()) &&
         request.resource.data.institutionId != null &&
-        sameInstitution(request.resource.data.institutionId)
-      );
+        sameInstitution(request.resource.data.institutionId);
 
       allow delete: if signedIn() &&
         isAdmin() &&
@@ -279,14 +581,17 @@ service cloud.firestore {
         sameInstitution(resource.data.institutionId);
     }
 
+
+    // ══════════════════════════════════════════════════════
+    //  EMERGENCY QUEUE
+    //  /emergency_queue/{docId}
+    // ══════════════════════════════════════════════════════
+
     match /emergency_queue/{docId} {
-      allow read: if signedIn() && (
-        (
-          resource.data.institutionId != null &&
-          sameInstitution(resource.data.institutionId)
-        ) &&
-        (isAdmin() || isApprovedStaff())
-      );
+      allow read: if signedIn() &&
+        resource.data.institutionId != null &&
+        sameInstitution(resource.data.institutionId) &&
+        (isAdmin() || isApprovedStaff());
 
       allow create, update: if signedIn() &&
         request.resource.data.institutionId != null &&
@@ -299,90 +604,28 @@ service cloud.firestore {
         isAdmin();
     }
 
+
+    // ══════════════════════════════════════════════════════
+    //  TOP-LEVEL ALERTS  (institution-wide alert feed)
+    //  /alerts/{alertId}
+    //  Note: per-patient alerts live under /users/{id}/alerts/
+    // ══════════════════════════════════════════════════════
+
     match /alerts/{alertId} {
       allow read: if signedIn() && (
         canReadPatientData(resource.data.patientId) ||
-        (
-          resource.data.institutionId != null &&
+        (resource.data.institutionId != null &&
           sameInstitution(resource.data.institutionId) &&
-          (isAdmin() || isApprovedStaff())
-        )
+          (isAdmin() || isApprovedStaff()))
       );
-
-      allow create: if false;
-      allow update, delete: if false;
+      // Alerts are generated server-side / by device — deny direct client writes
+      allow create, update, delete: if false;
     }
 
-    match /care_links/{linkId} {
-      allow read: if signedIn() && (
-        resource.data.patientId == uid() ||
-        resource.data.linkedUserId == uid() ||
-        (isAdmin() && resource.data.institutionId != null && sameInstitution(resource.data.institutionId))
-      );
 
-      allow create: if signedIn();
-
-      allow update, delete: if signedIn() && (
-        resource.data.patientId == uid() ||
-        resource.data.linkedUserId == uid() ||
-        (isAdmin() && resource.data.institutionId != null && sameInstitution(resource.data.institutionId))
-      );
-    }
-
-    match /users/{userId}/vitals/{vitalId} {
-      allow read: if canReadPatientData(userId);
-      allow create: if canWritePatientClinicalData(userId);
-      allow update, delete: if canWritePatientClinicalData(userId);
-    }
-
-    match /institutions/{hospitalId}/today_patients/{patientId} {
-      allow read: if signedIn() &&
-        sameInstitution(hospitalId) &&
-        (isAdmin() || isApprovedStaff());
-
-      allow create, update: if signedIn() &&
-        sameInstitution(hospitalId) &&
-        (isAdmin() || isApprovedStaff());
-
-      allow delete: if signedIn() &&
-        sameInstitution(hospitalId) &&
-        isAdmin();
-    }
-
-    match /users/{userId}/alerts/{alertId} {
-      allow read: if canReadPatientData(userId);
-      allow create: if false;
-      allow update, delete: if false;
-    }
-
-    match /users/{userId}/assessments/{docId} {
-      allow read: if canReadPatientData(userId);
-      allow create, update, delete: if canWritePatientClinicalData(userId);
-    }
-
-    match /users/{userId}/dispatches/{docId} {
-      allow read: if canReadPatientData(userId);
-      allow create, update, delete: if canWritePatientClinicalData(userId);
-    }
-
-    match /users/{userId}/timeline/{docId} {
-      allow read: if canReadPatientData(userId);
-      allow create, update, delete: if canWritePatientClinicalData(userId);
-    }
-
-    match /users/{userId}/doctor_notes/{noteId} {
-      allow read: if canReadPatientData(userId);
-      allow create, update, delete: if (
-        isAdmin() && patientBelongsToMyInstitution(userId)
-      ) || (
-        isApprovedStaff() && patientBelongsToMyInstitution(userId)
-      );
-    }
-
-    match /users/{userId}/{subCollection}/{docId} {
-      allow read: if canReadPatientData(userId);
-      allow create, update, delete: if canWritePatientClinicalData(userId);
-    }
+    // ══════════════════════════════════════════════════════
+    //  CATCH-ALL — deny everything not matched above
+    // ══════════════════════════════════════════════════════
 
     match /{document=**} {
       allow read, write: if false;

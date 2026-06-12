@@ -18,18 +18,18 @@ class _StaffApprovalScreenState extends State<StaffApprovalScreen> {
   String _searchText = '';
   String _roleFilter = 'all';
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> _requestsStream() {
-    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+  // cached once — avoids recreating stream on every setState
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _requestsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _requestsStream = FirebaseFirestore.instance
         .collection('staff_requests')
         .where('institutionId', isEqualTo: widget.institutionId)
         .where('status', isEqualTo: 'pending')
-        .orderBy('createdAt', descending: true);
-
-    if (_roleFilter != 'all') {
-      query = query.where('role', isEqualTo: _roleFilter);
-    }
-
-    return query.snapshots();
+        .orderBy('createdAt', descending: true)
+        .snapshots();
   }
 
   Future<void> _approve(QueryDocumentSnapshot<Map<String, dynamic>> doc) async {
@@ -257,7 +257,7 @@ class _StaffApprovalScreenState extends State<StaffApprovalScreen> {
           const SizedBox(height: 12),
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: _requestsStream(),
+              stream: _requestsStream,
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(
@@ -276,7 +276,11 @@ class _StaffApprovalScreenState extends State<StaffApprovalScreen> {
                 }
 
                 final docs = snapshot.data?.docs ?? [];
-                final filtered = docs.where((d) => _matchesSearch(d.data())).toList();
+                final filtered = docs.where((d) {
+                  final data = d.data();
+                  if (_roleFilter != 'all' && data['role'] != _roleFilter) return false;
+                  return _matchesSearch(data);
+                }).toList();
 
                 if (filtered.isEmpty) {
                   return const _ApprovalEmptyState();

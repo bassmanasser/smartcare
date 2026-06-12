@@ -40,11 +40,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
-  String get _doctorName => widget.doctor.name.toString();
-  String get _doctorSpecialty => widget.doctor.specialty.toString().isEmpty
-      ? 'General'
-      : widget.doctor.specialty.toString();
-
   String get _doctorScanId {
     final value = widget.doctor.doctorId.toString();
     if (value.isNotEmpty) return value;
@@ -145,7 +140,7 @@ class _DoctorOverviewTab extends StatelessWidget {
     final doctorName = doctor.name.toString();
     final lang = AppLocalizations.of(context);
     final specialty = doctor.specialty.toString().isEmpty
-        ? 'General'
+        ? lang.translate('general')
         : doctor.specialty.toString();
 
     return SafeArea(
@@ -173,15 +168,15 @@ class _DoctorOverviewTab extends StatelessWidget {
               alertsCount: app.alerts.length,
             ),
             const SizedBox(height: 20),
-            const _SectionTitle(
-              title: 'Clinical Work',
-              subtitle: 'Main doctor tools in a cleaner professional layout',
+            _SectionTitle(
+              title: lang.translate('clinical_work'),
+              subtitle: lang.translate('clinical_work_subtitle'),
             ),
             const SizedBox(height: 12),
             _ActionTile(
               icon: Icons.assignment_outlined,
-              title: 'Assigned Cases',
-              subtitle: 'Review active and priority patient cases',
+              title: lang.translate('assigned_cases'),
+              subtitle: lang.translate('assigned_cases_subtitle'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -194,8 +189,8 @@ class _DoctorOverviewTab extends StatelessWidget {
             ),
             _ActionTile(
               icon: Icons.description_outlined,
-              title: 'Requests & Notes',
-              subtitle: 'Track doctor requests and pending actions',
+              title: lang.translate('requests_and_notes'),
+              subtitle: lang.translate('requests_and_notes_subtitle'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -210,8 +205,8 @@ class _DoctorOverviewTab extends StatelessWidget {
             ),
             _ActionTile(
               icon: Icons.qr_code_scanner_rounded,
-              title: 'Scan Patient QR',
-              subtitle: 'Link a patient to your doctor account',
+              title: lang.translate('scan_patient_qr'),
+              subtitle: lang.translate('scan_patient_qr_subtitle'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -225,16 +220,16 @@ class _DoctorOverviewTab extends StatelessWidget {
               },
             ),
             const SizedBox(height: 20),
-            const _SectionTitle(
-              title: 'Critical Queue',
-              subtitle: 'Emergency and urgent cases that need quick attention',
+            _SectionTitle(
+              title: lang.translate('critical_queue'),
+              subtitle: lang.translate('critical_queue_subtitle'),
             ),
             const SizedBox(height: 12),
             if (emergencyCases.isEmpty && urgentCases.isEmpty)
-              const _EmptyStateCard(
+              _EmptyStateCard(
                 icon: Icons.local_hospital_outlined,
-                title: 'No critical cases',
-                subtitle: 'Emergency and urgent cases will appear here.',
+                title: lang.translate('no_critical_cases'),
+                subtitle: lang.translate('no_critical_cases_subtitle'),
               )
             else ...[
               ...emergencyCases.map(
@@ -273,19 +268,20 @@ class _DoctorProfileTab extends StatelessWidget {
               .doc(doctor.id.toString())
               .snapshots(),
           builder: (context, snapshot) {
+            final lang = AppLocalizations.of(context);
             final data = snapshot.data?.data() ?? {};
             final doctorName = doctor.name.toString();
             final specialty = doctor.specialty.toString().isEmpty
-                ? 'General'
+                ? lang.translate('general')
                 : doctor.specialty.toString();
 
             final institutionName =
-                (data['institutionName'] ?? 'Not assigned yet').toString();
+                (data['institutionName'] ?? lang.translate('not_assigned_yet')).toString();
             final departmentName =
-                (data['departmentName'] ?? data['department'] ?? 'General')
+                (data['departmentName'] ?? data['department'] ?? lang.translate('general'))
                     .toString();
-            final medicalRole = (data['medicalRole'] ?? 'Doctor').toString();
-            final approvalStatus = (data['approvalStatus'] ?? 'pending')
+            final medicalRole = (data['medicalRole'] ?? lang.translate('doctor')).toString();
+            final approvalStatus = (data['approvalStatus'] ?? lang.translate('pending'))
                 .toString();
             final employeeId = (data['employeeId'] ?? '--').toString();
             final licenseNumber = (data['licenseNumber'] ?? '--').toString();
@@ -308,9 +304,9 @@ class _DoctorProfileTab extends StatelessWidget {
                   compact: true,
                 ),
                 const SizedBox(height: 16),
-                const _SectionTitle(
-                  title: 'Doctor Profile',
-                  subtitle: 'Identity, hospital data, and registration details',
+                _SectionTitle(
+                  title: lang.translate('doctor_profile'),
+                  subtitle: lang.translate('doctor_profile_subtitle'),
                 ),
                 const SizedBox(height: 12),
                 Card(
@@ -319,39 +315,39 @@ class _DoctorProfileTab extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        _ProfileInfoRow(label: 'Full Name', value: doctorName),
+                        _ProfileInfoRow(label: lang.translate('full_name'), value: doctorName),
                         _ProfileInfoRow(
-                          label: 'Medical Role',
+                          label: lang.translate('medical_role'),
                           value: medicalRole,
                         ),
-                        _ProfileInfoRow(label: 'Specialty', value: specialty),
+                        _ProfileInfoRow(label: lang.translate('specialty'), value: specialty),
                         _ProfileInfoRow(
-                          label: 'Department',
+                          label: lang.translate('department'),
                           value: departmentName,
                         ),
                         _ProfileInfoRow(
-                          label: 'Hospital',
+                          label: lang.translate('hospital_label'),
                           value: institutionName,
                         ),
                         _ProfileInfoRow(
-                          label: 'Hospital ID',
+                          label: lang.translate('hospital_id'),
                           value: institutionId,
                         ),
                         _ProfileInfoRow(
-                          label: 'Employee ID',
+                          label: lang.translate('employee_id'),
                           value: employeeId,
                         ),
                         _ProfileInfoRow(
-                          label: 'License Number',
+                          label: lang.translate('license_number'),
                           value: licenseNumber,
                         ),
                         _ProfileInfoRow(
-                          label: 'Approval Status',
+                          label: lang.translate('approval_status'),
                           value: approvalStatus,
                         ),
-                        _ProfileInfoRow(label: 'Phone', value: phone),
+                        _ProfileInfoRow(label: lang.translate('phone'), value: phone),
                         _ProfileInfoRow(
-                          label: 'Email',
+                          label: lang.translate('email'),
                           value: email,
                           isLast: true,
                         ),
@@ -384,7 +380,7 @@ class _DoctorSettingsTab extends StatelessWidget {
     final doctorName = doctor.name.toString();
     final lang = AppLocalizations.of(context);
     final specialty = doctor.specialty.toString().isEmpty
-        ? 'General'
+        ? lang.translate('general')
         : doctor.specialty.toString();
 
     return Scaffold(
@@ -401,9 +397,9 @@ class _DoctorSettingsTab extends StatelessWidget {
               compact: true,
             ),
             const SizedBox(height: 16),
-            const _SectionTitle(
-              title: 'Settings',
-              subtitle: 'Doctor account options and system access',
+            _SectionTitle(
+              title: lang.translate('settings'),
+              subtitle: lang.translate('doctor_settings_subtitle'),
             ),
             const SizedBox(height: 12),
             _SettingTile(
@@ -414,8 +410,8 @@ class _DoctorSettingsTab extends StatelessWidget {
             ),
             _SettingTile(
               icon: Icons.qr_code_scanner_rounded,
-              title: 'Scan Patient QR',
-              subtitle: 'Link a patient by scanning their QR code',
+              title: lang.translate('scan_patient_qr'),
+              subtitle: lang.translate('scan_patient_qr_subtitle'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -430,8 +426,8 @@ class _DoctorSettingsTab extends StatelessWidget {
             ),
             _SettingTile(
               icon: Icons.description_outlined,
-              title: 'Requests',
-              subtitle: 'Open doctor requests and follow-ups',
+              title: lang.translate('requests_menu'),
+              subtitle: lang.translate('doctor_requests_subtitle'),
               onTap: () {
                 Navigator.push(
                   context,
@@ -455,9 +451,9 @@ class _DoctorSettingsTab extends StatelessWidget {
               ),
               onPressed: onLogout,
               icon: const Icon(Icons.logout_rounded),
-              label: const Text(
-                'Logout',
-                style: TextStyle(fontWeight: FontWeight.w700),
+              label: Text(
+                lang.translate('logout'),
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -533,12 +529,17 @@ class _DoctorHeaderCard extends StatelessWidget {
                 ),
                 if (!compact) ...[
                   const SizedBox(height: 8),
-                  Text(
-                    'Assigned cases: $queueCount  •  Emergency: $emergencyCount',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Builder(
+                    builder: (ctx) {
+                      final l = AppLocalizations.of(ctx);
+                      return Text(
+                        '${l.translate('assigned_cases')}: $queueCount  •  ${l.translate('emergency')}: $emergencyCount',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ],
@@ -563,14 +564,15 @@ class _InstitutionStatusCard extends StatelessWidget {
           .doc(doctor.id.toString())
           .snapshots(),
       builder: (context, snapshot) {
+        final lang = AppLocalizations.of(context);
         final data = snapshot.data?.data() ?? {};
-        final institutionName = (data['institutionName'] ?? 'Not assigned yet')
+        final institutionName = (data['institutionName'] ?? lang.translate('not_assigned_yet'))
             .toString();
         final departmentName =
-            (data['departmentName'] ?? data['department'] ?? 'General')
+            (data['departmentName'] ?? data['department'] ?? lang.translate('general'))
                 .toString();
-        final medicalRole = (data['medicalRole'] ?? 'Medical Staff').toString();
-        final approvalStatus = (data['approvalStatus'] ?? 'pending').toString();
+        final medicalRole = (data['medicalRole'] ?? lang.translate('medical_staff')).toString();
+        final approvalStatus = (data['approvalStatus'] ?? lang.translate('pending')).toString();
         final employeeId = (data['employeeId'] ?? '--').toString();
 
         return Card(
@@ -580,20 +582,20 @@ class _InstitutionStatusCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SectionTitle(
-                  title: 'Institution Status',
-                  subtitle: 'Doctor role and hospital registration summary',
+                _SectionTitle(
+                  title: lang.translate('institution_status'),
+                  subtitle: lang.translate('institution_status_subtitle'),
                 ),
                 const SizedBox(height: 14),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _InfoChip(label: 'Hospital', value: institutionName),
-                    _InfoChip(label: 'Department', value: departmentName),
-                    _InfoChip(label: 'Role', value: medicalRole),
-                    _InfoChip(label: 'Staff ID', value: employeeId),
-                    _InfoChip(label: 'Approval', value: approvalStatus),
+                    _InfoChip(label: lang.translate('hospital_label'), value: institutionName),
+                    _InfoChip(label: lang.translate('department'), value: departmentName),
+                    _InfoChip(label: lang.translate('role_label'), value: medicalRole),
+                    _InfoChip(label: lang.translate('staff_id_label'), value: employeeId),
+                    _InfoChip(label: lang.translate('approval_label'), value: approvalStatus),
                   ],
                 ),
               ],
@@ -620,13 +622,14 @@ class _DoctorStatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
     return Column(
       children: [
         Row(
           children: [
             Expanded(
               child: _StatCard(
-                title: 'Patients',
+                title: lang.translate('patients_label'),
                 value: '$totalPatients',
                 color: Colors.blue,
                 icon: Icons.groups_rounded,
@@ -635,7 +638,7 @@ class _DoctorStatsGrid extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: _StatCard(
-                title: 'Emergency',
+                title: lang.translate('emergency'),
                 value: '$emergencyCount',
                 color: Colors.red,
                 icon: Icons.emergency_rounded,
@@ -648,7 +651,7 @@ class _DoctorStatsGrid extends StatelessWidget {
           children: [
             Expanded(
               child: _StatCard(
-                title: 'Urgent',
+                title: lang.translate('urgent_label'),
                 value: '$urgentCount',
                 color: Colors.orange,
                 icon: Icons.priority_high_rounded,
@@ -657,7 +660,7 @@ class _DoctorStatsGrid extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: _StatCard(
-                title: 'Alerts',
+                title: lang.translate('alerts'),
                 value: '$alertsCount',
                 color: Colors.purple,
                 icon: Icons.notifications_active_rounded,
