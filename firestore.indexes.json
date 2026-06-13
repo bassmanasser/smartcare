@@ -1,13 +1,154 @@
 {
   "indexes": [
+
+    {
+      "collectionGroup": "care_links",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "linkedUserId",   "order": "ASCENDING" },
+        { "fieldPath": "linkedUserRole", "order": "ASCENDING" },
+        { "fieldPath": "status",         "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "care_links",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "linkedUserId", "order": "ASCENDING" },
+        { "fieldPath": "status",       "order": "ASCENDING" },
+        { "fieldPath": "updatedAt",    "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "care_links",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "patientId",      "order": "ASCENDING" },
+        { "fieldPath": "linkedUserRole", "order": "ASCENDING" },
+        { "fieldPath": "status",         "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "care_links",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "patientId",      "order": "ASCENDING" },
+        { "fieldPath": "linkedUserRole", "order": "ASCENDING" },
+        { "fieldPath": "status",         "order": "ASCENDING" },
+        { "fieldPath": "updatedAt",      "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "care_links",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "patientId",      "order": "ASCENDING" },
+        { "fieldPath": "linkedUserId",   "order": "ASCENDING" },
+        { "fieldPath": "linkedUserRole", "order": "ASCENDING" },
+        { "fieldPath": "status",         "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "care_links",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "patientId",      "order": "ASCENDING" },
+        { "fieldPath": "linkedUserRole", "order": "ASCENDING" },
+        { "fieldPath": "status",         "order": "ASCENDING" },
+        { "fieldPath": "isPrimary",      "order": "ASCENDING" }
+      ]
+    },
+
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId", "order": "ASCENDING" },
+        { "fieldPath": "role",          "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId", "order": "ASCENDING" },
+        { "fieldPath": "role",          "order": "ASCENDING" },
+        { "fieldPath": "arrivalDayKey", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId",  "order": "ASCENDING" },
+        { "fieldPath": "role",           "order": "ASCENDING" },
+        { "fieldPath": "approvalStatus", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId",  "order": "ASCENDING" },
+        { "fieldPath": "role",           "order": "ASCENDING" },
+        { "fieldPath": "approvalStatus", "order": "ASCENDING" },
+        { "fieldPath": "createdAt",      "order": "DESCENDING" }
+      ]
+    },
+
+    {
+      "collectionGroup": "alerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp",     "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "alerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId", "order": "ASCENDING" },
+        { "fieldPath": "patientId",     "order": "ASCENDING" },
+        { "fieldPath": "timestamp",     "order": "DESCENDING" }
+      ]
+    },
+
+    {
+      "collectionGroup": "staff_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId",  "order": "ASCENDING" },
+        { "fieldPath": "approvalStatus", "order": "ASCENDING" },
+        { "fieldPath": "role",           "order": "ASCENDING" },
+        { "fieldPath": "createdAt",      "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "staff_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId",  "order": "ASCENDING" },
+        { "fieldPath": "approvalStatus", "order": "ASCENDING" },
+        { "fieldPath": "createdAt",      "order": "DESCENDING" }
+      ]
+    },
     {
       "collectionGroup": "staff_requests",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "institutionId", "order": "ASCENDING" },
-        { "fieldPath": "approvalStatus", "order": "ASCENDING" },
-        { "fieldPath": "role", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "role",          "order": "ASCENDING" },
+        { "fieldPath": "createdAt",     "order": "DESCENDING" }
+      ]
+    },
+
+    {
+      "collectionGroup": "departments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt",     "order": "DESCENDING" }
       ]
     },
     {
@@ -15,7 +156,19 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "institutionId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "isActive",      "order": "ASCENDING" },
+        { "fieldPath": "createdAt",     "order": "DESCENDING" }
+      ]
+    },
+
+    {
+      "collectionGroup": "dispatch_cases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId", "order": "ASCENDING" },
+        { "fieldPath": "status",        "order": "ASCENDING" },
+        { "fieldPath": "priority",      "order": "ASCENDING" },
+        { "fieldPath": "createdAt",     "order": "DESCENDING" }
       ]
     },
     {
@@ -23,9 +176,35 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "institutionId", "order": "ASCENDING" },
-        { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "priority", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        { "fieldPath": "status",        "order": "ASCENDING" },
+        { "fieldPath": "createdAt",     "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "dispatch_cases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId", "order": "ASCENDING" },
+        { "fieldPath": "priority",      "order": "ASCENDING" },
+        { "fieldPath": "createdAt",     "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "dispatch_cases",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt",     "order": "DESCENDING" }
+      ]
+    },
+
+    {
+      "collectionGroup": "emergency_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId", "order": "ASCENDING" },
+        { "fieldPath": "queueType",     "order": "ASCENDING" },
+        { "fieldPath": "createdAt",     "order": "DESCENDING" }
       ]
     },
     {
@@ -33,10 +212,65 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "institutionId", "order": "ASCENDING" },
-        { "fieldPath": "queueType", "order": "ASCENDING" },
+        { "fieldPath": "status",        "order": "ASCENDING" },
+        { "fieldPath": "createdAt",     "order": "DESCENDING" }
+      ]
+    },
+
+    {
+      "collectionGroup": "doctor_tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "staffId",   "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "doctor_tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId", "order": "ASCENDING" },
+        { "fieldPath": "assignedTo",    "order": "ASCENDING" },
+        { "fieldPath": "createdAt",     "order": "DESCENDING" }
+      ]
+    },
+
+    {
+      "collectionGroup": "conversations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "participants", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "updatedAt",    "order": "DESCENDING" }
+      ]
+    },
+
+    {
+      "collectionGroup": "vitals",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "patientId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+
+    {
+      "collectionGroup": "arrhythmia_results",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "patientId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+
+    {
+      "collectionGroup": "moods",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "patientId", "order": "ASCENDING" },
+        { "fieldPath": "date",      "order": "DESCENDING" }
+      ]
     }
+
   ],
   "fieldOverrides": []
 }
