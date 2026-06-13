@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "C:/Users/Administrator/Desktop/moduler mobile app/smartcare/linux"
+    "cmake.sourceDirectory": "C:/Users/Administrator/Desktop/moduler mobile app/smartcare/linux",
+    "claudeCode.disableLoginPrompt": true
 }

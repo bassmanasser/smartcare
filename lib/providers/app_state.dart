@@ -55,6 +55,8 @@ class AppState extends ChangeNotifier {
   double _lastPredictedGlucose = 0.0;
   double get lastPredictedGlucose => _lastPredictedGlucose;
 
+  int _lastKnownHr = 0;
+
   String glucoseStatusMsg = "Waiting for finger...";
   final List<Map<String, dynamic>> doctors = [];
 
@@ -207,7 +209,12 @@ class AppState extends ChangeNotifier {
 
       final data = jsonDecode(safeStr);
 
-      final int hrVal = _safeInt(data['hr'] ?? data['HR'] ?? data['heartRate'] ?? data['heart_rate']);
+      final int rawHr = _safeInt(
+        data['hr'] ?? data['HR'] ?? data['heartRate'] ?? data['heart_rate'] ??
+        data['pulse'] ?? data['pr'] ?? data['PR'] ?? data['pulserate'] ?? data['pulse_rate'],
+      );
+      final int hrVal = rawHr > 0 ? rawHr : _lastKnownHr;
+      if (rawHr > 0) _lastKnownHr = rawHr;
       final int spo2Val = _safeInt(data['spo2'] ?? data['SPO2'] ?? data['oxygen'] ?? data['sp02']);
       final int sysVal = _safeInt(
         data['sys'] ?? data['systolic'] ?? data['sbp'] ?? data['SBP'] ??
@@ -759,6 +766,7 @@ class AppState extends ChangeNotifier {
       );
 
       data['id'] = p.id;
+      data['uid'] = p.id;
       data['role'] = 'patient';
 
       if (institutionCode.trim().isNotEmpty) {

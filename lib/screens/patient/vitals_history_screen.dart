@@ -45,9 +45,11 @@ class VitalsHistoryScreen extends StatelessWidget {
               return Card(
                 child: ListTile(
                   leading: const Icon(Icons.monitor_heart, color: petrol),
-                  title: Text('HR: ${v.hr} bpm • SpO₂: ${v.spo2}%'),
+                  title: Text(
+                    'HR: ${v.hr > 0 ? "${v.hr} bpm" : "--"} • SpO₂: ${v.spo2 > 0 ? "${v.spo2}%" : "--"}',
+                  ),
                   subtitle: Text(
-                    'BP: ${v.sys}/${v.dia} • Glu: ${v.glucose.toStringAsFixed(0)} • Temp: ${v.temperature.toStringAsFixed(1)}\n$date • $time',
+                    'BP: ${(v.sys > 0 && v.dia > 0) ? "${v.sys}/${v.dia}" : "--"} • Glu: ${v.glucose > 0 ? v.glucose.toStringAsFixed(0) : "--"} • Temp: ${v.temperature > 0 ? v.temperature.toStringAsFixed(1) : "--"}\n$date • $time',
                   ),
                 ),
               );

@@ -1,4 +1,5 @@
-﻿import 'dart:convert';
+﻿import 'dart:async';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -47,19 +48,21 @@ class _ArrhythmiaCheckScreenState extends State<ArrhythmiaCheckScreen>
   Future<List<num>> _getLatestPpg() async {
     for (final orderField in ['timestamp', 'createdAt']) {
       try {
+        // نجيب آخر 10 documents ونفتش على أول واحد فيه ppg data
         final qs = await FirebaseFirestore.instance
             .collection('users')
             .doc(widget.patientId)
             .collection('vitals')
             .orderBy(orderField, descending: true)
-            .limit(1)
+            .limit(10)
             .get();
 
-        if (qs.docs.isNotEmpty) {
-          final data = qs.docs.first.data();
+        for (final doc in qs.docs) {
+          final data = doc.data();
           final raw = data['ppg_values'] ?? data['ppg'] ?? data['ppgValues'];
           if (raw is List && raw.isNotEmpty) {
-            return raw.whereType<num>().toList();
+            final values = raw.whereType<num>().toList();
+            if (values.isNotEmpty) return values;
           }
         }
       } catch (_) {}
@@ -71,10 +74,16 @@ class _ArrhythmiaCheckScreenState extends State<ArrhythmiaCheckScreen>
     required int fs,
     required List<num> ppg,
   }) async {
+    // HuggingFace space قد تكون نايمة وتحتاج وقت تصحى
     final res = await http.post(
       Uri.parse('$_baseUrl$_endpoint'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'fs': fs, 'ppg': ppg}),
+    ).timeout(
+      const Duration(seconds: 90),
+      onTimeout: () => throw Exception(
+        'Request timed out. The AI server may be waking up — please try again in 30 seconds.',
+      ),
     );
     if (res.statusCode != 200) {
       throw Exception('AI API Error ${res.statusCode}: ${res.body}');
@@ -110,7 +119,12 @@ class _ArrhythmiaCheckScreenState extends State<ArrhythmiaCheckScreen>
       final ppg = await _getLatestPpg();
       if (ppg.isEmpty) {
         throw Exception(
-          'No PPG data found. Make sure the device is connected and has sent at least one reading.',
+          'No PPG data found. Make sure the device is connected and sending data.',
+        );
+      }
+      if (ppg.length < 20) {
+        throw Exception(
+          'Not enough PPG data (${ppg.length} samples). Keep the device connected for at least 30 seconds before running the check.',
         );
       }
       final result = await _callAi(fs: fs, ppg: ppg);

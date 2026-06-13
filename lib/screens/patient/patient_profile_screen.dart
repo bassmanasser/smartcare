@@ -131,21 +131,21 @@ class PatientProfileScreen extends StatelessWidget {
                   _ProfileReadingCard(
                     icon: Icons.favorite_rounded,
                     title: lang.translate('heart_rate'),
-                    value: latest?.hr.toString() ?? '--',
+                    value: (latest == null || latest.hr == 0) ? '--' : latest.hr.toString(),
                     unit: 'bpm',
                     color: Colors.red,
                   ),
                   _ProfileReadingCard(
                     icon: Icons.air_rounded,
                     title: lang.translate('spo2'),
-                    value: latest?.spo2.toString() ?? '--',
+                    value: (latest == null || latest.spo2 == 0) ? '--' : latest.spo2.toString(),
                     unit: '%',
                     color: Colors.blue,
                   ),
                   _ProfileReadingCard(
                     icon: Icons.monitor_heart_rounded,
                     title: lang.translate('blood_pressure'),
-                    value: latest == null
+                    value: (latest == null || (latest.sys == 0 && latest.dia == 0))
                         ? '--'
                         : '${latest.sys}/${latest.dia}',
                     unit: 'mmHg',

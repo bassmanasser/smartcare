@@ -273,7 +273,7 @@
 
     {
       "collectionGroup": "moods",
-      "queryScope": "COLLECTION_GROUP",
+    "queryScope": "COLLECTION_GROUP",
       "fields": [
         { "fieldPath": "patientId", "order": "ASCENDING" },
         { "fieldPath": "date",      "order": "DESCENDING" }
