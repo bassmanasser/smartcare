@@ -9,7 +9,7 @@ class AiApiService {
     required List<int> ppgValues,
   }) async {
     final url = Uri.parse(
-      ApiConfig.baseUrl + ApiConfig.analyzeEndpoint,
+      '${ApiConfig.baseUrl ?? ''}${ApiConfig.analyzeEndpoint ?? ''}',
     );
 
     final body = {

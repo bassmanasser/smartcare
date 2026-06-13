@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 
 class DoctorAppointmentsScreen extends StatelessWidget {
@@ -9,7 +9,7 @@ class DoctorAppointmentsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("جدول المواعيد"), backgroundColor: PETROL_DARK),
+      appBar: AppBar(title: const Text("جدول المواعيد"), backgroundColor: petrolDark),
       body: myPatients.isEmpty
           ? const Center(child: Text("لا توجد مواعيد محجوزة"))
           : ListView.builder(
@@ -23,7 +23,7 @@ class DoctorAppointmentsScreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(15),
-                    leading: CircleAvatar(backgroundColor: PETROL.withOpacity(0.1), child: const Icon(Icons.alarm, color: PETROL)),
+                    leading: CircleAvatar(backgroundColor: petrol.withValues(alpha: 0.1), child: const Icon(Icons.alarm, color: petrol)),
                     title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text("التاريخ: 2026-02-25\nالوقت: ${index + 9}:00 AM"),
                     trailing: TextButton(

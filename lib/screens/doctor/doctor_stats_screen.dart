@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 
 class DoctorStatsScreen extends StatelessWidget {
@@ -10,7 +10,7 @@ class DoctorStatsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("الإحصائيات والأداء"), backgroundColor: PETROL_DARK),
+      appBar: AppBar(title: const Text("الإحصائيات والأداء"), backgroundColor: petrolDark),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -42,7 +42,7 @@ class DoctorStatsScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, spreadRadius: 2)],
+        boxShadow: [BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 10, spreadRadius: 2)],
       ),
       child: Row(
         children: [

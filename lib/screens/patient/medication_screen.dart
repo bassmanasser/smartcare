@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../utils/constants.dart';
@@ -307,9 +307,9 @@ class _MedicationScreenState extends State<MedicationScreen>
       case 'stopped':
         return Colors.grey.shade600;
       case 'upcoming':
-        return ACCENT_YELLOW;
+        return accentYellow;
       default:
-        return PETROL;
+        return petrol;
     }
   }
 
@@ -345,10 +345,10 @@ class _MedicationScreenState extends State<MedicationScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: LIGHT_BG,
+      backgroundColor: lightBg,
       appBar: AppBar(
         title: Text(_t('medication_reminders')),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
@@ -362,7 +362,7 @@ class _MedicationScreenState extends State<MedicationScreen>
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openMedicationForm(),
-        backgroundColor: PETROL,
+        backgroundColor: petrol,
         icon: const Icon(Icons.add),
         label: Text(_t('add_medication')),
       ),
@@ -477,8 +477,8 @@ class _MedicationScreenState extends State<MedicationScreen>
       label: Text(label),
       selected: _statusFilter == value,
       onSelected: (_) => setState(() => _statusFilter = value),
-      selectedColor: PETROL.withValues(alpha: 0.16),
-      checkmarkColor: PETROL,
+      selectedColor: petrol.withValues(alpha: 0.16),
+      checkmarkColor: petrol,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     );
   }
@@ -624,8 +624,8 @@ class _MedicationScreenState extends State<MedicationScreen>
           final color = isPast
               ? Colors.green.shade700
               : isSoon
-              ? ACCENT_YELLOW
-              : PETROL;
+              ? accentYellow
+              : petrol;
           return Card(
             margin: const EdgeInsets.only(bottom: 10),
             shape: RoundedRectangleBorder(
@@ -704,7 +704,7 @@ class _MedicationScreenState extends State<MedicationScreen>
           margin: const EdgeInsets.only(bottom: 10),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           child: ListTile(
-            leading: const Icon(Icons.manage_history, color: PETROL),
+            leading: const Icon(Icons.manage_history, color: petrol),
             title: Text(entry.medName),
             subtitle: Text(entry.summary),
             trailing: Text('${_dateText(entry.at)}\n${_timeText(entry.at)}'),
@@ -815,7 +815,7 @@ class _MedicationScreenState extends State<MedicationScreen>
         MedicationAlert(
           title: _t('possible_duplicate'),
           message: '${entry.key} ${_t('appears_more_than_once')}',
-          color: ACCENT_ORANGE,
+          color: accentOrange,
           icon: Icons.compare_arrows,
         ),
       );
@@ -1302,7 +1302,7 @@ class _MedicationFormSheetState extends State<MedicationFormSheet> {
               SizedBox(
                 height: 50,
                 child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: PETROL),
+                  style: FilledButton.styleFrom(backgroundColor: petrol),
                   onPressed: _saving ? null : _save,
                   icon: _saving
                       ? const SizedBox(
@@ -1590,7 +1590,7 @@ class _EmptyMedicationState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.medication_outlined, size: 64, color: PETROL),
+            const Icon(Icons.medication_outlined, size: 64, color: petrol),
             const SizedBox(height: 12),
             Text(
               lang.translate('no_medications_added_yet'),
@@ -1599,7 +1599,7 @@ class _EmptyMedicationState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: PETROL),
+              style: FilledButton.styleFrom(backgroundColor: petrol),
               onPressed: onAdd,
               icon: const Icon(Icons.add),
               label: Text(lang.translate('add_medication')),

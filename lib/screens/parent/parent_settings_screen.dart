@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -153,7 +153,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                         setModalState(() => notificationsEnabled = v);
                       },
                       title: const Text('Enable Notifications'),
-                      activeThumbColor: PETROL_DARK,
+                      activeThumbColor: petrolDark,
                     ),
                     SwitchListTile(
                       value: criticalAlertsOnly,
@@ -161,7 +161,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                         setModalState(() => criticalAlertsOnly = v);
                       },
                       title: const Text('Critical Alerts Only'),
-                      activeThumbColor: PETROL_DARK,
+                      activeThumbColor: petrolDark,
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
@@ -169,13 +169,14 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                       height: 52,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: PETROL_DARK,
+                          backgroundColor: petrolDark,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
                         onPressed: () async {
                           final messenger = ScaffoldMessenger.of(context);
+                          final sheetNavigator = Navigator.of(sheetContext);
 
                           try {
                             await FirebaseFirestore.instance
@@ -200,7 +201,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
 
                             if (!mounted) return;
 
-                            Navigator.pop(sheetContext);
+                            sheetNavigator.pop();
                             messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Parent profile updated ✅'),
@@ -257,8 +258,8 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: PETROL.withValues(alpha: 0.12),
-            child: Icon(icon, size: 18, color: PETROL_DARK),
+            backgroundColor: petrol.withValues(alpha: 0.12),
+            child: Icon(icon, size: 18, color: petrolDark),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -289,8 +290,8 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: PETROL.withValues(alpha: 0.12),
-            child: Icon(icon, size: 18, color: PETROL_DARK),
+            backgroundColor: petrol.withValues(alpha: 0.12),
+            child: Icon(icon, size: 18, color: petrolDark),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -319,7 +320,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         title: const Text(
           'Parent Settings',
           style: TextStyle(color: Colors.white),
@@ -349,7 +350,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
           );
 
           return RefreshIndicator(
-            color: PETROL_DARK,
+            color: petrolDark,
             onRefresh: _refresh,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -359,7 +360,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [PETROL_DARK, PETROL],
+                      colors: [petrolDark, petrol],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -372,7 +373,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                         backgroundColor: Colors.white,
                         child: Icon(
                           Icons.family_restroom_rounded,
-                          color: PETROL_DARK,
+                          color: petrolDark,
                           size: 30,
                         ),
                       ),
@@ -411,7 +412,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 16,
-                          color: PETROL_DARK,
+                          color: petrolDark,
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -453,7 +454,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 16,
-                          color: PETROL_DARK,
+                          color: petrolDark,
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -491,7 +492,7 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                   height: 52,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: PETROL_DARK,
+                      backgroundColor: petrolDark,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),

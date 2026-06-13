@@ -28,9 +28,13 @@ class PHIAService {
 
       final result = await _fn.call({
         'question': question,
+        // ignore: use_null_aware_elements
         if (patientId != null) 'patientId': patientId,
+        // ignore: use_null_aware_elements
         if (patientName != null) 'patientName': patientName,
+        // ignore: use_null_aware_elements
         if (languageCode != null) 'languageCode': languageCode,
+        // ignore: use_null_aware_elements
         if (vitalsSummary != null) 'vitalsSummary': vitalsSummary,
       });
 

@@ -13,28 +13,26 @@ Future<void> showLanguagePicker(BuildContext context) async {
     builder: (dialogContext) {
       return AlertDialog(
         title: Text(lang.translate('language')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<String>(
-              value: 'en',
-              groupValue: app.currentLocale.languageCode,
-              title: Text(lang.translate('english')),
-              onChanged: (_) async {
-                Navigator.pop(dialogContext);
-                await app.setLocale(const Locale('en'));
-              },
-            ),
-            RadioListTile<String>(
-              value: 'ar',
-              groupValue: app.currentLocale.languageCode,
-              title: Text(lang.translate('arabic')),
-              onChanged: (_) async {
-                Navigator.pop(dialogContext);
-                await app.setLocale(const Locale('ar'));
-              },
-            ),
-          ],
+        content: RadioGroup<String>(
+          groupValue: app.currentLocale.languageCode,
+          onChanged: (val) async {
+            if (val == null) return;
+            Navigator.pop(dialogContext);
+            await app.setLocale(Locale(val));
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<String>(
+                value: 'en',
+                title: Text(lang.translate('english')),
+              ),
+              RadioListTile<String>(
+                value: 'ar',
+                title: Text(lang.translate('arabic')),
+              ),
+            ],
+          ),
         ),
       );
     },

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -182,7 +182,7 @@ class _PatientDetailForDoctorScreenState
                   height: 52,
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: PETROL_DARK,
+                      backgroundColor: petrolDark,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -294,7 +294,7 @@ class _PatientDetailForDoctorScreenState
     return Row(
       children: [
         if (icon != null) ...[
-          Icon(icon, color: PETROL_DARK, size: 20),
+          Icon(icon, color: petrolDark, size: 20),
           const SizedBox(width: 8),
         ],
         Text(
@@ -322,7 +322,7 @@ class _PatientDetailForDoctorScreenState
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -334,10 +334,10 @@ class _PatientDetailForDoctorScreenState
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: PETROL.withOpacity(0.12),
+                color: petrol.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: PETROL_DARK),
+              child: Icon(icon, color: petrolDark),
             ),
             const SizedBox(height: 10),
             Text(
@@ -375,7 +375,7 @@ class _PatientDetailForDoctorScreenState
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.035),
+            color: Colors.black.withValues(alpha: 0.035),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -387,10 +387,10 @@ class _PatientDetailForDoctorScreenState
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: PETROL.withOpacity(0.12),
+              color: petrol.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: PETROL_DARK),
+            child: Icon(icon, color: petrolDark),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -433,7 +433,7 @@ class _PatientDetailForDoctorScreenState
         border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.035),
+            color: Colors.black.withValues(alpha: 0.035),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -446,10 +446,10 @@ class _PatientDetailForDoctorScreenState
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: PETROL.withOpacity(0.12),
+              color: petrol.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: PETROL_DARK),
+            child: Icon(icon, color: petrolDark),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -498,10 +498,10 @@ class _PatientDetailForDoctorScreenState
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: (color ?? PETROL_DARK).withOpacity(0.10),
+              color: (color ?? petrolDark).withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color ?? PETROL_DARK),
+            child: Icon(icon, color: color ?? petrolDark),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -752,8 +752,8 @@ class _PatientDetailForDoctorScreenState
             ),
             child: ListTile(
               leading: CircleAvatar(
-                backgroundColor: PETROL.withOpacity(0.10),
-                child: const Icon(Icons.monitor_heart, color: PETROL_DARK),
+                backgroundColor: petrol.withValues(alpha: 0.10),
+                child: const Icon(Icons.monitor_heart, color: petrolDark),
               ),
               title: Text(
                 'HR ${v.hr} • SpO2 ${v.spo2}% • Glucose ${v.glucose.toStringAsFixed(1)}',
@@ -798,7 +798,7 @@ class _PatientDetailForDoctorScreenState
                 border: Border.all(color: Colors.grey.shade200),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -806,7 +806,7 @@ class _PatientDetailForDoctorScreenState
               ),
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: _severityColor(a.severity).withOpacity(0.12),
+                  backgroundColor: _severityColor(a.severity).withValues(alpha: 0.12),
                   child: Icon(
                     Icons.notification_important_outlined,
                     color: _severityColor(a.severity),
@@ -830,7 +830,7 @@ class _PatientDetailForDoctorScreenState
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _severityColor(a.severity).withOpacity(0.10),
+                    color: _severityColor(a.severity).withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
@@ -889,7 +889,7 @@ class _PatientDetailForDoctorScreenState
                   Expanded(
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: PETROL_DARK,
+                        backgroundColor: petrolDark,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -933,7 +933,7 @@ class _PatientDetailForDoctorScreenState
                 border: Border.all(color: Colors.grey.shade200),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -948,7 +948,7 @@ class _PatientDetailForDoctorScreenState
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: Colors.blueGrey.withOpacity(0.10),
+                    color: Colors.blueGrey.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -994,7 +994,7 @@ class _PatientDetailForDoctorScreenState
             border: Border.all(color: Colors.grey.shade200),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.035),
+                color: Colors.black.withValues(alpha: 0.035),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1132,7 +1132,7 @@ class _PatientDetailForDoctorScreenState
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         title: Text(widget.patient.name),
         centerTitle: false,
         bottom: TabBar(
@@ -1163,7 +1163,7 @@ class _PatientDetailForDoctorScreenState
               border: Border.all(color: Colors.grey.shade200),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 14,
                   offset: const Offset(0, 6),
                 ),
@@ -1173,10 +1173,10 @@ class _PatientDetailForDoctorScreenState
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: PETROL.withOpacity(0.12),
+                  backgroundColor: petrol.withValues(alpha: 0.12),
                   child: const Icon(
                     Icons.person,
-                    color: PETROL_DARK,
+                    color: petrolDark,
                     size: 28,
                   ),
                 ),

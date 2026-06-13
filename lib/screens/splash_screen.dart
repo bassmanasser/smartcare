@@ -46,6 +46,8 @@ class _SplashScreenState extends State<SplashScreen> {
     final doc =
         await _db.collection('users').doc(user.uid).get();
 
+    if (!mounted) return;
+
     if (!doc.exists) {
       Navigator.pushReplacement(
         context,

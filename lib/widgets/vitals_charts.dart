@@ -1,7 +1,6 @@
-import 'package:fl_chart/fl_chart.dart';
+﻿import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../models/vital_sample.dart';
-import '../utils/localization.dart';
 
 class VitalsCharts extends StatelessWidget {
   final List<VitalSample> samples;
@@ -21,9 +20,9 @@ class VitalsCharts extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -88,7 +87,7 @@ class VitalsCharts extends StatelessWidget {
                     show: true,
                     drawVerticalLine: false,
                     horizontalInterval: (maxY - minY) / 5,
-                    getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 1),
+                    getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.withValues(alpha: 0.2), strokeWidth: 1),
                   ),
                   borderData: FlBorderData(show: false),
                   
@@ -96,14 +95,14 @@ class VitalsCharts extends StatelessWidget {
                   rangeAnnotations: RangeAnnotations(
                     horizontalRangeAnnotations: inverseDanger 
                     ? [ // لو الخطر تحت (زي الأكسجين)
-                        HorizontalRangeAnnotation(y1: minY, y2: warnMax, color: dangerColor.withOpacity(0.1)),
-                        HorizontalRangeAnnotation(y1: warnMax, y2: normalMax, color: warnColor.withOpacity(0.1)),
-                        HorizontalRangeAnnotation(y1: normalMax, y2: maxY, color: normalColor.withOpacity(0.1)),
+                        HorizontalRangeAnnotation(y1: minY, y2: warnMax, color: dangerColor.withValues(alpha: 0.1)),
+                        HorizontalRangeAnnotation(y1: warnMax, y2: normalMax, color: warnColor.withValues(alpha: 0.1)),
+                        HorizontalRangeAnnotation(y1: normalMax, y2: maxY, color: normalColor.withValues(alpha: 0.1)),
                       ]
                     : [ // لو الخطر فوق (زي الضغط والحرارة)
-                        HorizontalRangeAnnotation(y1: minY, y2: normalMax, color: normalColor.withOpacity(0.1)),
-                        HorizontalRangeAnnotation(y1: normalMax, y2: warnMax, color: warnColor.withOpacity(0.1)),
-                        HorizontalRangeAnnotation(y1: warnMax, y2: maxY, color: dangerColor.withOpacity(0.1)),
+                        HorizontalRangeAnnotation(y1: minY, y2: normalMax, color: normalColor.withValues(alpha: 0.1)),
+                        HorizontalRangeAnnotation(y1: normalMax, y2: warnMax, color: warnColor.withValues(alpha: 0.1)),
+                        HorizontalRangeAnnotation(y1: warnMax, y2: maxY, color: dangerColor.withValues(alpha: 0.1)),
                       ],
                   ),
 
@@ -120,8 +119,8 @@ class VitalsCharts extends StatelessWidget {
                         show: true,
                         gradient: LinearGradient(
                           colors: [
-                            lineColor.withOpacity(0.4),
-                            lineColor.withOpacity(0.0),
+                            lineColor.withValues(alpha: 0.4),
+                            lineColor.withValues(alpha: 0.0),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,

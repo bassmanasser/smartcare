@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
@@ -248,7 +248,7 @@ class _AiBotScreenState
                 ),
               ),
               backgroundColor:
-                  PETROL_DARK,
+                  petrolDark,
             ),
             body: Center(
               child: Text(
@@ -285,7 +285,7 @@ class _AiBotScreenState
           lang.translate('ai_bot'),
         ),
         backgroundColor:
-            PETROL_DARK,
+            petrolDark,
       ),
 
       body: Column(
@@ -353,7 +353,7 @@ class _AiBotScreenState
                               BoxDecoration(
                             color:
                                 msg.isUser
-                                    ? PETROL
+                                    ? petrol
                                     : theme
                                         .cardColor,
 
@@ -429,7 +429,7 @@ class _AiBotScreenState
               ),
               child:
                   LinearProgressIndicator(
-                color: PETROL,
+                color: petrol,
               ),
             ),
 
@@ -500,7 +500,7 @@ class _AiBotScreenState
                             : _sendMessage,
 
                     backgroundColor:
-                        PETROL,
+                        petrol,
 
                     mini: true,
 

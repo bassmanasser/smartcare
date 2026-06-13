@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BookingService {
@@ -20,7 +21,7 @@ class BookingService {
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print("Error creating booking: $e");
+      log("Error creating booking: $e");
       rethrow;
     }
   }

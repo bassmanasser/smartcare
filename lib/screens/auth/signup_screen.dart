@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
 
@@ -49,7 +49,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Signup"), backgroundColor: PETROL_DARK),
+      appBar: AppBar(title: const Text("Signup"), backgroundColor: petrolDark),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Form(
@@ -82,7 +82,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _gender,
+                initialValue: _gender,
                 decoration: const InputDecoration(labelText: "Gender", border: OutlineInputBorder()),
                 items: const [
                   DropdownMenuItem(value: "Female", child: Text("Female")),
@@ -96,7 +96,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 height: 48,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(backgroundColor: PETROL_DARK, foregroundColor: Colors.white),
+                  style: ElevatedButton.styleFrom(backgroundColor: petrolDark, foregroundColor: Colors.white),
                   child: _isLoading ? const CircularProgressIndicator() : const Text("Create Account"),
                 ),
               ),

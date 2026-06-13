@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../utils/localization.dart';
 import '../../widgets/language_picker.dart';
@@ -32,7 +32,7 @@ class WelcomeScreen extends StatelessWidget {
                   'assets/images/app_logo.png',
                   width: 92,
                   height: 92,
-                  errorBuilder: (_, __, ___) => Icon(
+                  errorBuilder: (_, _, _) => Icon(
                     Icons.health_and_safety_rounded,
                     size: 86,
                     color: theme.colorScheme.primary,
@@ -52,7 +52,7 @@ class WelcomeScreen extends StatelessWidget {
                   tr.translate('welcome_subtitle'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.72),
+                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.72),
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
@@ -62,7 +62,7 @@ class WelcomeScreen extends StatelessWidget {
                   tr.translate('welcome_body'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.68),
+                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.68),
                     height: 1.45,
                   ),
                 ),
@@ -94,7 +94,7 @@ class WelcomeScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.textTheme.bodyMedium?.color
-                              ?.withOpacity(0.72),
+                              ?.withValues(alpha: 0.72),
                         ),
                       ),
                       const SizedBox(height: 20),

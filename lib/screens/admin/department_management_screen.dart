@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class DepartmentManagementScreen extends StatefulWidget {
@@ -126,7 +126,7 @@ class _DepartmentManagementScreenState
                 width: 44,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.4),
+                  color: Colors.grey.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
@@ -151,7 +151,7 @@ class _DepartmentManagementScreenState
                         .textTheme
                         .bodyMedium
                         ?.color
-                        ?.withOpacity(0.72),
+                        ?.withValues(alpha: 0.72),
                   ),
                 ),
               ),
@@ -248,8 +248,8 @@ class _DepartmentManagementScreenState
               borderRadius: BorderRadius.circular(24),
               gradient: LinearGradient(
                 colors: [
-                  colorScheme.primary.withOpacity(0.95),
-                  colorScheme.primaryContainer.withOpacity(0.90),
+                  colorScheme.primary.withValues(alpha: 0.95),
+                  colorScheme.primaryContainer.withValues(alpha: 0.90),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -261,7 +261,7 @@ class _DepartmentManagementScreenState
                   width: 58,
                   height: 58,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.18),
+                    color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(
@@ -287,7 +287,7 @@ class _DepartmentManagementScreenState
                       Text(
                         'Create and manage hospital departments professionally',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.92),
+                          color: Colors.white.withValues(alpha: 0.92),
                           fontSize: 13.5,
                         ),
                       ),
@@ -323,7 +323,7 @@ class _DepartmentManagementScreenState
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   itemCount: docs.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final doc = docs[index];
                     final data = doc.data();
@@ -347,7 +347,7 @@ class _DepartmentManagementScreenState
                                   height: 52,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(16),
-                                    color: colorScheme.primary.withOpacity(0.10),
+                                    color: colorScheme.primary.withValues(alpha: 0.10),
                                   ),
                                   child: Icon(
                                     Icons.apartment_rounded,
@@ -376,7 +376,7 @@ class _DepartmentManagementScreenState
                                                 .textTheme
                                                 .bodyMedium
                                                 ?.color
-                                                ?.withOpacity(0.72),
+                                                ?.withValues(alpha: 0.72),
                                           ),
                                         ),
                                       if (notes.isNotEmpty) ...[
@@ -388,7 +388,7 @@ class _DepartmentManagementScreenState
                                                 .textTheme
                                                 .bodyMedium
                                                 ?.color
-                                                ?.withOpacity(0.72),
+                                                ?.withValues(alpha: 0.72),
                                           ),
                                         ),
                                       ],
@@ -471,7 +471,7 @@ class _DeptChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Text(
@@ -518,7 +518,7 @@ class _DepartmentEmptyState extends StatelessWidget {
                       .textTheme
                       .bodyMedium
                       ?.color
-                      ?.withOpacity(0.72),
+                      ?.withValues(alpha: 0.72),
                 ),
               ),
             ],

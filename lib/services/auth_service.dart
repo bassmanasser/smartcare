@@ -9,16 +9,17 @@ class AuthService {
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   Future<User?> signIn(String email, String password, BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final res = await _auth.signInWithEmailAndPassword(email: email, password: password);
       return res.user;
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text(e.message ?? "Login failed")),
       );
       return null;
     } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text("Unexpected error")),
       );
       return null;
@@ -30,16 +31,17 @@ class AuthService {
     required String password,
     required BuildContext context,
   }) async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final res = await _auth.createUserWithEmailAndPassword(email: email, password: password);
       return res.user;
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text(e.message ?? "Signup failed")),
       );
       return null;
     } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text("Unexpected error")),
       );
       return null;

@@ -8,8 +8,9 @@ class DoctorQrCard extends StatelessWidget {
   const DoctorQrCard({super.key, required this.doctorId});
 
   Future<void> _copy(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     await Clipboard.setData(ClipboardData(text: doctorId));
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       const SnackBar(content: Text("تم نسخ Doctor ID ✅")),
     );
   }

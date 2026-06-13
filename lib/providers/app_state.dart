@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -752,18 +753,23 @@ class AppState extends ChangeNotifier {
     dynamic p, {
     required String institutionCode,
   }) async {
-    final Map<String, dynamic> data = Map<String, dynamic>.from(
-      (p.toJson() as Map),
-    );
+    try {
+      final Map<String, dynamic> data = Map<String, dynamic>.from(
+        (p.toJson() as Map),
+      );
 
-    data['id'] = p.id;
-    data['role'] = data['role'] ?? 'patient';
+      data['id'] = p.id;
+      data['role'] = 'patient';
 
-    if (institutionCode.trim().isNotEmpty) {
-      data['institutionCode'] = institutionCode.trim();
+      if (institutionCode.trim().isNotEmpty) {
+        data['institutionCode'] = institutionCode.trim();
+      }
+
+      await _db.collection('users').doc(p.id).set(data, SetOptions(merge: true));
+    } catch (e, st) {
+      log('registerPatient failed: $e', error: e, stackTrace: st);
+      rethrow;
     }
-
-    await _db.collection('users').doc(p.id).set(data, SetOptions(merge: true));
   }
 
   Future<void> registerDoctor(dynamic d) async {

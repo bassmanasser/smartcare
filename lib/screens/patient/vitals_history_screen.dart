@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../utils/constants.dart';
 import '../../services/vitals_service.dart';
@@ -14,7 +14,7 @@ class VitalsHistoryScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Vitals History'),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: StreamBuilder<List<VitalsDoc>>(
         stream: service.vitalsStream(patientId, limit: 50),
@@ -44,7 +44,7 @@ class VitalsHistoryScreen extends StatelessWidget {
 
               return Card(
                 child: ListTile(
-                  leading: const Icon(Icons.monitor_heart, color: PETROL),
+                  leading: const Icon(Icons.monitor_heart, color: petrol),
                   title: Text('HR: ${v.hr} bpm • SpO₂: ${v.spo2}%'),
                   subtitle: Text(
                     'BP: ${v.sys}/${v.dia} • Glu: ${v.glucose.toStringAsFixed(0)} • Temp: ${v.temperature.toStringAsFixed(1)}\n$date • $time',

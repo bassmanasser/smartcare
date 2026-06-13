@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -113,9 +113,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       floatingActionButton: _currentIndex == 0 
           ? FloatingActionButton(
               heroTag: 'voice_main',
-              backgroundColor: PETROL,
-              child: const Icon(Icons.mic, color: Colors.white),
+              backgroundColor: petrol,
               onPressed: _openVoiceAssistant,
+              child: const Icon(Icons.mic, color: Colors.white),
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -126,7 +126,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (i) => setState(() => _currentIndex = i),
-          selectedItemColor: PETROL,
+          selectedItemColor: petrol,
           unselectedItemColor: Colors.grey,
           type: BottomNavigationBarType.fixed,
           showUnselectedLabels: true,
@@ -173,7 +173,7 @@ class _PatientDispatchHomeTabState extends State<_PatientDispatchHomeTab> {
 
     if (activeAlerts.isEmpty) return const SizedBox.shrink();
     return Container(
-      color: Colors.red.withOpacity(0.1),
+      color: Colors.red.withValues(alpha: 0.1),
       padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,7 +311,7 @@ class _PatientServicesTab extends StatelessWidget {
       appBar: AppBar(
         title: Text(lang.translate('services')),
         centerTitle: true,
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         automaticallyImplyLeading: false,
       ),
       body: GridView.builder(
@@ -339,7 +339,7 @@ class _PatientServicesTab extends StatelessWidget {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: item.color.withOpacity(0.12), shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: item.color.withValues(alpha: 0.12), shape: BoxShape.circle),
                     child: Icon(item.icon, size: 30, color: item.color),
                   ),
                   const SizedBox(height: 12),
@@ -385,7 +385,7 @@ class _PatientHeader extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 24),
       decoration: const BoxDecoration(
-        color: PETROL_DARK,
+        color: petrolDark,
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
       ),
       child: Column(
@@ -403,7 +403,7 @@ class _PatientHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(lang.translate('welcome_back'), style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13)),
+                    Text(lang.translate('welcome_back'), style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13)),
                     const SizedBox(height: 4),
                     Text(patient.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20)),
                   ],
@@ -421,7 +421,7 @@ class _PatientHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: Colors.white12),
             ),
@@ -504,7 +504,7 @@ class _InstitutionWorkflowCard extends StatelessWidget {
               const SizedBox(width: 10),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(color: _priorityColor(priority).withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
+                decoration: BoxDecoration(color: _priorityColor(priority).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
                 child: Text(
                   lang.localizeDynamicValue(_prettyText(priority)),
                   style: TextStyle(
@@ -556,9 +556,9 @@ class _RiskSummaryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [color.withOpacity(0.95), color.withOpacity(0.75)]),
+        gradient: LinearGradient(colors: [color.withValues(alpha: 0.95), color.withValues(alpha: 0.75)]),
         borderRadius: BorderRadius.circular(22),
-        boxShadow: [BoxShadow(color: color.withOpacity(0.22), blurRadius: 18, offset: const Offset(0, 8))],
+        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.22), blurRadius: 18, offset: const Offset(0, 8))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -570,7 +570,7 @@ class _RiskSummaryCard extends StatelessWidget {
               Expanded(child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800))),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(14)),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(14)),
                 child: Text('${lang.translate('score')} $score', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ],
@@ -644,7 +644,7 @@ class _ConnectionBadge extends StatelessWidget {
     final color = connected ? Colors.greenAccent : Colors.redAccent;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(color: color.withOpacity(0.14), borderRadius: BorderRadius.circular(14), border: Border.all(color: color)),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(14), border: Border.all(color: color)),
       child: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
     );
   }

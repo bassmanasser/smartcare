@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:smartcare/models/doctor.dart';
 import '../../models/care_link.dart';
 import '../../services/care_link_service.dart';
@@ -16,7 +16,7 @@ class DoctorRequestsScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF6F8FB),
       appBar: AppBar(
         title: const Text('Incoming Requests'),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: StreamBuilder<List<CareLink>>(
         stream: service.incomingRequestsForUser(doctorId),
@@ -113,7 +113,7 @@ class DoctorRequestsScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

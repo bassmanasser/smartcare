@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/constants.dart';
 import '../user_type_selection_screen.dart';
@@ -74,7 +74,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final primary = PETROL_DARK;
+    final primary = petrolDark;
 
     return Scaffold(
       appBar: AppBar(

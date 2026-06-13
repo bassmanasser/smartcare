@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -24,7 +24,6 @@ class _VoiceScreenState extends State<VoiceScreen>
   String _recognized = '';
   String _answer = '';
 
-  List<String> _alerts = [];
 
   bool _sttReady = false;
 
@@ -163,7 +162,6 @@ class _VoiceScreenState extends State<VoiceScreen>
 
       setState(() {
         _answer = ans;
-        _alerts = alr;
         _state = 'speaking';
       });
 
@@ -189,7 +187,6 @@ class _VoiceScreenState extends State<VoiceScreen>
       setState(() {
         _state = 'idle';
         _answer = 'حدث خطأ أثناء الاتصال بالخادم';
-        _alerts = [];
       });
 
       _snack('حدث خطأ أثناء الاتصال بالخادم');
@@ -244,7 +241,6 @@ class _VoiceScreenState extends State<VoiceScreen>
     setState(() {
       _state = 'idle';
       _answer = 'Please log in first.';
-      _alerts = [];
     });
 
     _snack('Please log in first.');
@@ -419,7 +415,7 @@ class _VoiceScreenState extends State<VoiceScreen>
 
               AnimatedBuilder(
                 animation: _scale,
-                builder: (_, __) {
+                builder: (_, _) {
                   return Transform.scale(
                     scale: _state == 'listening'
                         ? _scale.value
@@ -434,7 +430,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                           color: _color,
                           boxShadow: [
                             BoxShadow(
-                              color: _color.withOpacity(
+                              color: _color.withValues(alpha: 
                                 0.4,
                               ),
                               blurRadius: 20,

@@ -108,11 +108,11 @@ class Doctor {
   String get clinicAddress => institutionName;
   List<dynamic> get availableSlots => [];
 
-  get doctorId => null;
+  String? get doctorId => null;
 
-  get isApproved => null;
+  bool? get isApproved => null;
 
-  get fee => null;
+  double? get fee => null;
 
   Map<String, dynamic> toMap() {
     return toJson();

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../models/doctor_note.dart';
@@ -13,7 +13,7 @@ class DoctorNotesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Doctor's Notes"),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: StreamBuilder<QuerySnapshot>(
         // الاستماع المباشر لمجموعة 'notes'
@@ -60,7 +60,7 @@ class DoctorNotesScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.medical_services, size: 18, color: PETROL),
+                          const Icon(Icons.medical_services, size: 18, color: petrol),
                           const SizedBox(width: 8),
                           Text(
                             DateFormat.yMMMd().add_jm().format(note.date),

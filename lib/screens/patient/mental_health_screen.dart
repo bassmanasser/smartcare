@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/mood_record.dart';
 import '../../models/patient.dart';
@@ -22,7 +22,6 @@ class _MentalHealthScreenState extends State<MentalHealthScreen> {
   bool _exercise = false;
   final _note = TextEditingController();
   
-  get L10n => null;
 
   Future<void> _save() async {
     final app = Provider.of<AppState>(context, listen: false); // Corrected: Removed `listen: false` as it's not needed for calling a method
@@ -59,7 +58,7 @@ class _MentalHealthScreenState extends State<MentalHealthScreen> {
         records.length > 30 ? records.sublist(records.length - 30) : records;
 
     return Scaffold(
-      appBar: AppBar(title: Text(L10n.get(context, 'mentalHealth', onChanged: (String? value) {  }))),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).translate('mental_health'))),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -74,9 +73,9 @@ class _MentalHealthScreenState extends State<MentalHealthScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: _mood == i + 1 ? PETROL.withOpacity(0.5) : Colors.transparent,
+                      color: _mood == i + 1 ? petrol.withValues(alpha: 0.5) : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _mood == i+1 ? PETROL : Colors.grey.shade300)
+                      border: Border.all(color: _mood == i+1 ? petrol : Colors.grey.shade300)
                     ),
                     child: Text(moods[i], style: const TextStyle(fontSize: 32)),
                   ),
@@ -126,15 +125,5 @@ class _MentalHealthScreenState extends State<MentalHealthScreen> {
         ),
       ),
     );
-  }
-}
-
-extension on Uri {
-  get patientId => null;
-}
-
-extension on Map<String, List<MoodRecord>> {
-  Iterable<dynamic> where(bool Function(Uri) param0) {
-    return const <dynamic>[];
   }
 }

@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -141,7 +141,7 @@ class MyApp extends StatelessWidget {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
-        indicatorColor: AppColors.primary.withOpacity(0.12),
+        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
         labelTextStyle: WidgetStateProperty.all(
           const TextStyle(fontWeight: FontWeight.w600),
         ),
@@ -197,7 +197,7 @@ class MyApp extends StatelessWidget {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(double.infinity, 54),
-          side: BorderSide(color: Colors.white.withOpacity(0.25)),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
@@ -213,11 +213,11 @@ class MyApp extends StatelessWidget {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
@@ -226,7 +226,7 @@ class MyApp extends StatelessWidget {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: const Color(0xFF111827),
-        indicatorColor: Colors.tealAccent.withOpacity(0.14),
+        indicatorColor: Colors.tealAccent.withValues(alpha: 0.14),
         labelTextStyle: WidgetStateProperty.all(
           const TextStyle(fontWeight: FontWeight.w600),
         ),
@@ -332,7 +332,7 @@ class _UserDataFetcherState extends State<UserDataFetcher> {
     _userFuture = FirebaseFirestore.instance
         .collection('users')
         .doc(widget.uid)
-        .get(const GetOptions(source: Source.serverAndCache));
+        .get();
   }
 
   bool _isStaffRole(String role) {

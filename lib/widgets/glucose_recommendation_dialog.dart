@@ -84,7 +84,7 @@ class GlucoseRecommendationDialog extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: PETROL, size: 22),
+          Icon(icon, color: petrol, size: 22),
           const SizedBox(width: 10),
           Expanded(child: Text(text, style: const TextStyle(fontSize: 15))),
         ],

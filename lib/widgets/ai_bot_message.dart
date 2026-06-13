@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 // هذا هو كلاس البيانات الخاص بالرسالة
 class ChatMessage {
@@ -12,7 +12,7 @@ class ChatMessageBubble extends StatelessWidget {
   final ChatMessage message;
   const ChatMessageBubble({super.key, required this.message});
   
-  static const Color PETROL_ACC = Color(0xFF006064); // petrol-like color
+  static const Color petrolAcc = Color(0xFF006064); // petrol-like color
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +23,7 @@ class ChatMessageBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isUser ? PETROL_ACC.withOpacity(0.3) : Colors.grey[200],
+          color: isUser ? petrolAcc.withValues(alpha: 0.3) : Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(

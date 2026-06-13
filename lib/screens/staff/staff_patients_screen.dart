@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../utils/constants.dart';
@@ -192,7 +192,7 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
               gradient: const LinearGradient(
-                colors: [PETROL_DARK, PETROL],
+                colors: [petrolDark, petrol],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -203,7 +203,7 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
                   width: 58,
                   height: 58,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.18),
+                    color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(
@@ -229,7 +229,7 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
                       Text(
                         'Professional patient list for assigned staff',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.92),
+                          color: Colors.white.withValues(alpha: 0.92),
                           fontSize: 13.5,
                         ),
                       ),
@@ -353,10 +353,10 @@ class _StaffPatientsScreenState extends State<StaffPatientsScreen> {
                             child: ListTile(
                               contentPadding: const EdgeInsets.all(14),
                               leading: CircleAvatar(
-                                backgroundColor: PETROL.withOpacity(0.12),
+                                backgroundColor: petrol.withValues(alpha: 0.12),
                                 child: const Icon(
                                   Icons.person_rounded,
-                                  color: PETROL_DARK,
+                                  color: petrolDark,
                                 ),
                               ),
                               title: Text(

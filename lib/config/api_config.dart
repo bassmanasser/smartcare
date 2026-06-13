@@ -10,7 +10,7 @@ class ApiConfig {
   static const String aiChatEndpoint =
       'https://us-central1-smartcare-app-wearable-device.cloudfunctions.net/aiChat';
 
-  static get baseUrl => null;
+  static String? get baseUrl => null;
 
-  static get analyzeEndpoint => null;
+  static String? get analyzeEndpoint => null;
 }

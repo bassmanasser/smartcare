@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../models/patient.dart';
 
 class MedicalRecordScreen extends StatelessWidget {
@@ -55,7 +55,7 @@ class MedicalRecordScreen extends StatelessWidget {
         const SizedBox(height: 8),
         items.isEmpty 
           ? const Text("لا يوجد بيانات مسجلة")
-          : Wrap(spacing: 8, children: items.map((e) => Chip(label: Text(e), backgroundColor: color.withOpacity(0.1))).toList()),
+          : Wrap(spacing: 8, children: items.map((e) => Chip(label: Text(e), backgroundColor: color.withValues(alpha: 0.1))).toList()),
       ],
     );
   }

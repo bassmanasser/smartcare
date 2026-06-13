@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../models/doctor.dart';
 import '../../utils/constants.dart';
@@ -21,7 +21,7 @@ class _BookingScreenState extends State<BookingScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('حجز موعد - د. ${widget.doctor.name}'),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: Column(
         children: [
@@ -39,7 +39,7 @@ class _BookingScreenState extends State<BookingScreen> {
               });
             },
             calendarStyle: const CalendarStyle(
-              selectedDecoration: BoxDecoration(color: PETROL, shape: BoxShape.circle),
+              selectedDecoration: BoxDecoration(color: petrol, shape: BoxShape.circle),
               todayDecoration: BoxDecoration(color: Colors.lightBlueAccent, shape: BoxShape.circle),
             ),
           ),
@@ -49,7 +49,7 @@ class _BookingScreenState extends State<BookingScreen> {
             child: Align(
               alignment: Alignment.centerRight,
               child: Text("اختر الوقت المتاح:", 
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: PETROL_DARK)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: petrolDark)),
             ),
           ),
 
@@ -73,9 +73,9 @@ class _BookingScreenState extends State<BookingScreen> {
                       onTap: () => setState(() => _selectedSlot = slot),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isSelected ? PETROL : Colors.grey[200],
+                          color: isSelected ? petrol : Colors.grey[200],
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: isSelected ? PETROL_DARK : Colors.transparent),
+                          border: Border.all(color: isSelected ? petrolDark : Colors.transparent),
                         ),
                         alignment: Alignment.center,
                         child: Text(slot, 
@@ -109,7 +109,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 55),
-                    backgroundColor: PETROL_DARK,
+                    backgroundColor: petrolDark,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: (_selectedDay != null && _selectedSlot != null) ? () {

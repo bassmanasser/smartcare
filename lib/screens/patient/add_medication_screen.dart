@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../utils/constants.dart';
@@ -126,7 +126,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Add Medication"),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -154,7 +154,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
               const SizedBox(height: 12),
 
               DropdownButtonFormField<String>(
-                value: _frequency,
+                initialValue: _frequency,
                 decoration: const InputDecoration(
                   labelText: "Frequency",
                   border: OutlineInputBorder(),
@@ -205,7 +205,7 @@ class _AddMedicationScreenState extends State<AddMedicationScreen> {
                 height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PETROL,
+                    backgroundColor: petrol,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   onPressed: _saving ? null : _save,

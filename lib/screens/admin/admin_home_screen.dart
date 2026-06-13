@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -358,7 +358,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           color: Theme.of(context)
                               .colorScheme
                               .primary
-                              .withOpacity(0.10),
+                              .withValues(alpha: 0.10),
                         ),
                         child: Icon(
                           Icons.notifications_active_outlined,
@@ -428,7 +428,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           icon: Icons.emergency_rounded,
           title: lang.translate('emergency_queue'),
           subtitle: lang.translate('emergency_queue_subtitle'),
-          onTap: () => _push(const EmergencyQueueScreen()),
+          onTap: () => _push(EmergencyQueueScreen(institutionId: _institutionId)),
         ),
         _ServiceCard(
           icon: Icons.space_dashboard_outlined,
@@ -608,8 +608,8 @@ class _HospitalOverviewCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         gradient: LinearGradient(
           colors: [
-            colorScheme.primary.withOpacity(0.95),
-            colorScheme.primaryContainer.withOpacity(0.90),
+            colorScheme.primary.withValues(alpha: 0.95),
+            colorScheme.primaryContainer.withValues(alpha: 0.90),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -622,7 +622,7 @@ class _HospitalOverviewCard extends StatelessWidget {
             width: compact ? 58 : 64,
             height: compact ? 58 : 64,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: Colors.white.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(18),
             ),
             child: const Icon(
@@ -684,7 +684,7 @@ class _HeaderMetaText extends StatelessWidget {
       child: Text(
         '$label: $value',
         style: TextStyle(
-          color: Colors.white.withOpacity(0.92),
+          color: Colors.white.withValues(alpha: 0.92),
           fontSize: 13.5,
           fontWeight: FontWeight.w500,
         ),
@@ -718,7 +718,7 @@ class _SectionTitle extends StatelessWidget {
         Text(
           subtitle,
           style: TextStyle(
-            color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.70),
+            color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.70),
             fontSize: 13.5,
           ),
         ),
@@ -755,7 +755,7 @@ class _ModernStatCard extends StatelessWidget {
               height: 46,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                color: colorScheme.primary.withOpacity(0.10),
+                color: colorScheme.primary.withValues(alpha: 0.10),
               ),
               child: Icon(icon, color: colorScheme.primary),
             ),
@@ -777,7 +777,7 @@ class _ModernStatCard extends StatelessWidget {
                         .textTheme
                         .bodyMedium
                         ?.color
-                        ?.withOpacity(0.78),
+                        ?.withValues(alpha: 0.78),
                   ),
                 ),
               ],
@@ -816,7 +816,7 @@ class _ServiceCard extends StatelessWidget {
           height: 50,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            color: colorScheme.primary.withOpacity(0.10),
+            color: colorScheme.primary.withValues(alpha: 0.10),
           ),
           child: Icon(icon, color: colorScheme.primary),
         ),
@@ -860,7 +860,7 @@ class _ProfileInfoRow extends StatelessWidget {
                       .textTheme
                       .bodyMedium
                       ?.color
-                      ?.withOpacity(0.70),
+                      ?.withValues(alpha: 0.70),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -923,7 +923,7 @@ class _EmptyStateCard extends StatelessWidget {
                     .textTheme
                     .bodyMedium
                     ?.color
-                    ?.withOpacity(0.72),
+                    ?.withValues(alpha: 0.72),
               ),
             ),
           ],

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 import '../../services/medical_report_service.dart';
 
@@ -19,7 +19,7 @@ class HealthInsightsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Health Insights'),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: StreamBuilder<Map<String, dynamic>?>(
         stream: repo.latestVitalsStream(patientId),
@@ -218,7 +218,7 @@ class _InsightCard extends StatelessWidget {
       case _Severity.good:
         return Colors.green;
       case _Severity.info:
-        return PETROL;
+        return petrol;
       case _Severity.warning:
         return Colors.orange;
       case _Severity.danger:
@@ -241,7 +241,7 @@ class _InsightCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: bar.withOpacity(0.12),
+                  backgroundColor: bar.withValues(alpha: 0.12),
                   child: Icon(item.icon, color: bar),
                 ),
                 const SizedBox(width: 10),
@@ -254,7 +254,7 @@ class _InsightCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: bar.withOpacity(0.12),
+                    color: bar.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(

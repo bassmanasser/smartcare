@@ -27,7 +27,7 @@ class InviteService {
       if (exists.docs.isEmpty) break;
     }
 
-    final docRef = await _db.collection("doctor_invites").add({
+    await _db.collection("doctor_invites").add({
       "code": code,
       "role": "doctor",
       "autoApprove": autoApprove,

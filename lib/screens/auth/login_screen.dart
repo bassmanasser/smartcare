@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -155,10 +155,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final lang = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: LIGHT_BG,
+      backgroundColor: lightBg,
       appBar: AppBar(
         title: Text(lang.translate('login')),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -178,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 40),
                 const Icon(
                   Icons.favorite,
-                  color: PETROL_DARK,
+                  color: petrolDark,
                   size: 60,
                 ),
                 const SizedBox(height: 16),
@@ -188,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
-                    color: PETROL_DARK,
+                    color: petrolDark,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -223,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: ElevatedButton(
                           onPressed: _loading ? null : _login,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: PETROL_DARK,
+                            backgroundColor: petrolDark,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -264,7 +264,7 @@ class _LoginScreenState extends State<LoginScreen> {
         keyboardType: keyboardType,
         validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
         decoration: InputDecoration(
-          icon: Icon(icon, color: PETROL_DARK),
+          icon: Icon(icon, color: petrolDark),
           labelText: label,
           border: InputBorder.none,
         ),

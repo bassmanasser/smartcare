@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/patient.dart';
@@ -27,7 +27,7 @@ class PatientProfileScreen extends StatelessWidget {
           appBar: AppBar(
             title: Text(lang.translate('profile')),
             centerTitle: true,
-            backgroundColor: PETROL_DARK,
+            backgroundColor: petrolDark,
             automaticallyImplyLeading: false,
           ),
           body: ListView(
@@ -50,11 +50,11 @@ class PatientProfileScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 32,
-                      backgroundColor: PETROL.withValues(alpha: 0.12),
+                      backgroundColor: petrol.withValues(alpha: 0.12),
                       child: const Icon(
                         Icons.person_rounded,
                         size: 34,
-                        color: PETROL_DARK,
+                        color: petrolDark,
                       ),
                     ),
                     const SizedBox(width: 14),

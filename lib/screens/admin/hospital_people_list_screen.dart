@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class HospitalPeopleListScreen extends StatefulWidget {
@@ -134,8 +134,8 @@ class _HospitalPeopleListScreenState extends State<HospitalPeopleListScreen> {
               borderRadius: BorderRadius.circular(24),
               gradient: LinearGradient(
                 colors: [
-                  colorScheme.primary.withOpacity(0.95),
-                  colorScheme.primaryContainer.withOpacity(0.90),
+                  colorScheme.primary.withValues(alpha: 0.95),
+                  colorScheme.primaryContainer.withValues(alpha: 0.90),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -147,7 +147,7 @@ class _HospitalPeopleListScreenState extends State<HospitalPeopleListScreen> {
                   width: 58,
                   height: 58,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.18),
+                    color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(icon, color: Colors.white, size: 30),
@@ -171,7 +171,7 @@ class _HospitalPeopleListScreenState extends State<HospitalPeopleListScreen> {
                             ? 'Today\'s filtered list for this hospital'
                             : 'All linked ${widget.title.toLowerCase()} for this hospital',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.92),
+                          color: Colors.white.withValues(alpha: 0.92),
                           fontSize: 13.5,
                         ),
                       ),
@@ -245,7 +245,7 @@ class _HospitalPeopleListScreenState extends State<HospitalPeopleListScreen> {
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   itemCount: filteredDocs.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final doc = filteredDocs[index];
                     final data = doc.data();
@@ -272,7 +272,7 @@ class _HospitalPeopleListScreenState extends State<HospitalPeopleListScreen> {
                               height: 52,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(16),
-                                color: colorScheme.primary.withOpacity(0.10),
+                                color: colorScheme.primary.withValues(alpha: 0.10),
                               ),
                               child: Icon(icon, color: colorScheme.primary),
                             ),
@@ -296,7 +296,7 @@ class _HospitalPeopleListScreenState extends State<HospitalPeopleListScreen> {
                                           .textTheme
                                           .bodyMedium
                                           ?.color
-                                          ?.withOpacity(0.72),
+                                          ?.withValues(alpha: 0.72),
                                     ),
                                   ),
                                   if (department.isNotEmpty ||
@@ -346,7 +346,7 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.10),
+        color: colorScheme.primary.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Text(
@@ -402,7 +402,7 @@ class _EmptyStateView extends StatelessWidget {
                         .textTheme
                         .bodyMedium
                         ?.color
-                        ?.withOpacity(0.72),
+                        ?.withValues(alpha: 0.72),
                   ),
                 ),
               ],

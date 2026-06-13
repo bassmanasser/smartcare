@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ApprovedDoctorsListScreen extends StatelessWidget {
@@ -31,7 +31,7 @@ class ApprovedDoctorsListScreen extends StatelessWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(12),
             itemCount: docs.length,
-            separatorBuilder: (_, __) => const Divider(),
+            separatorBuilder: (_, _) => const Divider(),
             itemBuilder: (context, i) {
               final d = docs[i].data() as Map<String, dynamic>;
               final name = d["name"] ?? "Doctor";

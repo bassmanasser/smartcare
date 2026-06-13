@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class StaffRequestsScreen extends StatelessWidget {
@@ -88,7 +88,7 @@ class StaffRequestsScreen extends StatelessWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: docs.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final doc = docs[index];
               final data = doc.data();
@@ -113,7 +113,7 @@ class StaffRequestsScreen extends StatelessWidget {
                       Row(
                         children: [
                           CircleAvatar(
-                            backgroundColor: color.withOpacity(0.12),
+                            backgroundColor: color.withValues(alpha: 0.12),
                             child: Icon(Icons.badge_outlined, color: color),
                           ),
                           const SizedBox(width: 12),
@@ -142,7 +142,7 @@ class StaffRequestsScreen extends StatelessWidget {
                               vertical: 7,
                             ),
                             decoration: BoxDecoration(
-                              color: color.withOpacity(0.12),
+                              color: color.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: Text(

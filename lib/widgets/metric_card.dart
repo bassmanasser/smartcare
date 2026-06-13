@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 
 class MetricCard extends StatelessWidget {
@@ -26,7 +26,7 @@ class MetricCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
-                Icon(icon, color: PETROL_DARK, size: 20),
+                Icon(icon, color: petrolDark, size: 20),
                 const SizedBox(width: 8),
                 Text(title, style: const TextStyle(fontWeight: FontWeight.bold))
               ]),
@@ -36,7 +36,7 @@ class MetricCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: PETROL,
+                  color: petrol,
                 ),
               ),
             ],

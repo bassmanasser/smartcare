@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 
 class PendingApprovalScreen extends StatelessWidget {
@@ -14,7 +14,7 @@ class PendingApprovalScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: LIGHT_BG,
+      backgroundColor: lightBg,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -38,7 +38,7 @@ class PendingApprovalScreen extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 38,
-                    backgroundColor: Colors.orange.withOpacity(0.12),
+                    backgroundColor: Colors.orange.withValues(alpha: 0.12),
                     child: const Icon(
                       Icons.hourglass_top_rounded,
                       color: Colors.orange,
@@ -52,7 +52,7 @@ class PendingApprovalScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
-                      color: PETROL_DARK,
+                      color: petrolDark,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -73,13 +73,13 @@ class PendingApprovalScreen extends StatelessWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: LIGHT_BG,
+                        color: lightBg,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
                         'Hospital: $hospitalName',
                         style: const TextStyle(
-                          color: PETROL_DARK,
+                          color: petrolDark,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -104,7 +104,7 @@ class PendingApprovalScreen extends StatelessWidget {
                       icon: const Icon(Icons.arrow_back),
                       label: const Text('Back'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: PETROL_DARK,
+                        backgroundColor: petrolDark,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(

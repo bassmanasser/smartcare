@@ -138,6 +138,15 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "institutionId", "order": "ASCENDING" },
+        { "fieldPath": "status",        "order": "ASCENDING" },
+        { "fieldPath": "createdAt",     "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "staff_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "institutionId", "order": "ASCENDING" },
         { "fieldPath": "role",          "order": "ASCENDING" },
         { "fieldPath": "createdAt",     "order": "DESCENDING" }
       ]

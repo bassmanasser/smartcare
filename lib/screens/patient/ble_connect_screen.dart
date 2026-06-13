@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -66,7 +66,7 @@ class _BleConnectScreenState extends State<BleConnectScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("ESP32 BLE Test"), backgroundColor: PETROL_DARK),
+      appBar: AppBar(title: const Text("ESP32 BLE Test"), backgroundColor: petrolDark),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -78,7 +78,7 @@ class _BleConnectScreenState extends State<BleConnectScreen> {
             ElevatedButton.icon(
               onPressed: _connect,
               style: ElevatedButton.styleFrom(
-                backgroundColor: PETROL,
+                backgroundColor: petrol,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)
               ),
               icon: const Icon(Icons.bluetooth_searching, color: Colors.white),

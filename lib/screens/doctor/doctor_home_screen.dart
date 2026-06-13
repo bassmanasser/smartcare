@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -486,7 +486,7 @@ class _DoctorHeaderCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
-          colors: [PETROL_DARK, PETROL],
+          colors: [petrolDark, petrol],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -695,8 +695,8 @@ class _ActionTile extends StatelessWidget {
         contentPadding: const EdgeInsets.all(14),
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor: PETROL.withValues(alpha: 0.12),
-          child: Icon(icon, color: PETROL_DARK),
+          backgroundColor: petrol.withValues(alpha: 0.12),
+          child: Icon(icon, color: petrolDark),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Padding(
@@ -775,8 +775,8 @@ class _SettingTile extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor: PETROL.withValues(alpha: 0.12),
-          child: Icon(icon, color: PETROL_DARK),
+          backgroundColor: petrol.withValues(alpha: 0.12),
+          child: Icon(icon, color: petrolDark),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(subtitle),
@@ -842,9 +842,9 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
-        color: PETROL.withValues(alpha: 0.10),
+        color: petrol.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: PETROL.withValues(alpha: 0.28)),
+        border: Border.all(color: petrol.withValues(alpha: 0.28)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -852,7 +852,7 @@ class _InfoChip extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              color: PETROL,
+              color: petrol,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -861,7 +861,7 @@ class _InfoChip extends StatelessWidget {
           Text(
             pretty(value),
             style: const TextStyle(
-              color: PETROL_DARK,
+              color: petrolDark,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -887,7 +887,7 @@ class _SectionTitle extends StatelessWidget {
           style: const TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 18,
-            color: PETROL_DARK,
+            color: petrolDark,
           ),
         ),
         const SizedBox(height: 4),
@@ -961,7 +961,7 @@ class _EmptyStateCard extends StatelessWidget {
         padding: const EdgeInsets.all(22),
         child: Column(
           children: [
-            Icon(icon, size: 42, color: PETROL_DARK),
+            Icon(icon, size: 42, color: petrolDark),
             const SizedBox(height: 12),
             Text(
               title,

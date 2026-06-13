@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -272,10 +272,10 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             final criticalCount = _criticalCount(children);
 
             return Scaffold(
-              backgroundColor: LIGHT_BG,
+              backgroundColor: lightBg,
               appBar: AppBar(
                 elevation: 0,
-                backgroundColor: PETROL_DARK,
+                backgroundColor: petrolDark,
                 title: Text(
                   parentName.isEmpty ? lang.translate('parent_dashboard') : parentName,
                   style: const TextStyle(
@@ -313,7 +313,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                 ],
               ),
               body: RefreshIndicator(
-                color: PETROL_DARK,
+                color: petrolDark,
                 onRefresh: _refresh,
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -368,13 +368,13 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
-          colors: [PETROL_DARK, PETROL],
+          colors: [petrolDark, petrol],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: PETROL_DARK.withOpacity(0.18),
+            color: petrolDark.withValues(alpha: 0.18),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -387,7 +387,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             backgroundColor: Colors.white,
             child: Icon(
               Icons.family_restroom_rounded,
-              color: PETROL_DARK,
+              color: petrolDark,
               size: 30,
             ),
           ),
@@ -444,7 +444,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.16),
+        color: Colors.white.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Text(
@@ -502,7 +502,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 14,
               offset: const Offset(0, 6),
             ),
@@ -549,7 +549,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -559,7 +559,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: color.withOpacity(0.12),
+            backgroundColor: color.withValues(alpha: 0.12),
             child: Icon(icon, color: color),
           ),
           const SizedBox(width: 10),
@@ -572,7 +572,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 18,
-                    color: PETROL_DARK,
+                    color: petrolDark,
                   ),
                 ),
                 Text(
@@ -601,7 +601,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
       children: [
         CircleAvatar(
           radius: 20,
-          backgroundColor: color.withOpacity(0.12),
+          backgroundColor: color.withValues(alpha: 0.12),
           child: Icon(icon, color: color, size: 20),
         ),
         const SizedBox(width: 10),
@@ -622,7 +622,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                 value,
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: PETROL_DARK,
+                  color: petrolDark,
                 ),
               ),
             ],
@@ -640,7 +640,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w800,
-          color: PETROL_DARK,
+          color: petrolDark,
         ),
       ),
     );
@@ -738,10 +738,10 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color.withOpacity(0.12)),
+          border: Border.all(color: color.withValues(alpha: 0.12)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.035),
+              color: Colors.black.withValues(alpha: 0.035),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -752,7 +752,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
           children: [
             CircleAvatar(
               radius: 19,
-              backgroundColor: color.withOpacity(0.12),
+              backgroundColor: color.withValues(alpha: 0.12),
               child: Icon(icon, color: color, size: 20),
             ),
             const Spacer(),
@@ -761,7 +761,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               style: const TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 15,
-                color: PETROL_DARK,
+                color: petrolDark,
               ),
             ),
             const SizedBox(height: 4),
@@ -793,10 +793,10 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
           children: [
             CircleAvatar(
               radius: 25,
-              backgroundColor: PETROL.withOpacity(0.10),
+              backgroundColor: petrol.withValues(alpha: 0.10),
               child: const Icon(
                 Icons.child_friendly_rounded,
-                color: PETROL_DARK,
+                color: petrolDark,
               ),
             ),
             const SizedBox(height: 12),
@@ -805,7 +805,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               style: const TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 15,
-                color: PETROL_DARK,
+                color: petrolDark,
               ),
             ),
             const SizedBox(height: 6),
@@ -833,7 +833,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.035),
+                color: Colors.black.withValues(alpha: 0.035),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -844,8 +844,8 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: PETROL.withOpacity(0.10),
-                    child: const Icon(Icons.person_rounded, color: PETROL_DARK),
+                    backgroundColor: petrol.withValues(alpha: 0.10),
+                    child: const Icon(Icons.person_rounded, color: petrolDark),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -857,7 +857,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                           style: const TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 15.5,
-                            color: PETROL_DARK,
+                            color: petrolDark,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -934,7 +934,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -956,7 +956,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             style: const TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 12.5,
-              color: PETROL_DARK,
+              color: petrolDark,
             ),
           ),
         ],
@@ -981,7 +981,7 @@ class _ParentQrScannerPageState extends State<_ParentQrScannerPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(lang.translate('scan_patient_qr')),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: Stack(
         children: [

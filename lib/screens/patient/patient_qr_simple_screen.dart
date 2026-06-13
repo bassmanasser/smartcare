@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -28,7 +28,7 @@ class PatientQrSimpleScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('My QR Code'),
         centerTitle: true,
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: Center(
         child: Padding(
@@ -53,7 +53,7 @@ class PatientQrSimpleScreen extends StatelessWidget {
                 const Icon(
                   Icons.qr_code_rounded,
                   size: 44,
-                  color: PETROL_DARK,
+                  color: petrolDark,
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -61,7 +61,7 @@ class PatientQrSimpleScreen extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: PETROL_DARK,
+                    color: petrolDark,
                   ),
                   textAlign: TextAlign.center,
                 ),

@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -132,7 +132,7 @@ class _MoodScreenState extends State<MoodScreen> {
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: const Text('Wellness Tracker'),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         elevation: 0,
       ),
       body: Column(
@@ -208,7 +208,7 @@ class _MoodScreenState extends State<MoodScreen> {
                               style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: PETROL_DARK,
+                                color: petrolDark,
                               ),
                             ),
                             const Text(
@@ -223,7 +223,7 @@ class _MoodScreenState extends State<MoodScreen> {
                           max: 12,
                           divisions: 24,
                           label: '${_sleepHours.toStringAsFixed(1)} hrs',
-                          activeColor: PETROL_DARK,
+                          activeColor: petrolDark,
                           inactiveColor: Colors.grey.shade300,
                           onChanged: (val) {
                             setState(() => _sleepHours = val);
@@ -367,7 +367,7 @@ class _MoodScreenState extends State<MoodScreen> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: PETROL_DARK,
+                        backgroundColor: petrolDark,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

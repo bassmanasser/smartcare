@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/app_state.dart';
 import '../../utils/localization.dart';
-import '../../widgets/language_picker.dart';
 import 'edit_patient_profile_screen.dart';
 import 'patient_qr_simple_screen.dart';
 
@@ -81,7 +80,7 @@ class PatientSettingsScreen extends StatelessWidget {
                   boxShadow: [
                     BoxShadow(
                       color: isDark
-                          ? Colors.black.withOpacity(0.25)
+                          ? Colors.black.withValues(alpha: 0.25)
                           : const Color(0x11000000),
                       blurRadius: 10,
                     ),
@@ -91,8 +90,8 @@ class PatientSettingsScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       backgroundColor: app.isDeviceConnected
-                          ? Colors.green.withOpacity(0.12)
-                          : Colors.red.withOpacity(0.12),
+                          ? Colors.green.withValues(alpha: 0.12)
+                          : Colors.red.withValues(alpha: 0.12),
                       child: Icon(
                         app.isDeviceConnected
                             ? Icons.bluetooth_connected
@@ -207,23 +206,20 @@ class PatientSettingsScreen extends StatelessWidget {
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          RadioListTile<String>(
-                            value: 'en',
+                          RadioGroup<String>(
                             groupValue: app.currentLocale.languageCode,
-                            title: const Text('English'),
-                            onChanged: (_) async {
+                            onChanged: (val) async {
+                              if (val == null) return;
                               Navigator.pop(context);
-                              await app.setLocale(const Locale('en'));
+                              await app.setLocale(Locale(val));
                             },
-                          ),
-                          RadioListTile<String>(
-                            value: 'ar',
-                            groupValue: app.currentLocale.languageCode,
-                            title: const Text('العربية'),
-                            onChanged: (_) async {
-                              Navigator.pop(context);
-                              await app.setLocale(const Locale('ar'));
-                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                RadioListTile<String>(value: 'en', title: Text('English')),
+                                RadioListTile<String>(value: 'ar', title: Text('العربية')),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -277,7 +273,7 @@ class PatientSettingsScreen extends StatelessWidget {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    // FIX: was hardcoded PETROL_DARK — now follows theme
+                    // FIX: was hardcoded petrolDark — now follows theme
                     backgroundColor: primaryColor,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -324,7 +320,7 @@ class PatientSettingsScreen extends StatelessWidget {
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          // FIX: was hardcoded PETROL_DARK
+          // FIX: was hardcoded petrolDark
           color: Theme.of(context).colorScheme.primary,
         ),
       ),
@@ -362,7 +358,7 @@ class _SettingsTile extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.25)
+                ? Colors.black.withValues(alpha: 0.25)
                 : const Color(0x11000000),
             blurRadius: 10,
           ),
@@ -372,7 +368,7 @@ class _SettingsTile extends StatelessWidget {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: iconColor.withOpacity(0.12),
+          backgroundColor: iconColor.withValues(alpha: 0.12),
           child: Icon(icon, color: iconColor),
         ),
         title: Text(title,
@@ -420,7 +416,7 @@ class _SwitchSettingsTile extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.25)
+                ? Colors.black.withValues(alpha: 0.25)
                 : const Color(0x11000000),
             blurRadius: 10,
           ),
@@ -430,7 +426,7 @@ class _SwitchSettingsTile extends StatelessWidget {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: iconColor.withOpacity(0.12),
+          backgroundColor: iconColor.withValues(alpha: 0.12),
           child: Icon(icon, color: iconColor),
         ),
         title: Text(title,
@@ -442,8 +438,8 @@ class _SwitchSettingsTile extends StatelessWidget {
         trailing: Switch(
           value: value,
           onChanged: onChanged,
-          // FIX: theme-aware instead of hardcoded PETROL constant
-          activeColor: primaryColor,
+          // FIX: theme-aware instead of hardcoded petrol constant
+          activeThumbColor: primaryColor,
         ),
       ),
     );

@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -75,7 +75,7 @@ class _ReportScreenState extends State<ReportScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Medical Report (PDF)'),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -110,7 +110,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 padding: const EdgeInsets.all(12),
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PETROL,
+                    backgroundColor: petrol,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
@@ -283,7 +283,7 @@ class MedicalReportService {
       ];
     }).toList();
 
-    return pw.Table.fromTextArray(
+    return pw.TableHelper.fromTextArray(
       headers: ['Time', 'HR', 'SpO2', 'BP', 'Glucose'],
       data: rows,
       headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),

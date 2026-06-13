@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../utils/constants.dart';
@@ -28,7 +28,7 @@ class _AlertsHistoryScreenState extends State<AlertsHistoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Alerts History"),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: Consumer<AppState>(
         builder: (context, appState, child) {
@@ -90,7 +90,7 @@ class _AlertsHistoryScreenState extends State<AlertsHistoryScreen> {
         ),
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withValues(alpha: 0.1),
             child: Icon(icon, color: color),
           ),
           title: Text(

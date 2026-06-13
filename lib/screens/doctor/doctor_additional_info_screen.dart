@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -358,7 +358,7 @@ class _DoctorAdditionalInfoScreenState
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         title: const Text(
           "بيانات العيادة والمواعيد",
           style: TextStyle(color: Colors.white),
@@ -379,7 +379,7 @@ class _DoctorAdditionalInfoScreenState
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [PETROL_DARK, PETROL],
+                          colors: [petrolDark, petrol],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -392,7 +392,7 @@ class _DoctorAdditionalInfoScreenState
                             backgroundColor: Colors.white,
                             child: Icon(
                               Icons.local_hospital_rounded,
-                              color: PETROL_DARK,
+                              color: petrolDark,
                               size: 28,
                             ),
                           ),
@@ -462,7 +462,7 @@ class _DoctorAdditionalInfoScreenState
                     const SizedBox(height: 15),
 
                     DropdownButtonFormField<String>(
-                      value: selectedStaffRole,
+                      initialValue: selectedStaffRole,
                       decoration: _inputDecoration(
                         "الدور داخل النظام",
                         Icons.badge,
@@ -494,7 +494,7 @@ class _DoctorAdditionalInfoScreenState
                     const SizedBox(height: 15),
 
                     DropdownButtonFormField<String>(
-                      value: selectedMedicalRole,
+                      initialValue: selectedMedicalRole,
                       decoration: _inputDecoration(
                         "Medical Role",
                         Icons.medical_services,
@@ -680,7 +680,7 @@ class _DoctorAdditionalInfoScreenState
                       child: ElevatedButton(
                         onPressed: saveDoctorData,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: PETROL_DARK,
+                          backgroundColor: petrolDark,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),

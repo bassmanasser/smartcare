@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/mood_record.dart';
 import '../utils/constants.dart';
@@ -7,7 +7,7 @@ class MentalCharts extends StatelessWidget {
   final List<MoodRecord> records;
   const MentalCharts({super.key, required this.records});
   
-  Color? get PETROL_ACC => null;
+  Color? get _petrolAcc => null;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +24,7 @@ class MentalCharts extends StatelessWidget {
         barRods: [
           BarChartRodData(
             toY: (item.stress ?? 0).toDouble(),
-            color: PETROL_ACC,
+            color: _petrolAcc,
             width: 10,
             borderRadius: BorderRadius.circular(4),
           )
@@ -49,10 +49,10 @@ class MentalCharts extends StatelessWidget {
                 LineChartBarData(
                   spots: spotsMood,
                   isCurved: true,
-                  color: PETROL,
+                  color: petrol,
                   barWidth: 3,
                   dotData: const FlDotData(show: false),
-                  belowBarData: BarAreaData(show: true, color: PETROL.withOpacity(0.2)),
+                  belowBarData: BarAreaData(show: true, color: petrol.withValues(alpha: 0.2)),
                 )
               ],
             ))),
@@ -71,10 +71,10 @@ class MentalCharts extends StatelessWidget {
                 LineChartBarData(
                   spots: spotsSleep,
                   isCurved: true,
-                  color: PETROL_ACC,
+                  color: _petrolAcc,
                   barWidth: 3,
                   dotData: const FlDotData(show: false),
-                  belowBarData: BarAreaData(show: true, color: PETROL_ACC.withOpacity(0.2)),
+                  belowBarData: BarAreaData(show: true, color: _petrolAcc?.withValues(alpha: 0.2)),
                 )
               ],
             ))),
@@ -94,20 +94,8 @@ class MentalCharts extends StatelessWidget {
   }
 }
 
-/// Provide a fallback `sleep` getter for MoodRecord so the chart compilation succeeds.
-extension on MoodRecord {
-  double get sleep => 0.0;
-}
-
 extension on String {
   double toDouble() {
     return double.tryParse(this) ?? 0.0;
-  }
-}
-
-extension on Color? {
-  Color? withOpacity(double opacity) {
-    // If the color is null, return a transparent color to avoid nulls
-    return this?.withOpacity(opacity) ?? Colors.transparent;
   }
 }

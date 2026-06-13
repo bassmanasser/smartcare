@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -128,7 +128,7 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         title: Text(
           lang.translate('parent'),
           style: TextStyle(color: Colors.white),
@@ -197,9 +197,9 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
 
               ValueListenableBuilder<String>(
                 valueListenable: _relation,
-                builder: (_, v, __) {
+                builder: (_, v, _) {
                   return DropdownButtonFormField<String>(
-                    value: v,
+                    initialValue: v,
                     decoration:
                         _decoration(lang.translate('relation'), Icons.family_restroom_rounded),
                     items: const [
@@ -218,9 +218,9 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
 
               ValueListenableBuilder<String>(
                 valueListenable: _gender,
-                builder: (_, v, __) {
+                builder: (_, v, _) {
                   return DropdownButtonFormField<String>(
-                    value: v,
+                    initialValue: v,
                     decoration: _decoration(lang.translate('gender'), Icons.wc),
                     items: const [
                       DropdownMenuItem(value: "Female", child: Text("Female")),
@@ -259,7 +259,7 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
                     setState(() => _notificationsEnabled = v);
                   },
                   title: Text(lang.translate('enable_notifications')),
-                  activeColor: PETROL_DARK,
+                  activeThumbColor: petrolDark,
                 ),
               ),
               const SizedBox(height: 10),
@@ -275,7 +275,7 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
                     setState(() => _criticalAlertsOnly = v);
                   },
                   title: Text(lang.translate('critical_alerts_only')),
-                  activeColor: PETROL_DARK,
+                  activeThumbColor: petrolDark,
                 ),
               ),
               const SizedBox(height: 22),
@@ -285,7 +285,7 @@ class _ParentSignUpScreenState extends State<ParentSignUpScreen> {
                 height: 52,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PETROL_DARK,
+                    backgroundColor: petrolDark,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../services/audio_predictor.dart';
 import '../../utils/constants.dart'; // لاستخدام ألوان التطبيق
 
@@ -52,7 +52,7 @@ class _RespiratoryTestScreenState extends State<RespiratoryTestScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Respiratory Check'),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         foregroundColor: Colors.white,
       ),
       body: Center(
@@ -65,7 +65,7 @@ class _RespiratoryTestScreenState extends State<RespiratoryTestScreen> {
               Icon(
                 isLoading ? Icons.mic : Icons.multitrack_audio,
                 size: 80,
-                color: isLoading ? Colors.redAccent : PETROL,
+                color: isLoading ? Colors.redAccent : petrol,
               ),
               const SizedBox(height: 20),
               
@@ -84,7 +84,7 @@ class _RespiratoryTestScreenState extends State<RespiratoryTestScreen> {
                 child: ElevatedButton.icon(
                   onPressed: isLoading ? null : onStart,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PETROL,
+                    backgroundColor: petrol,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),

@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -120,7 +120,7 @@ class _NurseScanPatientScreenState extends State<NurseScanPatientScreen> {
       appBar: AppBar(
         title: const Text('Scan Patient QR'),
         centerTitle: true,
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -130,7 +130,7 @@ class _NurseScanPatientScreenState extends State<NurseScanPatientScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
               gradient: const LinearGradient(
-                colors: [PETROL_DARK, PETROL],
+                colors: [petrolDark, petrol],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -141,7 +141,7 @@ class _NurseScanPatientScreenState extends State<NurseScanPatientScreen> {
                   width: 58,
                   height: 58,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.18),
+                    color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(
@@ -155,7 +155,7 @@ class _NurseScanPatientScreenState extends State<NurseScanPatientScreen> {
                   child: Text(
                     'Scan the patient QR code or enter patient ID manually.',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: 0.95),
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
                     ),
@@ -224,7 +224,7 @@ class _NurseQrScannerPageState extends State<_NurseQrScannerPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Scan Patient QR'),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: Stack(
         children: [

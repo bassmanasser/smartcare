@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:smartcare/models/doctor.dart';
@@ -101,8 +101,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
               borderRadius: BorderRadius.circular(24),
               gradient: LinearGradient(
                 colors: [
-                  colorScheme.primary.withOpacity(0.95),
-                  colorScheme.primaryContainer.withOpacity(0.90),
+                  colorScheme.primary.withValues(alpha: 0.95),
+                  colorScheme.primaryContainer.withValues(alpha: 0.90),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -114,7 +114,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                   width: 58,
                   height: 58,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.18),
+                    color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(
@@ -140,7 +140,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                       Text(
                         'Professional patient list for the assigned doctor',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.92),
+                          color: Colors.white.withValues(alpha: 0.92),
                           fontSize: 13.5,
                         ),
                       ),
@@ -199,7 +199,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   itemCount: docs.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final linkData = docs[index].data();
                     final patientId = (linkData['patientId'] ?? '').toString();
@@ -243,7 +243,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                               width: 50,
                               height: 50,
                               decoration: BoxDecoration(
-                                color: colorScheme.primary.withOpacity(0.10),
+                                color: colorScheme.primary.withValues(alpha: 0.10),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Icon(Icons.person_outline_rounded, color: colorScheme.primary),
@@ -342,7 +342,7 @@ class _PatientsEmptyState extends StatelessWidget {
                 'Linked patients will appear here.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.72),
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.72),
                 ),
               ),
             ],

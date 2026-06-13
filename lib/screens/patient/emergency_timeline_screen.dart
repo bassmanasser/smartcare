@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 import '../../services/medical_report_service.dart';
 
@@ -19,7 +19,7 @@ class EmergencyTimelineScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Emergency Timeline'),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: repo.alertsStream(patientId, limit: 120),
@@ -115,7 +115,7 @@ class _TimelineCard extends StatelessWidget {
     final s = item.severity.toLowerCase();
     if (s == 'high' || s == 'danger') return Colors.redAccent;
     if (s == 'medium' || s == 'warn') return Colors.orange;
-    return PETROL;
+    return petrol;
   }
 
   IconData _icon() {
@@ -153,7 +153,7 @@ class _TimelineCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              backgroundColor: c.withOpacity(0.12),
+              backgroundColor: c.withValues(alpha: 0.12),
               child: Icon(_icon(), color: c),
             ),
             const SizedBox(width: 12),

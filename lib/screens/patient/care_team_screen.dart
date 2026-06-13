@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 
@@ -13,10 +13,10 @@ class CareTeamScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: LIGHT_BG,
+      backgroundColor: lightBg,
       appBar: AppBar(
         title: const Text('Care Team'),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         foregroundColor: Colors.white,
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
@@ -65,8 +65,8 @@ class CareTeamScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 26,
-                      backgroundColor: PETROL.withOpacity(0.12),
-                      child: const Icon(Icons.person, color: PETROL_DARK),
+                      backgroundColor: petrol.withValues(alpha: 0.12),
+                      child: const Icon(Icons.person, color: petrolDark),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:flutter/material.dart';
 import '../../models/care_link.dart';
 import '../../services/care_link_service.dart';
 import '../../utils/constants.dart';
@@ -259,7 +258,7 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
       backgroundColor: const Color(0xFFF6F8FB),
       appBar: AppBar(
         title: const Text('Linked Doctors & Family'),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: StreamBuilder<List<CareLink>>(
         stream: _service.patientLinksStream(widget.patientId),
@@ -301,7 +300,7 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
         style: const TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 18,
-          color: PETROL_DARK,
+          color: petrolDark,
         ),
       ),
     );
@@ -466,8 +465,8 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
               children: [
                 CircleAvatar(
                   backgroundColor: link.linkedUserRole == LinkUserRole.doctor
-                      ? Colors.blue.withOpacity(0.12)
-                      : Colors.orange.withOpacity(0.12),
+                      ? Colors.blue.withValues(alpha: 0.12)
+                      : Colors.orange.withValues(alpha: 0.12),
                   child: Icon(
                     link.linkedUserRole == LinkUserRole.doctor
                         ? Icons.medical_services
@@ -498,7 +497,7 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: _statusColor(link.status).withOpacity(0.12),
+                    color: _statusColor(link.status).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -582,7 +581,7 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(

@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../utils/constants.dart';
@@ -23,7 +23,7 @@ class ConversationsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Messages'),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: q.snapshots(),
@@ -45,7 +45,7 @@ class ConversationsScreen extends StatelessWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(12),
             itemCount: docs.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, i) {
               final d = docs[i];
               final data = d.data();
@@ -73,10 +73,10 @@ class ConversationsScreen extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: PETROL.withOpacity(0.15),
+                    backgroundColor: petrol.withValues(alpha: 0.15),
                     child: Text(
                       otherName.isNotEmpty ? otherName[0].toUpperCase() : 'U',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: PETROL_DARK),
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: petrolDark),
                     ),
                   ),
                   title: Row(
@@ -238,14 +238,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.peerName, overflow: TextOverflow.ellipsis),
             Text(
               'Chat',
-              style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.8)),
+              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.8)),
             ),
           ],
         ),
@@ -301,7 +301,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 boxShadow: [
                   BoxShadow(
                     blurRadius: 10,
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withValues(alpha: 0.06),
                     offset: const Offset(0, -2),
                   ),
                 ],
@@ -318,7 +318,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       decoration: InputDecoration(
                         hintText: 'Type a message...',
                         filled: true,
-                        fillColor: LIGHT_BG,
+                        fillColor: lightBg,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(18),
@@ -335,7 +335,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: _sending ? Colors.grey : PETROL,
+                        color: _sending ? Colors.grey : petrol,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Icon(Icons.send, color: Colors.white),
@@ -370,7 +370,7 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isMe ? PETROL : Colors.white;
+    final bg = isMe ? petrol : Colors.white;
     final fg = isMe ? Colors.white : Colors.black87;
 
     return Align(
@@ -392,7 +392,7 @@ class _ChatBubble extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               blurRadius: 10,
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               offset: const Offset(0, 4),
             ),
           ],
@@ -408,7 +408,7 @@ class _ChatBubble extends StatelessWidget {
             Text(
               time,
               style: TextStyle(
-                color: isMe ? Colors.white.withOpacity(0.75) : Colors.black54,
+                color: isMe ? Colors.white.withValues(alpha: 0.75) : Colors.black54,
                 fontSize: 11,
               ),
             ),

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -159,7 +159,7 @@ class _ArrhythmiaCheckScreenState extends State<ArrhythmiaCheckScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         title: const Text(
           'Arrhythmia Check',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
@@ -191,14 +191,14 @@ class _ArrhythmiaCheckScreenState extends State<ArrhythmiaCheckScreen>
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [PETROL_DARK, PETROL],
+          colors: [petrolDark, petrol],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: PETROL_DARK.withValues(alpha: 0.3),
+            color: petrolDark.withValues(alpha: 0.3),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -287,7 +287,7 @@ class _ArrhythmiaCheckScreenState extends State<ArrhythmiaCheckScreen>
       ),
       child: Column(
         children: [
-          const CircularProgressIndicator(color: PETROL_DARK, strokeWidth: 3),
+          const CircularProgressIndicator(color: petrolDark, strokeWidth: 3),
           const SizedBox(height: 16),
           Text(
             'Fetching PPG data and running AI model...',
@@ -530,7 +530,7 @@ class _ArrhythmiaCheckScreenState extends State<ArrhythmiaCheckScreen>
         children: [
           const Row(
             children: [
-              Icon(Icons.analytics_outlined, color: PETROL_DARK, size: 20),
+              Icon(Icons.analytics_outlined, color: petrolDark, size: 20),
               SizedBox(width: 8),
               Text(
                 'Analysis Details',

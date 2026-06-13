@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/constants.dart';
@@ -104,7 +104,7 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Edit Information"),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         actions: [
           IconButton(onPressed: _saveProfile, icon: const Icon(Icons.check))
         ],
@@ -137,7 +137,7 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: _bloodType,
+                  initialValue: _bloodType,
                   items: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                   onChanged: (v) => setState(() => _bloodType = v!),
                   decoration: const InputDecoration(labelText: "Blood Type", prefixIcon: Icon(Icons.bloodtype, color: Colors.red), border: OutlineInputBorder(), filled: true, fillColor: Colors.white),
@@ -153,7 +153,7 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
                   child: ElevatedButton(
                     onPressed: _saveProfile,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: PETROL, 
+                      backgroundColor: petrol, 
                       padding: const EdgeInsets.symmetric(vertical: 15)
                     ),
                     child: const Text("Save Information", style: TextStyle(fontSize: 16, color: Colors.white)),
@@ -168,7 +168,7 @@ class _EditPatientProfileScreenState extends State<EditPatientProfileScreen> {
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Align(alignment: Alignment.centerLeft, child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: PETROL_DARK))),
+      child: Align(alignment: Alignment.centerLeft, child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: petrolDark))),
     );
   }
 

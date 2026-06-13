@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../models/doctor.dart';
 import '../../utils/constants.dart';
@@ -24,7 +24,7 @@ class AssignedCasesScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Assigned Cases'),
         centerTitle: true,
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: activeQueue.isEmpty
           ? const Center(
@@ -36,7 +36,7 @@ class AssignedCasesScreen extends StatelessWidget {
           : ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: activeQueue.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final item = activeQueue[index];
                 final urgency = urgencyColor(item.urgency);
@@ -61,7 +61,7 @@ class AssignedCasesScreen extends StatelessWidget {
                             children: [
                               CircleAvatar(
                                 radius: 24,
-                                backgroundColor: urgency.withOpacity(0.12),
+                                backgroundColor: urgency.withValues(alpha: 0.12),
                                 child: Icon(
                                   Icons.local_hospital_rounded,
                                   color: urgency,
@@ -93,7 +93,7 @@ class AssignedCasesScreen extends StatelessWidget {
                                   vertical: 7,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: urgency.withOpacity(0.12),
+                                  color: urgency.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: Text(
@@ -176,7 +176,7 @@ class _MiniMetric extends StatelessWidget {
           textAlign: TextAlign.center,
           style: const TextStyle(
             fontWeight: FontWeight.w700,
-            color: PETROL_DARK,
+            color: petrolDark,
           ),
         ),
       ],

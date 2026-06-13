@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -31,6 +31,7 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
   DateTime? _selectedBirthDate;
   final _gender = ValueNotifier('Female');
   final _bloodType = ValueNotifier('O+');
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -74,36 +75,46 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
       return;
     }
 
-    final app = Provider.of<AppState>(context, listen: false);
+    setState(() => _loading = true);
 
-    final p = Patient(
-      id: user.uid,
-      name: _name.text.trim(),
-      email: user.email ?? '',
-      birthDate: _selectedBirthDate,
-      gender: _gender.value,
-      phone: _phone.text.trim(),
-      weight: _weight.text.trim(),
-      height: _height.text.trim(),
-      bloodType: _bloodType.value,
-      allergies: _allergies.text.isNotEmpty ? _allergies.text.split(',') : [],
-      chronicDiseases:
-          _chronicDiseases.text.isNotEmpty ? _chronicDiseases.text.split(',') : [],
-      emergencyContactName: _emergencyName.text.trim(),
-      emergencyContactPhone: _emergencyPhone.text.trim(),
-      doctorId: null,
-      parentId: null,
-      age: DateTime.now().year - _selectedBirthDate!.year,
-    );
+    try {
+      final app = Provider.of<AppState>(context, listen: false);
 
-    await app.registerPatient(p, institutionCode: _institutionCode.text.trim());
+      final p = Patient(
+        id: user.uid,
+        name: _name.text.trim(),
+        email: user.email ?? '',
+        birthDate: _selectedBirthDate,
+        gender: _gender.value,
+        phone: _phone.text.trim(),
+        weight: _weight.text.trim(),
+        height: _height.text.trim(),
+        bloodType: _bloodType.value,
+        allergies: _allergies.text.isNotEmpty ? _allergies.text.split(',') : [],
+        chronicDiseases:
+            _chronicDiseases.text.isNotEmpty ? _chronicDiseases.text.split(',') : [],
+        emergencyContactName: _emergencyName.text.trim(),
+        emergencyContactPhone: _emergencyPhone.text.trim(),
+        doctorId: null,
+        parentId: null,
+        age: DateTime.now().year - _selectedBirthDate!.year,
+      );
 
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => PatientHomeScreen(patient: p)),
-      (_) => false,
-    );
+      await app.registerPatient(p, institutionCode: _institutionCode.text.trim());
+
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => PatientHomeScreen(patient: p)),
+        (_) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Registration failed: $e')),
+      );
+    }
   }
 
   @override
@@ -113,7 +124,7 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(lang.translate('patient_intake')),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -129,7 +140,7 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
           children: [
             Text(
               lang.translate('profile'),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: petrol),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -147,7 +158,7 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
                     ? lang.translate('date')
                     : DateFormat('yyyy-MM-dd').format(_selectedBirthDate!),
               ),
-              trailing: const Icon(Icons.calendar_today, color: PETROL),
+              trailing: const Icon(Icons.calendar_today, color: petrol),
               shape: RoundedRectangleBorder(
                 side: const BorderSide(color: Colors.grey),
                 borderRadius: BorderRadius.circular(6),
@@ -160,8 +171,8 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
                 Expanded(
                   child: ValueListenableBuilder<String>(
                     valueListenable: _gender,
-                    builder: (_, val, __) => DropdownButtonFormField<String>(
-                      value: val,
+                    builder: (_, val, _) => DropdownButtonFormField<String>(
+                      initialValue: val,
                       items: const [
                         DropdownMenuItem(value: 'Female', child: Text('Female')),
                         DropdownMenuItem(value: 'Male', child: Text('Male')),
@@ -191,7 +202,7 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
             const SizedBox(height: 20),
             Text(
               lang.translate('institution'),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: petrol),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -206,7 +217,7 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
             const SizedBox(height: 20),
             Text(
               lang.translate('medical_profile'),
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PETROL),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: petrol),
             ),
             const SizedBox(height: 10),
             Row(
@@ -239,8 +250,8 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
             const SizedBox(height: 10),
             ValueListenableBuilder<String>(
               valueListenable: _bloodType,
-              builder: (_, val, __) => DropdownButtonFormField<String>(
-                value: val,
+              builder: (_, val, _) => DropdownButtonFormField<String>(
+                initialValue: val,
                 items: const [
                   DropdownMenuItem(value: 'A+', child: Text('A+')),
                   DropdownMenuItem(value: 'A-', child: Text('A-')),
@@ -303,15 +314,24 @@ class _PatientSignUpScreenState extends State<PatientSignUpScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _save,
+                onPressed: _loading ? null : _save,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: PETROL,
+                  backgroundColor: petrol,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                 ),
-                child: Text(
-                  lang.translate('save_continue'),
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                ),
+                child: _loading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        lang.translate('save_continue'),
+                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                      ),
               ),
             ),
           ],

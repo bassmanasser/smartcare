@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
-import '../../models/doctor.dart';
 import '../../utils/constants.dart';
 import 'booking_screen.dart'; // تأكدي من وجود الملف
 
@@ -28,7 +27,7 @@ class _PatientDoctorSearchScreenState extends State<PatientDoctorSearchScreen> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text("البحث عن طبيب"), backgroundColor: PETROL_DARK),
+      appBar: AppBar(title: const Text("البحث عن طبيب"), backgroundColor: petrolDark),
       body: Column(
         children: [
           // شريط البحث والفلترة
@@ -74,7 +73,7 @@ class _PatientDoctorSearchScreenState extends State<PatientDoctorSearchScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(15),
-                    leading: const CircleAvatar(radius: 30, backgroundColor: PETROL, child: Icon(Icons.person, color: Colors.white)),
+                    leading: const CircleAvatar(radius: 30, backgroundColor: petrol, child: Icon(Icons.person, color: Colors.white)),
                     title: Text("د. ${doc.name}", style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +86,7 @@ class _PatientDoctorSearchScreenState extends State<PatientDoctorSearchScreen> {
                       ],
                     ),
                     trailing: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: PETROL),
+                      style: ElevatedButton.styleFrom(backgroundColor: petrol),
                       onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BookingScreen(doctor: doc))),
                       child: const Text("حجز", style: TextStyle(color: Colors.white)),
                     ),
@@ -103,5 +102,5 @@ class _PatientDoctorSearchScreenState extends State<PatientDoctorSearchScreen> {
 }
 
 extension on List<Map<String, dynamic>> {
-  get values => null;
+  dynamic get values => null;
 }

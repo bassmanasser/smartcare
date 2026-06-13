@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 
@@ -72,7 +72,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.otherName),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
       ),
       body: Column(
         children: [
@@ -123,7 +123,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           horizontal: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: isMe ? PETROL : Colors.grey.shade200,
+                          color: isMe ? petrol : Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Column(
@@ -188,7 +188,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                         )
                       : IconButton(
-                          icon: const Icon(Icons.send, color: PETROL),
+                          icon: const Icon(Icons.send, color: petrol),
                           onPressed: _sendMessage,
                         ),
                 ],

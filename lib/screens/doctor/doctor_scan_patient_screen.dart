@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -97,7 +97,7 @@ class _DoctorScanPatientScreenState extends State<DoctorScanPatientScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         title: const Text(
           'Scan Patient QR',
           style: TextStyle(color: Colors.white),
@@ -135,7 +135,7 @@ class _DoctorScanPatientScreenState extends State<DoctorScanPatientScreen> {
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.55),
+                color: Colors.black.withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Text(

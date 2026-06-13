@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -17,7 +17,6 @@ class _HospitalProfileScreenState extends State<HospitalProfileScreen> {
   bool _saving = false;
 
   Map<String, dynamic>? _userData;
-  Map<String, dynamic>? _hospitalData;
   String _institutionId = '';
 
   final _formKey = GlobalKey<FormState>();
@@ -66,7 +65,6 @@ class _HospitalProfileScreenState extends State<HospitalProfileScreen> {
       }
 
       _userData = userData;
-      _hospitalData = hospitalData;
       _institutionId = institutionId;
 
       _hospitalNameController.text = _readValue([
@@ -264,8 +262,8 @@ class _HospitalProfileScreenState extends State<HospitalProfileScreen> {
                 borderRadius: BorderRadius.circular(24),
                 gradient: LinearGradient(
                   colors: [
-                    colorScheme.primary.withOpacity(0.95),
-                    colorScheme.primaryContainer.withOpacity(0.90),
+                    colorScheme.primary.withValues(alpha: 0.95),
+                    colorScheme.primaryContainer.withValues(alpha: 0.90),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -278,7 +276,7 @@ class _HospitalProfileScreenState extends State<HospitalProfileScreen> {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.16),
+                      color: Colors.white.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: const Icon(
@@ -541,7 +539,7 @@ class _HeaderLine extends StatelessWidget {
       child: Text(
         '$label: $value',
         style: TextStyle(
-          color: Colors.white.withOpacity(0.92),
+          color: Colors.white.withValues(alpha: 0.92),
           fontSize: 13.5,
           fontWeight: FontWeight.w500,
         ),
@@ -562,7 +560,7 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textColor =
-        Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.72);
+        Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.72);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -615,7 +613,7 @@ class _StatCard extends StatelessWidget {
               height: 46,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                color: colorScheme.primary.withOpacity(0.10),
+                color: colorScheme.primary.withValues(alpha: 0.10),
               ),
               child: Icon(icon, color: colorScheme.primary),
             ),
@@ -637,7 +635,7 @@ class _StatCard extends StatelessWidget {
                         .textTheme
                         .bodyMedium
                         ?.color
-                        ?.withOpacity(0.75),
+                        ?.withValues(alpha: 0.75),
                   ),
                 ),
               ],
@@ -675,7 +673,7 @@ class _InfoRow extends StatelessWidget {
                       .textTheme
                       .bodyMedium
                       ?.color
-                      ?.withOpacity(0.72),
+                      ?.withValues(alpha: 0.72),
                 ),
               ),
             ),

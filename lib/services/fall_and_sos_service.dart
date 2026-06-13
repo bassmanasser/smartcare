@@ -9,7 +9,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/alert_item.dart';
 import '../providers/app_state.dart';
 import 'notification_service.dart';
-import 'permissions_service.dart'; // <-- تمت إضافة هذا السطر
 
 class FallAndSosService {
   StreamSubscription<AccelerometerEvent>? _accelSub;
@@ -20,7 +19,7 @@ class FallAndSosService {
   FallAndSosService({required this.patientId, required this.context});
 
   void start() {
-    _accelSub = accelerometerEvents.listen((e) {
+    _accelSub = accelerometerEventStream().listen((e) {
       final mag = sqrt(e.x * e.x + e.y * e.y + e.z * e.z);
       // Fall detection threshold can be adjusted based on testing
       if (mag > 25) {
@@ -97,7 +96,7 @@ class FallAndSosService {
   // ***** THIS IS THE MODIFIED FUNCTION *****
   Future<void> _performSosActions(AppState app) async {
     // --- تمت إضافة هذا السطر ---
-    await PermissionsService.instance.requestSmsAndCallPermissions();
+    await PermissionsService.instance?.requestSmsAndCallPermissions();
     // ------------------------- 
 
     // Make a phone call
@@ -131,7 +130,8 @@ class FallAndSosService {
 }
 
 class PermissionsService {
-  static get instance => null;
+  static PermissionsService? get instance => null;
+  Future<void> requestSmsAndCallPermissions() async {}
 }
 
 extension AppStateEmergencyFallback on AppState {

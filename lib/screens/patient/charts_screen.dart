@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 
@@ -180,7 +180,7 @@ class _ChartsScreenState extends State<ChartsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(lang.translate('charts')),
-        backgroundColor: PETROL_DARK,
+        backgroundColor: petrolDark,
         foregroundColor: Colors.white,
       ),
       body: Consumer<AppState>(
@@ -224,21 +224,21 @@ class _ChartsScreenState extends State<ChartsScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: PETROL.withValues(alpha: 0.1),
+                    color: petrol.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border:
-                        Border.all(color: PETROL.withValues(alpha: 0.3)),
+                        Border.all(color: petrol.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.timeline_rounded,
-                          size: 16, color: PETROL_DARK),
+                          size: 16, color: petrolDark),
                       const SizedBox(width: 8),
                       Text(modeLabel,
                           style: const TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: PETROL_DARK,
+                              color: petrolDark,
                               fontSize: 13)),
                       const SizedBox(width: 6),
                       Text(
@@ -477,7 +477,7 @@ class _VitalChart extends StatelessWidget {
                       isStrokeCapRound: true,
                       dotData: FlDotData(
                         show: data.length <= 25,
-                        getDotPainter: (_, __, ___, _) =>
+                        getDotPainter: (_, _, _, _) =>
                             FlDotCirclePainter(
                           radius: 3,
                           color: lineColor,
@@ -676,7 +676,7 @@ class _BPChart extends StatelessWidget {
                       isStrokeCapRound: true,
                       dotData: FlDotData(
                         show: data.length <= 25,
-                        getDotPainter: (_, __, ___, _) =>
+                        getDotPainter: (_, _, _, _) =>
                             FlDotCirclePainter(
                           radius: 3,
                           color: sysColor,
@@ -705,7 +705,7 @@ class _BPChart extends StatelessWidget {
                       isStrokeCapRound: true,
                       dotData: FlDotData(
                         show: data.length <= 25,
-                        getDotPainter: (_, __, ___, _) =>
+                        getDotPainter: (_, _, _, _) =>
                             FlDotCirclePainter(
                           radius: 3,
                           color: diaColor,

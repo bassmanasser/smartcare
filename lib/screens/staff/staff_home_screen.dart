@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -402,7 +402,7 @@ class _StaffHeaderCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
-          colors: [PETROL_DARK, PETROL],
+          colors: [petrolDark, petrol],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -413,7 +413,7 @@ class _StaffHeaderCard extends StatelessWidget {
             width: compact ? 58 : 64,
             height: compact ? 58 : 64,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: Colors.white.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(18),
             ),
             child: const Icon(
@@ -479,7 +479,7 @@ class _SectionTitle extends StatelessWidget {
           style: const TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 18,
-            color: PETROL_DARK,
+            color: petrolDark,
           ),
         ),
         const SizedBox(height: 4),
@@ -516,7 +516,7 @@ class _StatCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(11),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color),
@@ -564,8 +564,8 @@ class _ActionTile extends StatelessWidget {
         contentPadding: const EdgeInsets.all(14),
         onTap: onTap,
         leading: CircleAvatar(
-          backgroundColor: PETROL.withOpacity(0.12),
-          child: Icon(icon, color: PETROL_DARK),
+          backgroundColor: petrol.withValues(alpha: 0.12),
+          child: Icon(icon, color: petrolDark),
         ),
         title: Text(
           title,
